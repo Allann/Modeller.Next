@@ -214,6 +214,33 @@ government-response facts led there.
 
 Avoid using *behaviour*, *policy*, or *decision record* as synonyms for decision.
 
+### Decision table
+
+A [decision](#decision) representation whose typed rows map explicit
+[fact](#fact) combinations to declared [conclusions](#conclusion) under one
+[hit policy](#hit-policy). Row order cannot become an implicit default or change
+meaning where the hit policy does not define ordering.
+
+The Child Care **Classify ACCS eligibility** table uses the **Unique** hit policy
+to select **Eligible** or **Ineligible**. A wildcard evidence cell allows an
+inactive enrolment to be classified without demanding irrelevant evidence.
+
+Avoid using *spreadsheet*, *lookup table*, or *separate rules engine* as
+synonyms for a decision table.
+
+### Declared function
+
+A pure, versioned domain calculation referenced explicitly by canonical
+[rule](#rule) meaning when built-in expressions are insufficient. Its adapter
+receives only typed arguments and cancellation and cannot introduce ambient
+information.
+
+For example, a future Child Care date calculation must receive the relevant
+effective date as a [fact](#fact); it cannot read the host clock.
+
+Avoid using *callback*, *script*, or *external service* as synonyms for a
+declared function.
+
 ### Diagnostic
 
 A structured report of an invalid definition, request, contract, or expected
@@ -225,6 +252,19 @@ an inactive enrolment that prevents eligibility produces a finding.
 
 Avoid using *finding*, *conclusion*, or *exception text* as synonyms for a
 diagnostic.
+
+### Disclosure policy
+
+An explicit rule controlling which protected [facts](#fact),
+[evidence](#evidence), [findings](#finding), and trace details may appear in a
+projection for a named audience. It changes visibility without changing the
+[evaluation result](#evaluation-result).
+
+For ACCS, a public policy can omit protected supporting-document metadata while
+an authorised audit policy may retain its safe evidence reference.
+
+Avoid using *authorization policy*, *redaction afterthought*, or *trace level*
+as synonyms for a disclosure policy.
 
 ### Diagram projection
 
@@ -281,6 +321,19 @@ submitted**, **enrolment arrangement ended**, and **ACCS determination
 changed**. Downstream reactions do not change the event's meaning.
 
 Avoid using *command*, *notification*, or *message* as synonyms for event.
+
+### Evaluation result
+
+The immutable determined, indeterminate, invalid, or failed result of evaluating
+one [rule](#rule) or [decision](#decision) against one request. Cancellation is
+control flow and is never an evaluation result.
+
+For **Determine ACCS eligibility**, supplied supporting information may produce
+a determined **Eligible** conclusion; missing necessary information produces an
+indeterminate result with the exact missing Fact.
+
+Avoid using *outcome*, *response*, or *exception* as synonyms for an evaluation
+result.
 
 ### Evidence
 
@@ -369,6 +422,19 @@ For example, **can withdraw session report** might guard the transition to
 government-processing facts.
 
 Avoid using *validation*, *authorization*, or *condition* as synonyms for guard.
+
+### Hit policy
+
+The declared rule determining how matching [decision-table](#decision-table)
+rows produce a [conclusion](#conclusion). Every supported policy has explicit
+overlap, completeness, and ordering semantics.
+
+The initial Child Care table uses **Unique**: every complete Fact combination
+must match exactly one row, and overlapping or incomplete tables are invalid at
+binding.
+
+Avoid using *row order*, *default branch*, or *engine setting* as synonyms for
+hit policy.
 
 ### Invariant
 
@@ -563,6 +629,8 @@ synonyms for a runtime plan.
 
 See the [reusable rules runtime architecture decision](/docs/architecture/decisions/reusable-rules-runtime)
 for its binding, concurrency, conformance, isolation, and caching constraints.
+See the [rules-runtime reference](/docs/reference/rules-runtime) for the
+executable interface and Child Care result contract.
 
 ### Schema version
 
@@ -641,6 +709,18 @@ government response are state. **Draft**, **submitted**, **approved**, or
 
 Avoid using *status*, *lifecycle stage*, or *persisted data* as synonyms for
 state.
+
+### Trace level
+
+The requested amount of [canonical trace](#canonical-trace) detail: none,
+summary, or full. It changes trace projection only and never changes conclusions
+or findings.
+
+For an ACCS evaluation, full detail may include both Fact-expression steps,
+while none returns the same eligibility result without a canonical trace.
+
+Avoid using *disclosure policy*, *log level*, or *telemetry sampling* as
+synonyms for trace level.
 
 ### Transition
 

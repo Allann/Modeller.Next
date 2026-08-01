@@ -70,6 +70,7 @@ public static class CanonicalModel
         if (definition is not FactDefinition and
             not EntityDefinition and
             not RuleDefinition and
+            not DecisionDefinition and
             not BehaviourDefinition)
         {
             return Failure(
@@ -154,6 +155,23 @@ public static class CanonicalModel
                 })
                 .ToImmutableArray()
         },
+        DecisionDefinition decision => decision with
+        {
+            FormerQualifiedNames = OrEmpty(decision.FormerQualifiedNames),
+            InputFacts = OrEmpty(decision.InputFacts),
+            Conclusions = OrEmpty(decision.Conclusions).Select(conclusion => conclusion with
+            {
+                FormerQualifiedNames = OrEmpty(conclusion.FormerQualifiedNames)
+            }).ToImmutableArray(),
+            Table = decision.Table with
+            {
+                Rows = OrEmpty(decision.Table.Rows).Select(row => row with
+                {
+                    FormerQualifiedNames = OrEmpty(row.FormerQualifiedNames),
+                    Conditions = OrEmpty(row.Conditions)
+                }).ToImmutableArray()
+            }
+        },
         BehaviourDefinition behaviour => behaviour with
         {
             FormerQualifiedNames = OrEmpty(behaviour.FormerQualifiedNames),
@@ -235,6 +253,14 @@ public static class CanonicalModel
                     .Select(conclusion => Rename(conclusion, operation, formerQualifiedName))
                     .ToImmutableArray()
             },
+            DecisionDefinition decision => decision with
+            {
+                Conclusions = decision.Conclusions.Select(conclusion => Rename(conclusion, operation, formerQualifiedName)).ToImmutableArray(),
+                Table = decision.Table with
+                {
+                    Rows = decision.Table.Rows.Select(row => Rename(row, operation, formerQualifiedName)).ToImmutableArray()
+                }
+            },
             BehaviourDefinition behaviour => behaviour with
             {
                 Outcomes = behaviour.Outcomes.Select(outcome => Rename(outcome, operation, formerQualifiedName)).ToImmutableArray(),
@@ -292,6 +318,14 @@ public static class CanonicalModel
             Name = operation.Name,
             Slug = operation.Slug,
             FormerQualifiedNames = Aliases(conclusion, operation.Slug, formerName)
+        };
+
+    private static DecisionRow Rename(DecisionRow row, RenameConcept operation, string formerName) =>
+        row.Id != operation.ConceptId ? row : row with
+        {
+            Name = operation.Name,
+            Slug = operation.Slug,
+            FormerQualifiedNames = Aliases(row, operation.Slug, formerName)
         };
 
     private static OutcomeDefinition Rename(OutcomeDefinition outcome, RenameConcept operation, string formerName) =>
@@ -367,6 +401,17 @@ public static class CanonicalModel
                     yield return new SemanticNode(conclusion.Id, conclusion.Slug, rule.Id);
                 }
 
+                break;
+
+            case DecisionDefinition decision:
+                foreach (var conclusion in decision.Conclusions)
+                {
+                    yield return new SemanticNode(conclusion.Id, conclusion.Slug, decision.Id);
+                }
+                foreach (var row in decision.Table.Rows)
+                {
+                    yield return new SemanticNode(row.Id, row.Slug, decision.Id);
+                }
                 break;
 
             case BehaviourDefinition behaviour:

@@ -69,8 +69,55 @@ public sealed record RuleDefinition(
     SemanticSlug Slug,
     ImmutableArray<FactReference> InputFacts,
     ImmutableArray<ConclusionDefinition> Conclusions,
+    RuleExpression? Expression = null,
     SemanticDocumentation? Documentation = null)
     : SemanticDefinition(Id, Name, Slug, Documentation);
+
+public abstract record RuleExpression;
+
+public sealed record FactExpression(
+    FactReference Fact,
+    string? TrueFindingCode = null,
+    string? FalseFindingCode = null,
+    string? MissingFindingCode = null) : RuleExpression;
+
+public sealed record AndExpression(ImmutableArray<RuleExpression> Operands) : RuleExpression;
+
+public sealed record DecisionDefinition(
+    SemanticId Id,
+    SemanticName Name,
+    SemanticSlug Slug,
+    ImmutableArray<FactReference> InputFacts,
+    ImmutableArray<ConclusionDefinition> Conclusions,
+    DecisionTable Table,
+    SemanticDocumentation? Documentation = null)
+    : SemanticDefinition(Id, Name, Slug, Documentation);
+
+public sealed record DecisionTable(
+    DecisionHitPolicy HitPolicy,
+    ImmutableArray<DecisionRow> Rows);
+
+public enum DecisionHitPolicy
+{
+    Unique
+}
+
+public sealed record DecisionRow(
+    SemanticId Id,
+    SemanticName Name,
+    SemanticSlug Slug,
+    ImmutableArray<TruthDecisionCondition> Conditions,
+    ConclusionReference Conclusion,
+    string FindingCode,
+    SemanticDocumentation? Documentation = null) : ISemanticConcept
+{
+    public ImmutableArray<string> FormerQualifiedNames { get; init; } = [];
+}
+
+public sealed record TruthDecisionCondition(
+    FactReference Fact,
+    bool? Expected,
+    string? MissingFindingCode = null);
 
 public sealed record ConclusionDefinition(
     SemanticId Id,

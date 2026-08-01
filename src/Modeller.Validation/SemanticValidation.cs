@@ -169,6 +169,37 @@ public static class SemanticValidation
             }
         }
 
+        foreach (var decision in revision.Definitions.OfType<DecisionDefinition>().OrderBy(decision => decision.Id.ToString(), StringComparer.Ordinal))
+        {
+            for (var index = 0; index < decision.InputFacts.Length; index++)
+            {
+                var reference = decision.InputFacts[index];
+                if (revision.FindConcept(reference.TargetId)?.Kind != SemanticKind.Fact)
+                {
+                    diagnostics.Add(new ValidationDiagnostic(
+                        "validation.reference.fact-unresolved",
+                        ValidationStage.ReferencesAndFederation,
+                        ValidationSeverity.Error,
+                        "The decision input must reference a declared Fact.",
+                        decision.Id.ToString(),
+                        $"/definitions/{decision.Id}/inputFacts/{index}"));
+                }
+            }
+            foreach (var row in decision.Table.Rows.OrderBy(item => item.Id.ToString(), StringComparer.Ordinal))
+            {
+                if (decision.Conclusions.All(item => item.Id != row.Conclusion.TargetId))
+                {
+                    diagnostics.Add(new ValidationDiagnostic(
+                        "validation.reference.conclusion-unresolved",
+                        ValidationStage.ReferencesAndFederation,
+                        ValidationSeverity.Error,
+                        "A decision row must reference a Conclusion declared by its Decision.",
+                        row.Id.ToString(),
+                        $"/definitions/{decision.Id}/rows/{row.Id}/conclusion"));
+                }
+            }
+        }
+
         foreach (var behaviour in revision.Definitions.OfType<BehaviourDefinition>()
                      .OrderBy(behaviour => behaviour.Id.ToString(), StringComparer.Ordinal))
         {

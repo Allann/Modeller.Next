@@ -18,6 +18,9 @@
     <None Include="../../conformance/inputs/child-care-accs.context-package.v1.json"
           Link="Fixtures/child-care-accs.context-package.v1.json"
           CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../conformance/inputs/child-care-accs-decision-table.context-package.v1.json"
+          Link="Fixtures/child-care-accs-decision-table.context-package.v1.json"
+          CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../conformance/fixtures/child-care/context-package-resolution.v1.json"
           Link="Fixtures/context-package-resolution.v1.json"
           CopyToOutputDirectory="PreserveNewest" />

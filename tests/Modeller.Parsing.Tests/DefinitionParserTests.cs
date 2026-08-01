@@ -19,7 +19,7 @@ public sealed class DefinitionParserTests
         Assert.True(result.IsSuccess);
         Assert.Empty(result.Diagnostics);
         Assert.Equal(
-            "sha256:26b35b94c741cae8ffb8aafac1ad7cefb7bb5bf106cddc5db27544f5ccdfcd16",
+            "sha256:6d1448c32127c49571d2a7ea5982045b7aa74ed28da2d7323ac5360b94ed6728",
             result.Package!.SemanticDigest);
         Assert.Equal(5, result.Package.AuthoredRevision.Definitions.Length);
     }
@@ -63,7 +63,7 @@ public sealed class DefinitionParserTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(
-            "sha256:26b35b94c741cae8ffb8aafac1ad7cefb7bb5bf106cddc5db27544f5ccdfcd16",
+            "sha256:6d1448c32127c49571d2a7ea5982045b7aa74ed28da2d7323ac5360b94ed6728",
             result.Package!.SemanticDigest);
     }
 
@@ -121,6 +121,19 @@ public sealed class DefinitionParserTests
         Assert.Equal(mapping.ContextId, result.ParseResult.Package!.AuthoredRevision.Id.ToString());
         Assert.Equal("1.0.0", result.ParseResult.Package.AuthoredRevision.ContextVersion);
         Assert.Equal("ChildCare", Assert.Single(result.IdentifierMappings).LegacyIdentifier);
+    }
+
+    [Fact]
+    public void Readable_child_care_decision_table_matches_canonical_json_meaning()
+    {
+        var source = new SourceDocument(
+            "child-care-accs-decision-table.modeller",
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "child-care-accs-decision-table.modeller")));
+
+        var result = DefinitionParser.Parse([source], ParseOptions.Language1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("sha256:63e39411df24b9ee59614cc8d3fae4397e79272f85ac99b8fc2d97eda4e7a37a", result.Package!.SemanticDigest);
     }
 
     [Fact]

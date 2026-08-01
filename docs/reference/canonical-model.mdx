@@ -85,3 +85,13 @@ so canonical JSON does not leak into the model interface.
 
 [Readable source](/docs/reference/readable-source-language) is another authoring
 path into this interface, not another model representation.
+
+Rule expressions and their authored finding codes are consumed through the
+[rules-runtime reference interface](/docs/reference/rules-runtime); loading must
+not discard that canonical meaning or replace it with runtime convention.
+
+Decision definitions own typed inputs, conclusions, a declared
+[hit policy](/docs/concepts/ubiquitous-language#hit-policy), and stable rows.
+Rows use explicit Truth conditions or wildcards and select conclusions by stable
+ID. They execute through the same rules-runtime interface rather than a second
+engine.

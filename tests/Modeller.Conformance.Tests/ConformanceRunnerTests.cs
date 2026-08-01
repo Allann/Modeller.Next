@@ -239,6 +239,7 @@ public sealed class ConformanceRunnerTests
 
         Assert.Equal(
             [
+                "child-care.accs.decision-table.eligible.v1",
                 "child-care.accs.eligible.v1",
                 "child-care.accs.information-required.v1",
                 "child-care.context-package.resolve.v1",

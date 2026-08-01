@@ -12,19 +12,20 @@
       "contractId": "rule-evaluation.determined",
       "sourceDecision": 17,
       "fixtures": ["child-care.accs.eligible.v1"],
-      "status": "AdapterPending"
+      "status": "Executable"
     },
     {
       "contractId": "rule-evaluation.missing-information",
       "sourceDecision": 17,
       "fixtures": ["child-care.accs.information-required.v1"],
-      "status": "AdapterPending"
+      "status": "Executable"
     },
     { "contractId": "behaviour.lifecycle-governance", "sourceDecision": 18, "fixtures": [], "status": "Planned" },
-    { "contractId": "runtime.bind-evaluate", "sourceDecision": 19, "fixtures": [], "status": "Planned" },
+    { "contractId": "runtime.bind-evaluate", "sourceDecision": 19, "fixtures": ["child-care.accs.eligible.v1", "child-care.accs.information-required.v1"], "status": "Executable" },
+    { "contractId": "runtime.decision-table.unique", "sourceDecision": 19, "fixtures": ["child-care.accs.decision-table.eligible.v1"], "status": "Executable" },
     { "contractId": "persistence.canonical-package", "sourceDecision": 20, "fixtures": ["child-care.context-package.resolve.v1"], "status": "Executable" },
     { "contractId": "projection.initial-views", "sourceDecision": 21, "fixtures": [], "status": "Planned" },
-    { "contractId": "acceptance.release-gates", "sourceDecision": 22, "fixtures": ["child-care.accs.eligible.v1", "child-care.accs.information-required.v1"], "status": "AdapterPending" },
+    { "contractId": "acceptance.release-gates", "sourceDecision": 22, "fixtures": ["child-care.accs.eligible.v1", "child-care.accs.information-required.v1"], "status": "Executable" },
     { "contractId": "validation.staged-diagnostics", "sourceDecision": 22, "fixtures": ["child-care.validation.unknown-eligibility-fact.v1"], "status": "Executable" }
   ]
 }

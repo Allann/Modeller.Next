@@ -89,10 +89,28 @@ defined conclusions. It explains how the supplied facts led to its conclusion
 and causes no effects.
 _Avoid_: Behaviour, policy, decision record
 
+**Decision table**:
+A decision representation whose typed rows map explicit Fact combinations to
+declared conclusions under one hit policy. Row order cannot become an implicit
+default or change meaning where the hit policy does not define ordering.
+_Avoid_: Spreadsheet, lookup table, separate rules engine
+
+**Declared function**:
+A pure, versioned domain calculation referenced explicitly by canonical rule
+meaning when built-in expressions are insufficient. Its adapter receives only
+typed arguments and cancellation and cannot introduce ambient information.
+_Avoid_: Callback, script, external service
+
 **Diagnostic**:
 A structured report of an invalid definition, request, contract, or expected
 technical failure. It is distinct from a finding that explains domain reasoning.
 _Avoid_: Finding, conclusion, exception text
+
+**Disclosure policy**:
+An explicit rule controlling which protected facts, evidence, findings, and
+trace details may appear in a projection for a named audience. It changes
+visibility without changing the evaluation result.
+_Avoid_: Authorization policy, redaction afterthought, trace level
 
 **Diagram projection**:
 A derived visual graph that reveals selected semantic concepts and relationships
@@ -115,6 +133,12 @@ An immutable statement that a domain-significant fact occurred. It may result
 from a behaviour or report something that occurred externally, and is neither a
 request nor an instruction.
 _Avoid_: Command, notification, message
+
+**Evaluation result**:
+The immutable determined, indeterminate, invalid, or failed result of evaluating
+one rule or decision against one request. Cancellation is control flow and is
+never an evaluation result.
+_Avoid_: Outcome, response, exception
 
 **Evidence**:
 Immutable provenance supplied with facts and referenced by findings. Evidence
@@ -151,6 +175,12 @@ A rule evaluated against current facts to determine whether a particular
 behaviour or lifecycle transition is allowed now. It produces an explained
 conclusion and no effects.
 _Avoid_: Validation, authorization, condition
+
+**Hit policy**:
+The declared rule determining how matching decision-table rows produce a
+conclusion. Every supported policy has explicit overlap, completeness, and
+ordering semantics.
+_Avoid_: Row order, default branch, engine setting
 
 **Invariant**:
 A rule that must hold for domain state to be valid before and after every
@@ -257,6 +287,11 @@ _Avoid_: Ownership, identity, semantic relationship
 The complete set of domain facts currently associated with an entity. A
 lifecycle stage is one part of state, not a synonym for the whole of it.
 _Avoid_: Status, lifecycle stage, persisted data
+
+**Trace level**:
+The requested amount of canonical evaluation detail: none, summary, or full.
+It changes trace projection only and never changes conclusions or findings.
+_Avoid_: Disclosure policy, log level, telemetry sampling
 
 **Transition**:
 A permitted change from one lifecycle stage to another, caused by successful

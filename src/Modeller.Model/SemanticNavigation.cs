@@ -7,6 +7,8 @@ public enum SemanticKind
     Lifecycle,
     LifecycleStage,
     Rule,
+    Decision,
+    DecisionRow,
     Conclusion,
     Behaviour,
     Outcome,
@@ -81,6 +83,21 @@ internal static class SemanticNavigation
 
                     break;
 
+                case DecisionDefinition decision:
+                    foreach (var conclusion in decision.Conclusions)
+                    {
+                        yield return new SemanticConceptAddress(
+                            conclusion.Id, conclusion.Name, conclusion.Slug, SemanticKind.Conclusion,
+                            decision.Id, $"{definitionName}.{conclusion.Slug}", conclusion.FormerQualifiedNames);
+                    }
+                    foreach (var row in decision.Table.Rows)
+                    {
+                        yield return new SemanticConceptAddress(
+                            row.Id, row.Name, row.Slug, SemanticKind.DecisionRow,
+                            decision.Id, $"{definitionName}.{row.Slug}", row.FormerQualifiedNames);
+                    }
+                    break;
+
                 case BehaviourDefinition behaviour:
                     foreach (var outcome in behaviour.Outcomes)
                     {
@@ -147,6 +164,7 @@ internal static class SemanticNavigation
                 FactDefinition => SemanticKind.Fact,
                 EntityDefinition => SemanticKind.Entity,
                 RuleDefinition => SemanticKind.Rule,
+                DecisionDefinition => SemanticKind.Decision,
                 BehaviourDefinition => SemanticKind.Behaviour,
                 _ => throw new InvalidOperationException(
                     $"Unsupported semantic definition '{definition.GetType().Name}'.")

@@ -72,7 +72,7 @@ stable diagnostic codes. Input order does not affect the snapshot lock order.
 
 For the Child Care reference project, the `child-care@1.0.0` ACCS package
 resolves to an immutable one-package snapshot with semantic digest
-`sha256:26b35b94c741cae8ffb8aafac1ad7cefb7bb5bf106cddc5db27544f5ccdfcd16`.
+`sha256:6d1448c32127c49571d2a7ea5982045b7aa74ed28da2d7323ac5360b94ed6728`.
 That result is retained as executable conformance evidence.
 
 ## Explicit migration
@@ -93,3 +93,8 @@ for the governing constraints.
 The [readable-source language](/docs/reference/readable-source-language)
 compiles to this canonical package form and retains source provenance without
 changing package authority.
+
+The Child Care `1.1.0` package is a complete successor to `1.0.0`: it preserves
+the application, lifecycle, Facts, Rule, Behaviour, exports, and stable IDs,
+then adds **Classify ACCS eligibility** and its **Unique** decision table. A
+context version is never a delta that silently removes earlier meaning.

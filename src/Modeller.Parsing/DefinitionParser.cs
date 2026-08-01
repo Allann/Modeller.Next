@@ -157,6 +157,10 @@ public static partial class DefinitionParser
                     throw new ParseException("parse.expression.unsupported", "Only the explicit and(...) expression is supported in language 1.0.", rule);
                 }
 
+                var trueFindings = Mappings(rule.Values.GetValueOrDefault("true-findings"));
+                var falseFindings = Mappings(rule.Values.GetValueOrDefault("false-findings"));
+                var missingFindings = Mappings(rule.Values.GetValueOrDefault("missing-findings"));
+
                 definitions.Add(new JsonObject
                 {
                     ["kind"] = "Rule",
@@ -167,10 +171,13 @@ public static partial class DefinitionParser
                     ["expression"] = new JsonObject
                     {
                         ["kind"] = "And",
-                        ["operands"] = new JsonArray(Split(expression[4..^1]).Select(id => new JsonObject
+                        ["operands"] = new JsonArray(Split(expression[4..^1]).Select(id =>
                         {
-                            ["kind"] = "Fact",
-                            ["factId"] = id
+                            var operand = new JsonObject { ["kind"] = "Fact", ["factId"] = id };
+                            AddOptional(operand, "trueFindingCode", trueFindings.GetValueOrDefault(id));
+                            AddOptional(operand, "falseFindingCode", falseFindings.GetValueOrDefault(id));
+                            AddOptional(operand, "missingFindingCode", missingFindings.GetValueOrDefault(id));
+                            return operand;
                         }).ToArray())
                     },
                     ["conclusions"] = new JsonArray(new JsonObject
@@ -181,6 +188,32 @@ public static partial class DefinitionParser
                     })
                 });
                 AddExport(rule, exports);
+            }
+
+            foreach (var decision in statements.Where(statement => statement.Kind == "decision"))
+            {
+                var owner = Required(decision, "id");
+                var conclusions = statements.Where(item =>
+                        item.Kind == "decision-conclusion" && Required(item, "owner") == owner)
+                    .Select(Identity).ToArray();
+                var rows = statements.Where(item =>
+                        item.Kind == "decision-row" && Required(item, "owner") == owner)
+                    .Select(DecisionRow).ToArray();
+                definitions.Add(new JsonObject
+                {
+                    ["kind"] = "Decision",
+                    ["id"] = owner,
+                    ["name"] = Required(decision, "name"),
+                    ["slug"] = Required(decision, "slug"),
+                    ["inputFacts"] = new JsonArray(Split(Required(decision, "inputs")).Select(id => JsonValue.Create(id)).ToArray()),
+                    ["conclusions"] = new JsonArray(conclusions),
+                    ["table"] = new JsonObject
+                    {
+                        ["hitPolicy"] = Required(decision, "hit-policy"),
+                        ["rows"] = new JsonArray(rows)
+                    }
+                });
+                AddExport(decision, exports);
             }
 
             foreach (var behaviour in statements.Where(statement => statement.Kind == "behaviour"))
@@ -271,6 +304,37 @@ public static partial class DefinitionParser
         };
     }
 
+    private static JsonObject DecisionRow(Statement statement)
+    {
+        var missingFindings = Mappings(statement.Values.GetValueOrDefault("missing-findings"));
+        var conditions = Split(Required(statement, "conditions")).Select(item =>
+        {
+            var pair = item.Split(':', 2);
+            var condition = new JsonObject
+            {
+                ["factId"] = pair[0],
+                ["expected"] = pair[1] switch
+                {
+                    "true" => JsonValue.Create(true),
+                    "false" => JsonValue.Create(false),
+                    "any" => JsonValue.Create("Any"),
+                    _ => throw new ParseException("parse.decision.condition-invalid", "Decision conditions must use true, false, or any.", statement)
+                }
+            };
+            AddOptional(condition, "missingFindingCode", missingFindings.GetValueOrDefault(pair[0]));
+            return condition;
+        }).ToArray();
+        return new JsonObject
+        {
+            ["id"] = Required(statement, "id"),
+            ["name"] = Required(statement, "name"),
+            ["slug"] = Required(statement, "slug"),
+            ["conditions"] = new JsonArray(conditions),
+            ["conclusion"] = Required(statement, "conclusion"),
+            ["findingCode"] = Required(statement, "finding-code")
+        };
+    }
+
     private static JsonObject Transition(Statement statement) => new()
     {
         ["id"] = Required(statement, "id"),
@@ -288,6 +352,12 @@ public static partial class DefinitionParser
     }
 
     private static string[] Split(string value) => value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    private static Dictionary<string, string> Mappings(string? value) =>
+        value is null ? [] : Split(value).Select(item => item.Split(':', 2)).ToDictionary(item => item[0], item => item[1], StringComparer.Ordinal);
+    private static void AddOptional(JsonObject target, string name, string? value)
+    {
+        if (value is not null) target[name] = value;
+    }
     private static bool IsPackageRelative(string name)
     {
         var normalized = name.Replace('\\', '/');

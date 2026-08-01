@@ -24,8 +24,26 @@ public sealed class ContextPackageSystemTests
         Assert.Equal("1.0.0", result.Package.AuthoredRevision.ContextVersion);
         Assert.Equal(5, result.Package.AuthoredRevision.Definitions.Length);
         Assert.Equal(
-            "sha256:26b35b94c741cae8ffb8aafac1ad7cefb7bb5bf106cddc5db27544f5ccdfcd16",
+            "sha256:6d1448c32127c49571d2a7ea5982045b7aa74ed28da2d7323ac5360b94ed6728",
             result.Package.SemanticDigest);
+    }
+
+    [Fact]
+    public void Child_care_1_1_adds_the_decision_table_without_removing_1_0_definitions_or_exports()
+    {
+        var version1 = ContextPackageSystem.Load(File.ReadAllBytes(
+            Path.Combine(AppContext.BaseDirectory, "Fixtures", "child-care-accs.context-package.v1.json"))).Package!;
+        var version1_1 = ContextPackageSystem.Load(File.ReadAllBytes(
+            Path.Combine(AppContext.BaseDirectory, "Fixtures", "child-care-accs-decision-table.context-package.v1.json"))).Package!;
+
+        Assert.Equal("1.1.0", version1_1.AuthoredRevision.ContextVersion);
+        Assert.All(
+            version1.AuthoredRevision.Definitions,
+            definition => Assert.Contains(version1_1.AuthoredRevision.Definitions, item => item.Id == definition.Id));
+        Assert.All(
+            version1.Exports,
+            export => Assert.Contains(version1_1.Exports, item => item.Id == export.Id));
+        Assert.Single(version1_1.AuthoredRevision.Definitions.OfType<Modeller.Model.DecisionDefinition>());
     }
 
     [Fact]
@@ -121,7 +139,7 @@ public sealed class ContextPackageSystemTests
         Assert.Equal("child-care", lockedPackage.ContextSlug);
         Assert.Equal("1.0.0", lockedPackage.ContextVersion);
         Assert.Equal(
-            "sha256:26b35b94c741cae8ffb8aafac1ad7cefb7bb5bf106cddc5db27544f5ccdfcd16",
+            "sha256:6d1448c32127c49571d2a7ea5982045b7aa74ed28da2d7323ac5360b94ed6728",
             lockedPackage.SemanticDigest);
         Assert.Equal(result.Snapshot.Packages, result.Snapshot.Packages.OrderBy(item => item.ContextId));
     }

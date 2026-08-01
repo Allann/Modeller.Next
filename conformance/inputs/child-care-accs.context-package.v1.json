@@ -65,11 +65,15 @@
         "operands": [
           {
             "kind": "Fact",
-            "factId": "0191f6d4-4ea0-7000-8000-000000000006"
+            "factId": "0191f6d4-4ea0-7000-8000-000000000006",
+            "trueFindingCode": "accs.active-enrolment-confirmed",
+            "missingFindingCode": "accs.active-enrolment-required"
           },
           {
             "kind": "Fact",
-            "factId": "0191f6d4-4ea0-7000-8000-000000000007"
+            "factId": "0191f6d4-4ea0-7000-8000-000000000007",
+            "trueFindingCode": "accs.supporting-evidence-confirmed",
+            "missingFindingCode": "accs.supporting-evidence-required"
           }
         ]
       },

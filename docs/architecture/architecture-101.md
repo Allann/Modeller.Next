@@ -189,6 +189,8 @@ requested them.
 
 The [reusable rules runtime](/docs/architecture/decisions/reusable-rules-runtime)
 implements the [rule evaluation interface](/docs/architecture/decisions/rule-evaluation-interface).
+Its executable contract is documented in the
+[rules-runtime reference](/docs/reference/rules-runtime).
 It binds a resolved snapshot and deterministic function catalog into an
 immutable [runtime plan](/docs/concepts/ubiquitous-language#runtime-plan), then
 exposes one concurrent `Evaluate` operation. Requests carry typed facts and
@@ -214,7 +216,10 @@ result only when the conclusion logically depends on it. Canonical results and
 traces exclude ambient time, locale, randomness, network state, and operational
 timing so equivalent evaluations remain structurally equal.
 
-Decision tables execute within the same runtime rather than a separate engine.
+[Decision tables](/docs/concepts/ubiquitous-language#decision-table) execute
+within the same runtime rather than a separate engine. The initial **Unique**
+[hit policy](/docs/concepts/ubiquitous-language#hit-policy) rejects overlapping
+or incomplete tables during binding.
 Alternate interpreters and generated runtimes implement the same complete
 interface and pass common conformance fixtures. Deterministic work budgets
 produce stable failures; host timeouts, process isolation, caching, rendered

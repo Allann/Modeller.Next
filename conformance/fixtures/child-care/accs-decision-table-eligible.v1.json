@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0",
+  "scenarioId": "child-care.accs.decision-table.eligible.v1",
+  "sourceDecision": "https://github.com/Allann/Modeller.Next/issues/19",
+  "capability": "decision-table-evaluation",
+  "contractVersion": "1.0",
+  "inputDigest": "sha256:b87755e208a5cf1ac6318e51334a11a8db724dea95a21c2095bb7de28052fc97",
+  "input": {
+    "artifact": "child-care-accs-decision-table.context-package.v1.json",
+    "facts": {
+      "active-enrolment-exists": true,
+      "supporting-evidence-is-held": true
+    }
+  },
+  "expected": {
+    "semanticDigest": "sha256:63e39411df24b9ee59614cc8d3fae4397e79272f85ac99b8fc2d97eda4e7a37a",
+    "status": "Determined",
+    "classification": "eligible",
+    "findingCodes": ["accs.eligibility-confirmed"],
+    "canonicalTrace": ["classify-accs-eligibility", "eligible-with-enrolment-and-evidence", "eligible"]
+  },
+  "permittedVariance": []
+}

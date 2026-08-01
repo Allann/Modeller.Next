@@ -686,7 +686,9 @@ public static class ContextPackageSystem
                     .ToImmutableArray(),
                 definition.GetProperty("conclusions").EnumerateArray()
                     .Select(ReadConclusion)
-                    .ToImmutableArray()),
+                    .ToImmutableArray(),
+                ReadExpression(definition.GetProperty("expression"))),
+            "Decision" => ReadDecision(definition, identity),
             "Behaviour" => ReadBehaviour(definition, identity),
             var kind => throw new ArgumentException($"Unsupported semantic definition kind '{kind}'.")
         };
@@ -703,6 +705,38 @@ public static class ContextPackageSystem
             [],
             definition.GetProperty("transitions").EnumerateArray().Select(ReadTransition).ToImmutableArray(),
             definition.GetProperty("ruleBindings").EnumerateArray().Select(ReadRuleBinding).ToImmutableArray());
+
+    private static DecisionDefinition ReadDecision(JsonElement definition, Identity identity)
+    {
+        var table = definition.GetProperty("table");
+        return new DecisionDefinition(
+            identity.Id,
+            identity.Name,
+            identity.Slug,
+            definition.GetProperty("inputFacts").EnumerateArray()
+                .Select(item => new FactReference(SemanticId.Parse(item.GetString()!))).ToImmutableArray(),
+            definition.GetProperty("conclusions").EnumerateArray().Select(ReadConclusion).ToImmutableArray(),
+            new DecisionTable(
+                Enum.Parse<DecisionHitPolicy>(table.GetProperty("hitPolicy").GetString()!),
+                table.GetProperty("rows").EnumerateArray().Select(ReadDecisionRow).ToImmutableArray()));
+    }
+
+    private static DecisionRow ReadDecisionRow(JsonElement row)
+    {
+        var identity = ReadIdentity(row);
+        return new DecisionRow(
+            identity.Id,
+            identity.Name,
+            identity.Slug,
+            row.GetProperty("conditions").EnumerateArray().Select(condition => new TruthDecisionCondition(
+                new FactReference(SemanticId.Parse(condition.GetProperty("factId").GetString()!)),
+                condition.GetProperty("expected").ValueKind == JsonValueKind.String
+                    ? null
+                    : condition.GetProperty("expected").GetBoolean(),
+                OptionalString(condition, "missingFindingCode"))).ToImmutableArray(),
+            new ConclusionReference(SemanticId.Parse(row.GetProperty("conclusion").GetString()!)),
+            row.GetProperty("findingCode").GetString()!);
+    }
 
     private static LifecycleDefinition ReadLifecycle(JsonElement element)
     {
@@ -725,6 +759,21 @@ public static class ContextPackageSystem
         var identity = ReadIdentity(element);
         return new ConclusionDefinition(identity.Id, identity.Name, identity.Slug);
     }
+
+    private static RuleExpression ReadExpression(JsonElement element) =>
+        element.GetProperty("kind").GetString() switch
+        {
+            "Fact" => new FactExpression(
+                new FactReference(SemanticId.Parse(element.GetProperty("factId").GetString()!)),
+                OptionalString(element, "trueFindingCode"),
+                OptionalString(element, "falseFindingCode"),
+                OptionalString(element, "missingFindingCode")),
+            "And" => new AndExpression(element.GetProperty("operands").EnumerateArray().Select(ReadExpression).ToImmutableArray()),
+            var kind => throw new ArgumentException($"Unsupported rule expression kind '{kind}'.")
+        };
+
+    private static string? OptionalString(JsonElement element, string propertyName) =>
+        element.TryGetProperty(propertyName, out var property) ? property.GetString() : null;
 
     private static OutcomeDefinition ReadOutcome(JsonElement element)
     {

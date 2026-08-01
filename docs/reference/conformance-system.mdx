@@ -49,28 +49,30 @@ implementation.
 
 ## Child Care fixtures
 
-The initial corpus contains six independently authored observations:
+The initial corpus contains seven independently authored observations:
 
 - the canonical-model ownership graph for the ACCS determination application;
 - canonical loading and exact snapshot locking of the Child Care context package;
 - staged rejection of an unknown ACCS eligibility Fact reference;
 - readable ACCS source compiling to the canonical JSON semantic digest;
 - **Determine ACCS eligibility** with sufficient facts and an **Eligible**
-  conclusion; and
+  conclusion;
 - the same decision without supporting evidence, producing **Information
   required**, an explicit missing fact, a safe next action, and a canonical
-  trace.
+  trace; and
+- **Classify ACCS eligibility** selecting the **Eligible** decision-table row
+  under the **Unique** hit policy.
 
-Both evaluation fixtures retain the same canonical JSON Child Care context
-package as a versioned input artifact and assert its normalized semantic digest.
+All three evaluation fixtures retain versioned canonical JSON Child Care context
+packages and assert their normalized semantic digests.
 Each fixture also carries the SHA-256 digest of its own normalized input; loading
 a fixture whose input has changed without an explicit versioned update fails
 before an adapter runs.
 
-The canonical-model, context-package, semantic-validation, and readable-source
-fixtures already pass through real adapters over their public interfaces. The two evaluation fixtures are marked adapter-pending
-until the reusable rules runtime is delivered by issue #27; their expected
-domain meaning is already fixed and will not be regenerated from that runtime.
+The canonical-model, context-package, semantic-validation, readable-source, and
+three [rules-runtime](/docs/reference/rules-runtime) evaluation fixtures pass
+through real adapters over their public interfaces. Their expected domain
+meaning remains independently authored and is not regenerated from an adapter.
 
 ## Generated and mutated scenarios
 

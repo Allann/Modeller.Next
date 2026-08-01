@@ -4,8 +4,8 @@
     "fixtureSchemas": ["1.0"],
     "conformanceContracts": ["1.0"],
     "persistenceSchemas": ["1.0"],
-    "contextVersions": ["child-care@1.0.0"],
-    "runtimeContracts": [],
+    "contextVersions": ["child-care@1.0.0", "child-care@1.1.0"],
+    "runtimeContracts": ["reference/1.0"],
     "projectionVersions": [],
     "adapterVersions": ["readable-source/1.0", "legacy-domain-root/1.0"]
   },

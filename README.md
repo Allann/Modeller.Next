@@ -45,6 +45,10 @@ resolved snapshots through one deterministic staged interface documented in the
 [readable source](docs/reference/readable-source-language.mdx) into that same
 canonical model while retaining safe source provenance and diagnostics.
 
+`Modeller.Rules` binds validated federation snapshots into immutable runtime
+plans and evaluates typed facts with deterministic results, findings, evidence,
+and canonical traces.
+
 For the complete development experience, open `Modeller.Next.code-workspace` in
 VS Code. Run the `setup`, `docs: dev`, or `verify` tasks from the task picker.
 Press F5 and choose **Modeller Docs** to start the development server and open

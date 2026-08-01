@@ -1,0 +1,116 @@
+---
+title: Rules runtime
+description: Bind validated federation snapshots and evaluate typed rules with deterministic results, findings, evidence, and traces.
+---
+
+`Modeller.Rules` is the reference implementation of the reusable rules-runtime
+contract. It exposes one deep two-stage interface:
+
+```csharp
+RuntimeBindingResult RulesRuntime.Bind(
+    FederationSnapshot snapshot,
+    IEnumerable<LoadedContextPackage> packages,
+    FunctionCatalogue functions,
+    RuntimeLimits limits,
+    CancellationToken cancellationToken = default);
+
+EvaluationResult RuntimePlan.Evaluate(
+    EvaluationRequest request,
+    CancellationToken cancellationToken = default);
+```
+
+Binding reruns core [semantic validation](/docs/reference/semantic-validation),
+checks exact snapshot locks and expression limits, and returns either an
+immutable [runtime plan](/docs/concepts/ubiquitous-language#runtime-plan) or
+ordered diagnostics. A plan retains no request state and is safe for concurrent
+reuse.
+
+## Requests and typed facts
+
+An evaluation request identifies one Rule, supplies immutable values keyed by
+stable Fact IDs, supplies immutable [evidence](/docs/concepts/ubiquitous-language#evidence),
+and selects a [trace level](/docs/concepts/ubiquitous-language#trace-level) and
+[disclosure policy](/docs/concepts/ubiquitous-language#disclosure-policy).
+Language `1.0` supports `Truth` Fact values for its `And` expression slice.
+Unknown Fact IDs and mismatched value types produce an invalid result; values
+are never coerced.
+
+The same operation evaluates [decision tables](/docs/concepts/ubiquitous-language#decision-table).
+The initial **Unique** policy requires every complete Truth-Fact combination to
+match exactly one row. Binding rejects duplicate inputs, unresolved conclusions,
+overlapping rows, incomplete tables, and tables exceeding 16 inputs.
+
+The Child Care 1.1 fixture classifies ACCS eligibility. Active enrolment plus
+supporting evidence selects **Eligible**; an inactive enrolment selects
+**Ineligible** without requiring irrelevant evidence through a wildcard cell;
+missing evidence remains indeterminate when it can change the classification.
+
+## Evaluation results
+
+The interface represents the four statuses as distinct immutable types:
+
+| Result | Semantic content |
+| --- | --- |
+| `DeterminedResult` | Typed conclusion, findings, permitted evidence, optional canonical trace |
+| `IndeterminateResult` | Exact missing Fact IDs, findings, permitted evidence, optional canonical trace; no conclusion |
+| `InvalidResult` | Request or contract diagnostics; no conclusion |
+| `FailedResult` | Expected runtime diagnostics and a safe partial trace; no conclusion |
+
+Cancellation throws normal cancellation control flow and publishes no partial
+[evaluation result](/docs/concepts/ubiquitous-language#evaluation-result).
+Implementation defects are not converted into domain failures.
+
+`false AND missing` is determined false because the missing Fact cannot change
+the conclusion. `true AND missing` is indeterminate. Missing information is
+never converted to false or null.
+
+## Findings, evidence, and explanations
+
+Fact-expression finding codes are authored canonical meaning. The Child Care
+rule records `accs.active-enrolment-confirmed`,
+`accs.supporting-evidence-confirmed`, and
+`accs.supporting-evidence-required`; the runtime does not infer these from
+names. Findings carry deterministic local identities, dispositions, semantic
+references, and evidence references.
+
+Evidence is preserved only when it supports a referenced Fact and the request's
+disclosure policy permits it. Public ACCS results omit protected supporting
+document metadata without changing the conclusion. Audience prose and next
+actions are deterministic projections from this structured result, as proved by
+the reviewed ACCS conformance fixtures.
+
+## Canonical traces and telemetry
+
+`None`, `Summary`, and `Full` select canonical semantic detail without changing
+conclusions or findings. Full ACCS traces contain stable paths for the Rule and
+both Fact-expression steps. They exclude request IDs, timestamps, durations,
+host information, and sensitive Fact values.
+
+OpenTelemetry is a later operational projection that may correlate spans to
+canonical paths and semantic IDs. OTEL availability, timing, sampling, and
+export failure never enter or delay the canonical result.
+
+## Determinism, limits, and concurrency
+
+Runtime `reference/1.0` orders definitions, diagnostics, findings, evidence, and
+traces semantically. The same immutable plan can evaluate requests concurrently
+without sharing facts, findings, evidence, traces, or cancellation.
+
+`RuntimeLimits` bounds semantic steps, expression depth, request collection
+size, and canonical trace nodes. Work and trace exhaustion produce stable failed
+results at the same semantic step. Oversized request collections are invalid.
+Machine-dependent time and memory limits remain host controls rather than
+semantic results.
+
+## Declared functions and compatibility
+
+`FunctionCatalogue` is explicitly versioned. Each
+`IDeclaredFunctionAdapter` has a stable ID and version, receives only typed
+arguments and the caller cancellation token, and returns a typed value or safe
+structured failure. Canonical language `1.0` declares no function-call
+expression, so the initial Child Care plan binds the empty `none/1.0` catalogue.
+
+The compatibility matrix records runtime contract `reference/1.0`. The reviewed
+**Eligible** and **Information required** fixtures are executable through the
+public bind-and-evaluate seam, as is the **Unique** Child Care decision-table
+fixture.

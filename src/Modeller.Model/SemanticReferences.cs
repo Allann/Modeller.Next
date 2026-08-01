@@ -11,3 +11,4 @@ public readonly record struct LifecycleReference(SemanticId TargetId) : ISemanti
 public readonly record struct LifecycleStageReference(SemanticId TargetId) : ISemanticReference;
 public readonly record struct OutcomeReference(SemanticId TargetId) : ISemanticReference;
 public readonly record struct RuleReference(SemanticId TargetId) : ISemanticReference;
+public readonly record struct ConclusionReference(SemanticId TargetId) : ISemanticReference;
