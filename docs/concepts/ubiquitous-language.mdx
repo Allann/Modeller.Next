@@ -154,6 +154,23 @@ government-response facts led there.
 
 Avoid using *behaviour*, *policy*, or *decision record* as synonyms for decision.
 
+### Diagram projection
+
+A derived visual graph that reveals selected semantic concepts and relationships
+without owning or changing their meaning. It is recreated from a semantic model
+revision, a [view definition](#view-definition), and optional
+[layout state](#layout-state).
+
+For example, a Child Care lifecycle projection can show **Draft**, **Submitted**,
+and **Withdrawn** session-report states. Moving those state shapes changes only
+layout; adding a transition requires an explicit semantic model operation.
+
+Avoid using *model*, *source of truth*, or *visual schema* as synonyms for a
+diagram projection.
+
+See the [diagram projection and editing decision](/docs/architecture/decisions/diagram-projections-editing-semantics)
+for the initial view kinds and editing contract.
+
 ### Effect
 
 A declared domain consequence owned by a [behaviour](#behaviour). An effect may
@@ -274,6 +291,23 @@ allowed now, an invariant applies to every relevant state change.
 
 Avoid using *guard*, *validation rule*, or *database constraint* as synonyms for
 invariant.
+
+### Layout state
+
+Non-semantic presentation choices for one [view](#view-definition), such as
+positions, sizes, routing, orientation, and collapsed appearance. Removing it
+changes no domain meaning and permits the [diagram projection](#diagram-projection)
+to be laid out again.
+
+For example, placing the **Submitted** session-report state above **Withdrawn**
+and routing their transition around another shape is layout state. It neither
+creates nor changes the transition.
+
+Avoid using *model state*, *ownership*, or *relationship* as synonyms for layout
+state.
+
+See the [diagram projection and editing decision](/docs/architecture/decisions/diagram-projections-editing-semantics)
+for persisted layout and editor-session constraints.
 
 ### Lifecycle
 
@@ -482,6 +516,23 @@ the transition guard then determines whether it is allowed now.
 Avoid using *transition selector*, *requirement*, or *invariant* as synonyms for
 transition guard.
 
+### View definition
+
+A persisted, non-semantic selection of what a
+[diagram projection](#diagram-projection) reveals. It identifies a view kind,
+scope, roots, filters, inclusions, exclusions, and expansion choices
+independently of [layout state](#layout-state).
+
+For example, one Child Care behaviour-map view may focus on **Attendance
+management** and expand its events, while another hides events and includes only
+the behaviours available to a provider actor.
+
+Avoid using *semantic model*, *diagram image*, or *layout state* as synonyms for
+a view definition.
+
+See the [diagram projection and editing decision](/docs/architecture/decisions/diagram-projections-editing-semantics)
+for the six initial view kinds.
+
 ### Workflow
 
 A [behaviour](#behaviour) that coordinates multiple behaviours toward a domain
@@ -504,7 +555,8 @@ The accepted semantic baseline establishes these relationships:
 - Rules evaluate typed facts and produce explained conclusions.
 - Behaviours own effects, transitions, and event publication.
 - Persistence is separate from domain meaning.
-- Diagrams are projections; layout is not semantic truth.
+- [Diagrams are projections](#diagram-projection);
+  [layout](#layout-state) is not semantic truth.
 - Modeller owns canonical semantic and expression meaning; external formats and
   runtimes are adapters.
 - Independently versioned [bounded contexts](#bounded-context) federate through

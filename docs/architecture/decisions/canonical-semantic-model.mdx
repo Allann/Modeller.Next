@@ -16,6 +16,7 @@ Source: [Wayfinder issue #16](https://github.com/Allann/Modeller.Next/issues/16)
 [Command](/docs/concepts/ubiquitous-language#command) ·
 [Conclusion](/docs/concepts/ubiquitous-language#conclusion) ·
 [Decision](/docs/concepts/ubiquitous-language#decision) ·
+[Diagram projection](/docs/concepts/ubiquitous-language#diagram-projection) ·
 [Effect](/docs/concepts/ubiquitous-language#effect) ·
 [Entity](/docs/concepts/ubiquitous-language#entity) ·
 [Evidence](/docs/concepts/ubiquitous-language#evidence) ·
@@ -25,11 +26,13 @@ Source: [Wayfinder issue #16](https://github.com/Allann/Modeller.Next/issues/16)
 [Guard](/docs/concepts/ubiquitous-language#guard) ·
 [Invariant](/docs/concepts/ubiquitous-language#invariant) ·
 [Lifecycle](/docs/concepts/ubiquitous-language#lifecycle) ·
+[Layout state](/docs/concepts/ubiquitous-language#layout-state) ·
 [Outcome](/docs/concepts/ubiquitous-language#outcome) ·
 [Rule](/docs/concepts/ubiquitous-language#rule) ·
 [Source provenance](/docs/concepts/ubiquitous-language#source-provenance) ·
 [State](/docs/concepts/ubiquitous-language#state) ·
 [Transition](/docs/concepts/ubiquitous-language#transition) ·
+[View definition](/docs/concepts/ubiquitous-language#view-definition) ·
 [Workflow](/docs/concepts/ubiquitous-language#workflow)
 
 ## Decision
@@ -197,10 +200,13 @@ files changes provenance only.
 
 ## Diagram-independent meaning
 
-Diagrams are separate view definitions that reference semantic UUIDs. A view may
-define selection, grouping, labels, notation, position, and routing. It may not
-introduce semantic concepts or relationships: every meaningful edge must already
-exist in the resolved graph. Deleting every diagram leaves the model's meaning
+[Diagram projections](/docs/concepts/ubiquitous-language#diagram-projection) are
+derived from separate [view definitions](/docs/concepts/ubiquitous-language#view-definition)
+that reference semantic UUIDs. A view definition selects scope, roots, filters,
+and expansions; [layout state](/docs/concepts/ubiquitous-language#layout-state)
+owns position, routing, and other geometry. Neither may introduce semantic
+concepts or relationships: every meaningful edge must already exist in the
+resolved graph. Deleting every view and layout leaves the model's meaning
 unchanged.
 
 ## Consequences

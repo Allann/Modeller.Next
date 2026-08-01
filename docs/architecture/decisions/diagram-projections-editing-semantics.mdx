@@ -1,0 +1,247 @@
+---
+title: Diagram projections and editing semantics
+description: Define the initial semantic views and distinguish model edits from view, layout, and session state.
+---
+
+Status: **Accepted**
+
+Source: [Wayfinder issue #21](https://github.com/Allann/Modeller.Next/issues/21)
+
+Prototype: [diagram edit-semantics branch](https://github.com/Allann/Modeller.Next/tree/codex/prototype-issue-21-diagram-edits/prototypes/issue-21-diagram-edit-semantics)
+
+## Canonical terms
+
+[Actor](/docs/concepts/ubiquitous-language#actor) ·
+[Behaviour](/docs/concepts/ubiquitous-language#behaviour) ·
+[Bounded context](/docs/concepts/ubiquitous-language#bounded-context) ·
+[Capability](/docs/concepts/ubiquitous-language#capability) ·
+[Command](/docs/concepts/ubiquitous-language#command) ·
+[Conclusion](/docs/concepts/ubiquitous-language#conclusion) ·
+[Decision](/docs/concepts/ubiquitous-language#decision) ·
+[Diagram projection](/docs/concepts/ubiquitous-language#diagram-projection) ·
+[Effect](/docs/concepts/ubiquitous-language#effect) ·
+[Entity](/docs/concepts/ubiquitous-language#entity) ·
+[Event](/docs/concepts/ubiquitous-language#event) ·
+[Fact](/docs/concepts/ubiquitous-language#fact) ·
+[Federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot) ·
+[Finding](/docs/concepts/ubiquitous-language#finding) ·
+[Guard](/docs/concepts/ubiquitous-language#guard) ·
+[Invariant](/docs/concepts/ubiquitous-language#invariant) ·
+[Layout state](/docs/concepts/ubiquitous-language#layout-state) ·
+[Lifecycle](/docs/concepts/ubiquitous-language#lifecycle) ·
+[Outcome](/docs/concepts/ubiquitous-language#outcome) ·
+[Query](/docs/concepts/ubiquitous-language#query) ·
+[Rule](/docs/concepts/ubiquitous-language#rule) ·
+[Rule binding](/docs/concepts/ubiquitous-language#rule-binding) ·
+[State](/docs/concepts/ubiquitous-language#state) ·
+[Transition](/docs/concepts/ubiquitous-language#transition) ·
+[Transition guard](/docs/concepts/ubiquitous-language#transition-guard) ·
+[View definition](/docs/concepts/ubiquitous-language#view-definition) ·
+[Workflow](/docs/concepts/ubiquitous-language#workflow)
+
+## Decision
+
+### Projection module
+
+Diagrams are editable
+[projections](/docs/concepts/ubiquitous-language#diagram-projection) over an
+immutable semantic read model. The projection module exposes one deep operation:
+project a semantic source revision through a
+[view definition](/docs/concepts/ubiquitous-language#view-definition) and return
+an immutable projection graph plus structured diagnostics.
+
+The semantic source is either a resolved
+[federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot) for
+cross-context review or an immutable revision of an authored context model for
+editing. The graph identifies its source kind, revision, and semantic digest.
+Generation and conformance still consume only resolved snapshots.
+
+Projection nodes and edges carry projection-element IDs, their semantic roles,
+references to zero or more stable semantic IDs, and the edit operations valid
+for that element. A semantic concept may appear more than once in one view, so a
+projection-element ID is not a second semantic identity. Projection topology is
+deterministic for the same semantic revision and view definition; geometry is
+applied afterward from layout state.
+
+The six initial view kinds share this interface. Their view-specific selection,
+expansion, validation, and edit mapping remain inside the projection module
+rather than becoming caller orchestration or six unrelated public interfaces.
+
+### View definition, layout, and session state
+
+A view definition is non-semantic persisted projection state. It has a stable
+view ID, a versioned view kind, semantic roots or scope, filters, explicit
+inclusions and exclusions, and expansion choices. Changing a view definition
+changes what the diagram reveals, never the underlying model.
+
+[Layout state](/docs/concepts/ubiquitous-language#layout-state) is separately
+persisted by view ID and projection-element ID. It may contain positions, sizes,
+edge routing, orientation, collapsed presentation, visual-only grouping, and
+style overrides. It cannot encode ownership, relationships, rule meaning,
+lifecycle meaning, or event causality.
+
+Selection, hover, open panels, temporary highlighting, zoom, and viewport are
+session state by default. A user may explicitly save a preferred viewport as
+layout, but transient editor state is not shared semantic or view state.
+
+Missing layout invokes a deterministic default layout. Stale or orphaned layout
+produces diagnostics and cannot create, delete, or resurrect semantic elements.
+
+### Editing contract
+
+The projected graph is never mutated as an authority. Every visual interaction
+must resolve to exactly one typed operation category:
+
+| Category | Examples | Revision changed |
+| --- | --- | --- |
+| Semantic model operation | Create, rename, or delete a concept; change ownership, type, cardinality, expression, transition, publication, import, or export | Authored model |
+| View operation | Change roots, filters, expansion, inclusion, or exclusion | View definition |
+| Layout operation | Move or resize a node; route an edge; collapse or style presentation | Layout state |
+| Session operation | Select, hover, pan, zoom, or apply a temporary evaluation overlay | None |
+
+An interaction that is invalid for its view or ambiguous between categories is
+rejected with available explicit alternatives. Layout is never interpreted as
+semantic intent: dragging an ACCS concept into another context lane does not
+change ownership, and placing two nodes close together does not create a
+relationship.
+
+**Remove from view** and **Delete from model** are separate named commands.
+Generic Delete never deletes a semantic concept. For a projected semantic
+element it offers the two explicit commands; for a layout-only decoration it may
+remove that decoration directly. Model deletion requires an explicit command,
+dependency impact preview, and confirmation through the model module.
+
+Creating a node or edge uses a view-specific semantic tool that names the
+operation before the gesture begins. The model module validates and applies the
+typed operation atomically; the editor then reprojects the accepted model
+revision. A diagram cannot write canonical JSON directly.
+
+Every semantic command includes the source revision it was projected from.
+Stale commands fail with a conflict and reproject rather than applying against a
+different model. View and layout changes use their own revision checks and may
+merge only when they affect disjoint persisted entries.
+
+### Behaviour map
+
+The behaviour map explains what the system can do and who participates. Its
+primary concepts are [capabilities](/docs/concepts/ubiquitous-language#capability),
+[behaviours](/docs/concepts/ubiquitous-language#behaviour),
+[actors](/docs/concepts/ubiquitous-language#actor),
+[commands](/docs/concepts/ubiquitous-language#command), and
+[queries](/docs/concepts/ubiquitous-language#query). Outcomes, effects, events,
+requirements, and policies are available as explicit expansions rather than
+always-visible clutter.
+
+Semantic editing may create or rename those concepts and declare their existing
+typed relationships. Visual containment never assigns capability grouping or
+behaviour ownership. In the Child Care model, **Attendance management** may
+reveal **Record parent attendance**, its parent-or-guardian actor role, command,
+and **Attendance recorded** event.
+
+### Lifecycle view
+
+The lifecycle view focuses on one [entity](/docs/concepts/ubiquitous-language#entity)
+and one of its [lifecycles](/docs/concepts/ubiquitous-language#lifecycle). It
+shows lifecycle states, [transitions](/docs/concepts/ubiquitous-language#transition),
+triggering behaviours, outcomes, [transition guards](/docs/concepts/ubiquitous-language#transition-guard),
+and inherited [invariants](/docs/concepts/ubiquitous-language#invariant).
+
+Semantic editing may add states, transitions, guard bindings, and the explicit
+behaviour/outcome relationship that selects a transition. Moving a state or
+routing a transition is layout only. For a session report, **Draft → Submitted**
+may be selected by **Submit session report**, while **Submitted → Withdrawn** is
+validated by **Provider may withdraw session report**.
+
+### Causality and event-flow view
+
+The causality and event-flow view explains which behaviour outcomes publish
+[events](/docs/concepts/ubiquitous-language#event), and which behaviours or
+[workflows](/docs/concepts/ubiquitous-language#workflow) consume them. It may
+cross bounded contexts and may expose causation and correlation identities.
+
+Semantic editing declares event definitions, outcome publication, consumption,
+and workflow progression relationships. A line means declared causality or
+consumption, not elapsed time, delivery order, synchronous invocation, or shared
+transaction. Sequence is shown only where a workflow explicitly owns it.
+
+For example, **Submit session report** publishes **Session report submitted**;
+a processing workflow may consume that event without implying that government
+processing occurs in the submitting behaviour's transaction.
+
+### Context map
+
+The context map shows [bounded contexts](/docs/concepts/ubiquitous-language#bounded-context),
+their explicit semantic dependencies, imports, exports, selected package
+versions, and snapshot resolution diagnostics. Owned concepts may appear as
+summaries or expansions.
+
+Semantic editing may create a context and declare compatible imports and
+exports. Moving a concept between context containers does not transfer
+ownership; ownership migration is a separately named model operation with an
+impact preview. A shared kernel is represented as an ordinary explicitly named
+context.
+
+Deployment nodes, processes, databases, queues, and network links are invalid in
+this view because physical topology is not a bounded-context relationship. For
+example, ACCS may import enrolment facts from Child Care without implying that
+the two contexts use separate services or deployments.
+
+### Structural view
+
+The structural view explains semantic ownership and typed structure for a
+selected scope. It shows entities, declared semantic types and members, stable
+typed references, cardinalities, and ownership relationships. Behaviour and
+lifecycle details appear only as optional context links.
+
+Semantic editing may create or rename structural concepts, members, and typed
+relationships and may change declared types or cardinalities. Nesting or moving
+shapes is layout only and never changes ownership. A Child Care structural view
+may relate **Child**, **Enrolment**, and **Session report** without implying
+tables, document shapes, persistence foreign keys, or generated classes.
+
+### Rule decision view
+
+The rule decision view explains one [rule](/docs/concepts/ubiquitous-language#rule)
+or [decision](/docs/concepts/ubiquitous-language#decision) through its typed
+[facts](/docs/concepts/ubiquitous-language#fact), expression structure or
+decision table, referenced rules, conclusions, finding definitions, and
+optional governing [rule bindings](/docs/concepts/ubiquitous-language#rule-binding).
+
+Semantic editing may change typed expressions, decision-table hit policy and
+rows, rule references, conclusions, and finding definitions. Canonical row
+order is semantic because it participates in evaluation and trace identity;
+column width, visual sorting, and table styling are layout or session state and
+cannot reorder canonical rows.
+
+An evaluation result may overlay the view with a temporary path, findings, and
+missing facts. The overlay is session state derived from that immutable result;
+it does not annotate or mutate the rule. An ACCS eligibility decision can
+therefore highlight why an application is indeterminate without storing the
+child's facts in the diagram.
+
+### Projection validation and extensibility
+
+Each built-in view kind has a versioned definition of allowed semantic roles,
+relationships, edit mappings, and required diagnostics. A view cannot invent a
+semantic element or edge that is absent from its source revision. Derived edges
+are visibly distinguished and read-only unless they map unambiguously to one
+named semantic operation.
+
+The initial registry is the six views in this decision. Future view kinds may be
+added behind the same projection interface only when they define a distinct
+selection or edit mapping; renderer-only differences use projection renderers,
+not new semantic view kinds.
+
+## Consequences
+
+- Six focused views explain complementary parts of one semantic authority
+  without creating six models.
+- One projection interface hides view selection, expansion, graph identity,
+  diagnostics, and edit mapping from callers.
+- Semantic, view, layout, and session revisions can evolve independently.
+- Explicit edit tools prevent spatial gestures and ambiguous deletion from
+  silently changing domain meaning.
+- Cross-context, lifecycle, event-flow, and decision-table diagrams retain the
+  precise semantics already established by earlier decisions.
+- Projection graphs and layouts are disposable; stable semantic IDs and typed
+  model operations remain authoritative.

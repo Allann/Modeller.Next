@@ -68,6 +68,12 @@ defined conclusions. It explains how the supplied facts led to its conclusion
 and causes no effects.
 _Avoid_: Behaviour, policy, decision record
 
+**Diagram projection**:
+A derived visual graph that reveals selected semantic concepts and relationships
+without owning or changing their meaning. It is recreated from a semantic model
+revision, a view definition, and optional layout state.
+_Avoid_: Model, source of truth, visual schema
+
 **Effect**:
 A declared domain consequence owned by a behaviour. An effect may change state
 or request an interaction, but is never produced directly by a rule or decision.
@@ -119,6 +125,12 @@ A rule that must hold for domain state to be valid before and after every
 externally observable behaviour. A violated invariant prevents the proposed
 state from becoming observable.
 _Avoid_: Guard, validation rule, database constraint
+
+**Layout state**:
+Non-semantic presentation choices for one view, such as positions, sizes,
+routing, orientation, and collapsed appearance. Removing it changes no domain
+meaning and permits the diagram to be laid out again.
+_Avoid_: Model state, ownership, relationship
 
 **Lifecycle**:
 The meaningful stages an entity may occupy and the permitted transitions among
@@ -207,6 +219,12 @@ A guard owned by a lifecycle transition that determines whether that declared
 transition is currently allowed. It validates an explicitly selected transition
 rather than selecting among transitions.
 _Avoid_: Transition selector, requirement, invariant
+
+**View definition**:
+A persisted, non-semantic selection of what a diagram projection reveals. It
+identifies a view kind, scope, roots, filters, inclusions, exclusions, and
+expansion choices independently of visual layout.
+_Avoid_: Semantic model, diagram image, layout state
 
 **Workflow**:
 A behaviour that coordinates multiple behaviours toward a domain outcome,

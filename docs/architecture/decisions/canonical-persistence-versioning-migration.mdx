@@ -12,11 +12,14 @@ Source: [Wayfinder issue #20](https://github.com/Allann/Modeller.Next/issues/20)
 [Bounded context](/docs/concepts/ubiquitous-language#bounded-context) ·
 [Context package](/docs/concepts/ubiquitous-language#context-package) ·
 [Context version](/docs/concepts/ubiquitous-language#context-version) ·
+[Diagram projection](/docs/concepts/ubiquitous-language#diagram-projection) ·
 [Federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot) ·
+[Layout state](/docs/concepts/ubiquitous-language#layout-state) ·
 [Migration](/docs/concepts/ubiquitous-language#migration) ·
 [Schema version](/docs/concepts/ubiquitous-language#schema-version) ·
 [Semantic digest](/docs/concepts/ubiquitous-language#semantic-digest) ·
-[Source provenance](/docs/concepts/ubiquitous-language#source-provenance)
+[Source provenance](/docs/concepts/ubiquitous-language#source-provenance) ·
+[View definition](/docs/concepts/ubiquitous-language#view-definition)
 
 ## Decision
 
@@ -30,7 +33,9 @@ contains:
 - a manifest identifying the bounded context, schema version, context version,
   and content digests;
 - canonical semantic definitions and relationships;
-- optional layout documents keyed by stable semantic IDs;
+- optional [view definitions](/docs/concepts/ubiquitous-language#view-definition)
+  and [layout state](/docs/concepts/ubiquitous-language#layout-state) keyed by
+  stable view, projection-element, and semantic IDs;
 - optional source-provenance records keyed by those same IDs; and
 - explicit import and export declarations.
 
@@ -134,9 +139,11 @@ implicit round-trip sources.
 
 ### Layout and source provenance
 
-Layout documents are independently schema-versioned projections keyed by a
-stable view ID and semantic concept IDs. They may store positions, routing,
-grouping, collapsed state, and other presentation choices but never ownership,
+[View definitions](/docs/concepts/ubiquitous-language#view-definition) and
+[layout state](/docs/concepts/ubiquitous-language#layout-state) are independently
+schema-versioned, non-semantic companions. View definitions select scope,
+filters, and expansions; layout may store positions, routing, visual grouping,
+collapsed presentation, and other geometry. Neither may encode ownership,
 relationships, rule meaning, or lifecycle meaning. Missing or stale layout
 produces a diagnostic or a default layout, not an invalid semantic package.
 

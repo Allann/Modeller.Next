@@ -248,24 +248,47 @@ including diagrams, documentation, and code.
 
 ## Stage 4: Treat every view as a projection
 
-A diagram is useful, but the position of a box is not domain truth. The semantic
-model feeds projections for people and generators for machines. No projection is
-allowed to quietly become a second model.
+A [diagram projection](/docs/concepts/ubiquitous-language#diagram-projection) is
+useful, but the position of a box is not domain truth. The semantic model feeds
+projections for people and generators for machines. No projection is allowed to
+quietly become a second model.
 
 ```mermaid
 graph TD
     Model[Semantic model] --> Diagram[Diagram projection]
     Model --> Docs[Documentation projection]
     Model --> Plan[Generation plan]
-    Diagram --> Layout[Disposable layout]
+    View[View definition] --> Diagram
+    Diagram --> Layout[Disposable layout state]
     Plan --> Templates[Template pack]
     Templates --> Outputs[Generated outputs]
 ```
 
-Diagram layout can be saved as presentation metadata, regenerated, or discarded.
-Documentation can emphasise behaviours and decisions. A generation plan can
-select the semantic inputs required by a template pack. All three remain views
-over one authority.
+[View definitions](/docs/concepts/ubiquitous-language#view-definition) select
+scope, roots, filters, and expansions. [Layout state](/docs/concepts/ubiquitous-language#layout-state)
+stores geometry separately and can be regenerated or discarded. Documentation
+can emphasise behaviours and decisions. A generation plan can select the
+semantic inputs required by a template pack. All remain views over one authority.
+
+The initial diagram set is a behaviour map, lifecycle view, causality and
+event-flow view, context map, structural view, and rule decision view. Together
+they expose complementary questions without becoming separate models.
+
+```mermaid
+flowchart LR
+    Gesture[Explicit editor gesture] --> Classify{Operation category}
+    Classify --> Semantic[Semantic model operation]
+    Classify --> ViewEdit[View-definition operation]
+    Classify --> LayoutEdit[Layout operation]
+    Classify --> Session[Session-only operation]
+    Semantic --> Reproject[Validate, apply, and reproject]
+    ViewEdit --> Reproject
+    LayoutEdit --> Reproject
+```
+
+The [diagram editing decision](/docs/architecture/decisions/diagram-projections-editing-semantics)
+requires explicit typed operations. Moving shapes never changes ownership or
+relationships, and **Remove from view** is distinct from **Delete from model**.
 
 **Pressure introduced:** generating files repeatedly is dangerous unless output
 ownership and overwrite rules are explicit.
