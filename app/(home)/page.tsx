@@ -1,16 +1,15 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ArrowRight,
   Bot,
   Braces,
   Check,
   Code2,
-  FileCode2,
   Layers3,
   RefreshCw,
   Route,
   ShieldCheck,
-  Sparkles,
 } from 'lucide-react';
 
 const capabilities = [
@@ -42,34 +41,40 @@ export default function HomePage() {
   return (
     <main className="modeller-home">
       <section className="marketing-hero">
-        <div className="marketing-hero-copy">
-          <p className="eyebrow"><Sparkles size={15} /> Intent-first software design</p>
-          <h1>Describe the system.<br /><span>Generate the structure.</span></h1>
-          <p className="hero-lede">
+        <div className="marketing-brand-hero">
+          <Image
+            className="theme-hero-light"
+            src="/brand/modeller-hero-light.png"
+            width={1731}
+            height={909}
+            priority
+            alt="Modeller — Describe the system. Generate the structure."
+          />
+          <Image
+            className="theme-hero-dark"
+            src="/brand/modeller-hero-dark.png"
+            width={1734}
+            height={907}
+            priority
+            alt="Modeller — Describe the system. Generate the structure."
+          />
+        </div>
+        <div className="marketing-hero-intro">
+          <p>
             Modeller turns a clear domain model into consistent, production-ready
             software—so your team can spend less time rebuilding foundations and more
             time delivering what makes the product matter.
           </p>
-          <div className="hero-actions">
-            <Link className="primary-action" href="/docs/getting-started">
-              Start modelling <ArrowRight size={17} />
-            </Link>
-            <Link className="secondary-action" href="/docs/concepts">
-              Explore the concepts
-            </Link>
-          </div>
-          <p className="hero-note">Open foundations. Explicit architecture. Your code stays yours.</p>
-        </div>
-
-        <div className="intent-demo" aria-label="An intent model becoming software structure">
-          <div className="demo-toolbar">
-            <span><span className="preview-dot" /> child-care.modeller</span>
-            <span>Model</span>
-          </div>
-          <pre><code><span className="syntax-keyword">domain</span> ChildCare {'{'}{`\n`}  <span className="syntax-keyword">concept</span> Child {'{'}{`\n`}    name: Text{`\n`}    dateOfBirth: Date{`\n`}  {'}'}{`\n`}{`\n`}  <span className="syntax-keyword">concept</span> Enrolment {'{'}{`\n`}    child: Child{`\n`}    startsOn: Date{`\n`}  {'}'}{`\n`}{'}'}</code></pre>
-          <div className="demo-output">
-            <div><Check size={15} /><span>Domain model validated</span></div>
-            <div><FileCode2 size={15} /><span>Application structure ready</span></div>
+          <div>
+            <div className="hero-actions">
+              <Link className="primary-action" href="/docs/getting-started">
+                Start modelling <ArrowRight size={17} />
+              </Link>
+              <Link className="secondary-action" href="/docs/concepts">
+                Explore the concepts
+              </Link>
+            </div>
+            <p className="hero-note">Open foundations. Explicit architecture. Your code stays yours.</p>
           </div>
         </div>
       </section>
