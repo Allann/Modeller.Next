@@ -1,0 +1,64 @@
+name: Wayfinder capability
+description: Reconstruct a Modeller capability at an explicit module seam.
+title: "[Wayfinder]: "
+labels:
+  - wayfinder
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the desired capability independently of the legacy source-tree shape.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What becomes possible when this issue is complete?
+    validations:
+      required: true
+  - type: textarea
+    id: why-now
+    attributes:
+      label: Why now
+      description: Why is this the next useful reconstruction slice?
+    validations:
+      required: true
+  - type: textarea
+    id: interface
+    attributes:
+      label: Module interface
+      description: Include inputs, outputs, invariants, ordering, configuration, and error modes.
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: Acceptance examples
+      description: Give concrete inputs and observable results.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Legacy evidence
+      description: Link relevant legacy code, tests, documents, and known behaviour.
+    validations:
+      required: true
+  - type: dropdown
+    id: disposition
+    attributes:
+      label: Expected legacy disposition
+      options:
+        - Reuse
+        - Adapt
+        - Rewrite
+        - Retire
+        - Undecided
+    validations:
+      required: true
+  - type: textarea
+    id: documentation
+    attributes:
+      label: Documentation impact
+      description: Which canonical pages must change when this is accepted?
+    validations:
+      required: true

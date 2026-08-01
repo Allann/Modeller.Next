@@ -1,0 +1,25 @@
+---
+title: Core concepts
+description: The ideas that make Modeller predictable, extensible, and safe.
+---
+
+## Intent before implementation
+
+A model describes the business concepts and behaviours that must survive changes
+in frameworks, storage engines, interfaces, and AI providers.
+
+## Templates realise architecture
+
+Template packs turn the model into a chosen software structure. They encode team
+conventions once and apply them consistently across generated outputs.
+
+## Generated code has explicit ownership
+
+Modeller only replaces files designated as generated. Handwritten extensions stay
+separate, making regeneration routine rather than risky.
+
+## AI is an adapter
+
+AI can assist with modelling and explanation, but it does not own the domain
+model. The durable interface is the explicit model and the operations performed
+on it.

@@ -1,0 +1,20 @@
+---
+title: Wayfinder issues
+description: The issue contract used to reconstruct each Modeller capability.
+---
+
+A Wayfinder issue connects product intent to implementation evidence. It should
+be understandable without first learning the shape of the legacy source tree.
+
+## Required sections
+
+1. **Outcome** — the user-visible or system-visible capability.
+2. **Why now** — why this belongs in the next reconstruction slice.
+3. **Interface** — everything a caller must know, including invariants and errors.
+4. **Acceptance examples** — concrete inputs and observable results.
+5. **Legacy evidence** — relevant code, tests, documents, and known behaviour.
+6. **Disposition** — what will be reused, adapted, rewritten, or retired.
+7. **Documentation impact** — canonical pages that must change when accepted.
+
+An issue is complete only when the successor behaviour is verified at the new
+module seam and its documentation describes the accepted result.

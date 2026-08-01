@@ -1,0 +1,115 @@
+{
+  "folders": [
+    {
+      "name": "Modeller",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.next": true,
+      "**/.source": true
+    },
+    "files.watcherExclude": {
+      "**/.next/**": true,
+      "**/node_modules/**": true
+    },
+    "search.exclude": {
+      "**/.next": true,
+      "**/.source": true,
+      "**/node_modules": true
+    },
+    "editor.formatOnSave": true,
+    "typescript.tsdk": "node_modules/typescript/lib"
+  },
+  "extensions": {
+    "recommendations": [
+      "dbaeumer.vscode-eslint",
+      "unifiedjs.vscode-mdx",
+      "bradlc.vscode-tailwindcss"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "setup",
+        "type": "process",
+        "command": "npm.cmd",
+        "args": ["install"],
+        "problemMatcher": []
+      },
+      {
+        "label": "docs: dev",
+        "type": "process",
+        "command": "npm.cmd",
+        "args": ["run", "dev"],
+        "isBackground": true,
+        "problemMatcher": {
+          "owner": "modeller-docs",
+          "pattern": {
+            "regexp": "^(.*)$",
+            "message": 1
+          },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": ".*Starting.*",
+            "endsPattern": ".*Ready in.*"
+          }
+        },
+        "presentation": {
+          "group": "development",
+          "reveal": "always",
+          "panel": "dedicated"
+        }
+      },
+      {
+        "label": "docs: build",
+        "type": "process",
+        "command": "npm.cmd",
+        "args": ["run", "build"],
+        "problemMatcher": ["$tsc"]
+      },
+      {
+        "label": "docs: lint",
+        "type": "process",
+        "command": "npm.cmd",
+        "args": ["run", "lint"],
+        "problemMatcher": ["$eslint-stylish"]
+      },
+      {
+        "label": "docs: types",
+        "type": "process",
+        "command": "npm.cmd",
+        "args": ["run", "types:check"],
+        "problemMatcher": ["$tsc"]
+      },
+      {
+        "label": "verify",
+        "dependsOrder": "sequence",
+        "dependsOn": ["docs: lint", "docs: types", "docs: build"],
+        "problemMatcher": []
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Modeller Docs",
+        "type": "pwa-chrome",
+        "request": "launch",
+        "url": "http://localhost:3000",
+        "webRoot": "${workspaceFolder}",
+        "preLaunchTask": "docs: dev"
+      },
+      {
+        "name": "Modeller Docs: server",
+        "type": "node-terminal",
+        "request": "launch",
+        "command": "npm run dev",
+        "cwd": "${workspaceFolder}"
+      }
+    ]
+  }
+}

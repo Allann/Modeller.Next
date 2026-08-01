@@ -1,0 +1,25 @@
+---
+title: Capability inventory
+description: Initial Wayfinder map for reconstructing the Modeller implementation.
+---
+
+| Capability | Legacy evidence | Successor status |
+| --- | --- | --- |
+| Domain definition parsing | `Modeller.Parser` | Proposed |
+| Immutable domain model | `Modeller.Domain` | Proposed |
+| Validation and diagnostics | Parser and CLI validation paths | Proposed |
+| Generation planning | `Modeller.Generator` | Proposed |
+| Scriban rendering | Generator template engine | Proposed |
+| Safe output ownership | `.g.*` generation convention | Proposed |
+| Profiles and configuration | `.modeller/config.yaml` | Proposed |
+| Command-line workflows | `Modeller.Cli` | Proposed |
+| Template packs | `templates/csharp/*` | Proposed |
+| Editor assistance | VS Code extension | Proposed |
+| AI-assisted modelling | Legacy experiments and future design | Discovery |
+
+This table is the seed for Wayfinder issues. An item becomes accepted only when
+its desired interface, invariants, acceptance criteria, and legacy disposition
+are explicit.
+
+The [Child Care reference project](/docs/reference/reference-project) supplies
+the canonical end-to-end examples and acceptance data for this reconstruction.

@@ -1,0 +1,19 @@
+{
+  "title": "Legacy Design Drafts",
+  "pages": [
+    "README",
+    "00-dsl-reference",
+    "01-overview",
+    "02-domain-concepts",
+    "03-behaviours",
+    "04-file-structure",
+    "05-examples",
+    "06-ai-integration",
+    "07-data-types",
+    "08-glossary",
+    "09-format-options",
+    "10-templates",
+    "11-implementation-status",
+    "12-template-orchestration"
+  ]
+}
