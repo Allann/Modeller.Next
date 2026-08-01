@@ -1,5 +1,11 @@
 # Modeller
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="public/brand/modeller-hero-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="public/brand/modeller-hero-light.png">
+  <img alt="Modeller — Describe the system. Generate the structure." src="public/brand/modeller-hero-light.png">
+</picture>
+
 This is the successor workspace for Modeller. During reconstruction the local
 directory and repository use the temporary `Modeller.Next` label; the public
 product remains **Modeller**.
@@ -25,3 +31,9 @@ implemented behaviour until the replacement gates in `MIGRATION.md` are met.
 The temporary successor repository is hosted under `Allann/Modeller.Next`
 because GitHub currently reports that the legacy `CSharp-Catalyst` organisation
 is being deleted and will not accept new repositories.
+
+## Brand assets
+
+The reusable light and dark marketing heroes live under `public/brand/`. Their
+composition, wording, and architecture diagram should remain consistent across
+the documentation site, repository pages, launch material, and social previews.

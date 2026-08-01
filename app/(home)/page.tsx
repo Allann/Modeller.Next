@@ -1,14 +1,20 @@
 import Link from 'next/link';
-import { ArrowRight, Braces, FileCode2, Layers3, Sparkles } from 'lucide-react';
+import { ArrowRight, Braces, Layers3, Sparkles } from 'lucide-react';
 
 export default function HomePage() {
   return (
     <main className="modeller-home">
-      <section className="hero-shell">
-        <div className="hero-copy">
-          <div className="eyebrow"><Sparkles size={15} /> Intent-first software design</div>
-          <h1>Describe the system.<br /><span>Generate the structure.</span></h1>
-          <p className="hero-lede">
+      <section className="brand-hero-shell">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcSet="/brand/modeller-hero-dark.png" />
+          <source media="(prefers-color-scheme: light)" srcSet="/brand/modeller-hero-light.png" />
+          <img
+            src="/brand/modeller-hero-light.png"
+            alt="Modeller — Describe the system. Generate the structure."
+          />
+        </picture>
+        <div className="hero-intro">
+          <p>
             Modeller turns concise domain definitions into consistent, production-ready
             software—without making your architecture disappear inside a black box.
           </p>
@@ -18,11 +24,6 @@ export default function HomePage() {
             </Link>
             <Link className="secondary-action" href="/docs/concepts">Explore the concepts</Link>
           </div>
-        </div>
-        <div className="model-preview" aria-label="Example Modeller domain definition">
-          <div className="preview-bar"><span className="preview-dot" /><span>order.entity</span></div>
-          <pre><code><span className="syntax-keyword">entity</span> Order{`\n`}  attributes{`\n`}    id         guid        generated{`\n`}    reference  text        unique{`\n`}    status     OrderStatus{`\n`}    created    datetime    generated{`\n`}  end{`\n`}<span className="syntax-keyword">end</span></code></pre>
-          <div className="preview-result"><FileCode2 size={16} /> Domain, persistence, API and SDK outputs</div>
         </div>
       </section>
       <section className="principles-grid" aria-label="Modeller principles">
