@@ -1,0 +1,316 @@
+---
+title: Ubiquitous language
+description: The canonical vocabulary shared by Modeller's models, documentation, architecture, and code.
+---
+
+This page is the public, canonical home for Modeller's domain language. The root
+`CONTEXT.md` file carries the same glossary for contributors and automated
+tools. Terms are alphabetical, and related terms cross-link in both directions.
+
+Status: **Accepted**
+
+## Language
+
+### Actor
+
+A person, organisation, or external system that participates in a
+[behaviour](#behaviour) through a named domain role. The role is independent of
+technical identity and authentication.
+
+For example, a **parent or guardian** records a child's attendance, an
+**educator** records staff attendance, and a **government child-care system**
+receives a session report. A child may be the subject of a behaviour without
+being its actor.
+
+Avoid using *user*, *account*, or *persona* as synonyms for actor.
+
+### Behaviour
+
+One complete, externally meaningful thing a system can do. [Commands](#command),
+[queries](#query), [rules](#rule), [outcomes](#outcome), [effects](#effect), and
+[events](#event) describe aspects of a behaviour rather than being
+interchangeable with it.
+
+An [actor](#actor) participates in a behaviour through a named domain role. A
+[workflow](#workflow) is a behaviour that coordinates other behaviours. A
+[capability](#capability) groups behaviours by enduring business purpose.
+
+Avoid using *operation*, *endpoint*, or *use case* as synonyms for behaviour.
+
+### Capability
+
+An enduring ability or responsibility of a system, realised through one or more
+[behaviours](#behaviour). A capability groups behaviours by business purpose but
+is not itself executable and does not prescribe organisation or implementation.
+
+For example, **attendance management** is a capability realised through
+behaviours such as **record parent attendance**, **record staff attendance**, and
+**clear attendance** in the Child Care reference project.
+
+Avoid using *module*, *service*, or *feature* as synonyms for capability.
+
+### Command
+
+A request from an [actor](#actor) to perform a [behaviour](#behaviour) that may
+change domain [state](#state) or produce [effects](#effect). It expresses intent,
+can be accepted or rejected, and is not evidence that the requested behaviour
+occurred.
+
+For example, a provider issues a **submit session report** command. A
+[policy](#policy) may reject it; if accepted, the behaviour may update report
+state and publish a **session report submitted** [event](#event).
+
+Avoid using *behaviour*, *event*, or *instruction* as synonyms for command.
+
+### Conclusion
+
+The typed, explained result of evaluating a [rule](#rule). A conclusion may be a
+truth, classification, or value, but does not itself change domain
+[state](#state).
+
+A [decision](#decision) selects a conclusion. [Findings](#finding) explain how
+the evaluation arrived there. An [outcome](#outcome) is instead the domain result
+of a completed behaviour.
+
+Avoid using *outcome*, *effect*, or *return value* as synonyms for conclusion.
+
+### Decision
+
+A named composition of [rules](#rule) that resolves a domain question by
+selecting among defined [conclusions](#conclusion). It explains how supplied
+[facts](#fact) led to its conclusion and causes no [effects](#effect).
+
+For example, **determine session-report disposition** may conclude **approve**,
+**reject**, or **no change**, with findings explaining which reported-care and
+government-response facts led there.
+
+Avoid using *behaviour*, *policy*, or *decision record* as synonyms for decision.
+
+### Effect
+
+A declared domain consequence owned by a [behaviour](#behaviour). An effect may
+change [state](#state) or request an interaction, but is never produced directly
+by a [rule](#rule) or [decision](#decision).
+
+For example, accepting a session report may update its submitted information or
+request submission to the government child-care system. A
+[transition](#transition) and publication of an [event](#event) are related
+consequences owned by the behaviour, but remain explicit semantic concepts.
+
+Avoid using *conclusion*, *outcome*, or *side effect* as synonyms for effect.
+
+### Entity
+
+A domain concept with stable identity and continuity through changes in
+[state](#state). Its meaning and [lifecycle](#lifecycle) are independent of how
+or whether it is persisted.
+
+Child Care examples include a **child**, **enrolment**, **booking**, and **session
+report**. Two entities may contain identical values yet remain distinct because
+they have different identities.
+
+Avoid using *record*, *table*, *document*, or *generated class* as synonyms for
+entity.
+
+### Event
+
+An immutable statement that a domain-significant fact occurred. It may result
+from a [behaviour](#behaviour) or report something that occurred externally, and
+is neither a [command](#command) nor an instruction. Event names use the past
+tense.
+
+Child Care examples include **attendance recorded**, **session report
+submitted**, **enrolment arrangement ended**, and **ACCS determination
+changed**. Downstream reactions do not change the event's meaning.
+
+Avoid using *command*, *notification*, or *message* as synonyms for event.
+
+### Fact
+
+A typed piece of domain information supplied to [rule](#rule) or
+[decision](#decision) evaluation as known for that evaluation. Facts are inputs
+to reasoning, not mutable evaluation state or untyped property bags.
+
+For an ACCS determination, facts may include the child's enrolment, identified
+risk reasons, relevant dates, and whether supporting evidence is held.
+
+Avoid using *variable*, *parameter*, or *raw data* as synonyms for fact.
+
+### Finding
+
+An explained observation produced while evaluating a [rule](#rule) or
+[decision](#decision) that supports, qualifies, or prevents a
+[conclusion](#conclusion). A finding is not necessarily an error.
+
+For example, **supporting evidence is held** may support an ACCS conclusion,
+while **enrolment is not active for the requested period** may prevent it.
+
+Avoid using *diagnostic*, *exception*, or *outcome* as synonyms for finding.
+
+### Guard
+
+A [rule](#rule) evaluated against current [facts](#fact) to determine whether a
+particular [behaviour](#behaviour) or lifecycle [transition](#transition) is
+allowed now. It produces an explained [conclusion](#conclusion) and no effects;
+the behaviour decides what happens when the guard passes or fails.
+
+For example, **can withdraw session report** might guard the transition to
+**withdrawn**, based on the report's current [lifecycle](#lifecycle) stage and
+government-processing facts.
+
+Avoid using *validation*, *authorization*, or *condition* as synonyms for guard.
+
+### Invariant
+
+A [rule](#rule) that must hold for domain [state](#state) to be valid before and
+after every externally observable [behaviour](#behaviour). A violated invariant
+prevents the proposed state from becoming observable.
+
+For example, a session of care cannot end before it starts, and an attendance
+cannot belong to a different child than its booking.
+
+Unlike a [guard](#guard), which asks whether one behaviour or transition is
+allowed now, an invariant applies to every relevant state change.
+
+Avoid using *guard*, *validation rule*, or *database constraint* as synonyms for
+invariant.
+
+### Lifecycle
+
+The meaningful stages an [entity](#entity) may occupy and the permitted
+[transitions](#transition) among them from creation to termination.
+[Behaviours](#behaviour) cause transitions; [guards](#guard) decide whether a
+transition is currently allowed.
+
+For a Child Care session report, a simplified lifecycle is **draft → submitted
+→ approved or rejected**, with a later transition to **withdrawn** only where
+the domain permits it. A lifecycle describes how one entity may change; a
+[workflow](#workflow) coordinates multiple behaviours toward an outcome.
+
+Avoid using *workflow*, *status*, or *state* as synonyms for lifecycle.
+
+### Outcome
+
+The explicit domain result of a completed [behaviour](#behaviour), including
+success, rejection, or another defined result. It is distinct from the
+[conclusions](#conclusion) used to reach it and the [effects](#effect) it
+authorises.
+
+Submitting a session report might produce **submitted**, **rejected**, or **no
+change** outcomes. Each is meaningful to the actor even when no state transition
+occurs.
+
+Avoid using *conclusion*, *effect*, or *response* as synonyms for outcome.
+
+### Policy
+
+A named [rule](#rule) or [decision](#decision) expressing a domain choice about
+what is permitted, required, or entitled. [Behaviours](#behaviour) enforce
+policies; policies do not cause [effects](#effect) themselves.
+
+For example, an **ACCS eligibility policy** may determine whether the known child,
+enrolment, risk, date, and evidence facts establish eligibility.
+
+A [guard](#guard) applies a rule to whether one behaviour or transition is
+allowed now. An [invariant](#invariant) defines state that must always remain
+valid. A policy expresses the domain choice those specialised uses may draw on.
+
+Avoid using *guard*, *procedure*, or *configuration* as synonyms for policy.
+
+### Query
+
+A request from an [actor](#actor) to perform a [behaviour](#behaviour) that
+observes domain information without changing domain [state](#state) or producing
+domain [effects](#effect). It may select, derive, aggregate, or explain
+information, and returns an answer rather than evidence that something occurred.
+
+Child Care examples include **get occupancy for centre**, **get projected
+bookings**, **find family**, and **check whether an action is allowed**.
+Authorization checks and technical telemetry do not make a query a
+state-changing behaviour.
+
+Avoid using *command*, *lookup*, or *report* as synonyms for query.
+
+### Rule
+
+A named, reusable definition that evaluates typed [facts](#fact) and produces an
+explained [conclusion](#conclusion) without changing domain [state](#state) or
+causing [effects](#effect). Rules may compose other rules.
+
+Child Care examples include **child is within the eligible age range**,
+**session report contains reportable care**, and **provider may withdraw session
+report**. [Guards](#guard), [policies](#policy), [invariants](#invariant), and
+[decisions](#decision) use rules for different purposes; they do not redefine
+rule evaluation.
+
+Avoid using *condition*, *validation*, or *business logic* as synonyms for rule.
+
+### State
+
+The complete set of domain [facts](#fact) currently associated with an
+[entity](#entity). A named position in its [lifecycle](#lifecycle) is one part of
+state, not a synonym for the whole of it.
+
+For a Child Care session report, its reporting period, submitted sessions, and
+government response are state. **Draft**, **submitted**, **approved**, or
+**rejected** is its current lifecycle stage.
+
+Avoid using *status*, *lifecycle stage*, or *persisted data* as synonyms for
+state.
+
+### Transition
+
+A permitted change from one [lifecycle](#lifecycle) stage to another, caused by
+successful [behaviour](#behaviour). It identifies its source and target stages,
+may be restricted by [guards](#guard), and may result in [events](#event) or
+other [effects](#effect).
+
+For example, **record session-report approval** causes the transition from
+**submitted** to **approved**. The transition is neither the [command](#command)
+requesting approval nor the resulting **session report approved** event.
+
+Avoid using *command*, *event*, or the broader *state change* as synonyms for
+transition.
+
+### Workflow
+
+A [behaviour](#behaviour) that coordinates multiple behaviours toward a domain
+[outcome](#outcome), often across time and in response to outcomes or
+[events](#event). Its coordination and progress are explicit domain meaning
+rather than a sequence of technical calls.
+
+For example, a Child Care workflow may submit a session report, await the
+government response, record approval, rejection, or no-change, and notify the
+responsible provider role. The steps remain independently defined behaviours.
+
+Avoid using *pipeline*, *script*, or *orchestration* as synonyms for workflow.
+
+## Settled relationships
+
+The accepted semantic baseline establishes these relationships:
+
+- Behaviour is the organising principle.
+- Entities provide identity, lifecycle, and state.
+- Rules evaluate typed facts and produce explained conclusions.
+- Behaviours own effects, transitions, and event publication.
+- Persistence is separate from domain meaning.
+- Diagrams are projections; layout is not semantic truth.
+- Modeller owns canonical semantic and expression meaning; external formats and
+  runtimes are adapters.
+- Independently versioned bounded contexts federate through explicit exports and
+  imports; every concept has exactly one owner and stable identity.
+- Documentation is first-class model content, while rendered pages and source
+  locations remain projections and provenance.
+
+See the [successor semantic baseline](/docs/architecture/decisions/successor-semantic-baseline)
+and [canonical rule expressions](/docs/architecture/decisions/canonical-rule-expressions),
+and the [canonical semantic model](/docs/architecture/decisions/canonical-semantic-model)
+for the accepted decisions behind these statements.
+
+## Decision status
+
+This glossary is the accepted resolution of
+[Wayfinder issue #15](https://github.com/Allann/Modeller.Next/issues/15).
+Documentation, architecture, model definitions, and implementation interfaces
+must use these meanings consistently. Later decisions may add terms or sharpen a
+definition, but must record any intentional change here and in `CONTEXT.md`.

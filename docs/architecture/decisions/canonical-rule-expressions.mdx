@@ -1,0 +1,30 @@
+---
+title: Canonical rule expressions
+description: Modeller owns typed expression meaning independently of runtimes and exchange formats.
+---
+
+Status: **Accepted**
+
+Source: [Wayfinder issue #14](https://github.com/Allann/Modeller.Next/issues/14)
+
+## Decision
+
+Modeller owns a small, versioned, statically typed expression representation and
+a readable authoring language.
+
+- Source expressions compile to the canonical representation.
+- A bounded, pure reference interpreter defines their semantics.
+- Generated C# and external decision formats are adapters.
+- JavaScript is a constrained, visibly foreign escape hatch rather than
+  canonical meaning.
+- Imported expressions identify their dialect explicitly; dialect autodetection
+  is not supported.
+- Readable unary tests and operators may be adopted only where their semantics
+  exactly match Modeller's type, null, determinism, and versioning rules.
+
+## Consequences
+
+No host language, runtime, code generator, or interchange format can silently
+change the meaning of a model. Authoring syntax, language-server affordances,
+generated-code strategy, and packaging remain later decisions built on this
+representation.

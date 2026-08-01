@@ -1,331 +1,284 @@
 ---
-title: "Architecture 101: Building Up Complexity One Decision at a Time"
+title: "Architecture 101: Building Modeller One Decision at a Time"
+description: How Modeller's architecture grows from explicit domain meaning to safe, repeatable generation.
 ---
 
-# Architecture 101: Building Up Complexity One Decision at a Time
+# Architecture 101: Building Modeller One Decision at a Time
 
 ## The core idea
 
-An architect's job isn't to draw every box on day one. It's to decide **what to leave out**, and to say "no — not yet" more often than "yes." Every box in the diagram below was added *on purpose*, to solve a specific, named problem. If you can't name the problem a box solves, you probably don't need the box.
+Architecture is not the number of boxes in a diagram. It is the set of decisions
+that protect the meaning we care about.
 
-There is no such thing as a universal "best practice." Companies like Twitter can afford mistakes you can't. What follows is a set of components explained in the order you'd actually reach for them, each one paired with the pain it removes and the pain it introduces.
+For Modeller, the durable thing is the business model: the
+[behaviours](/docs/concepts/ubiquitous-language#behaviour) a business performs,
+the [facts](/docs/concepts/ubiquitous-language#fact) and
+[rules](/docs/concepts/ubiquitous-language#rule) behind its
+[decisions](/docs/concepts/ubiquitous-language#decision), and the
+[outcomes](/docs/concepts/ubiquitous-language#outcome) those behaviours produce.
+Parsers, diagram editors, template engines, generated languages, and AI
+providers can all change. They must not silently change that meaning.
 
-The end state of this guide matches the full reference architecture below — by the end, every box in it should be justifiable, even if you choose not to use all of them.
+The architecture therefore grows one pressure at a time. Every seam below solves
+a named problem and introduces a cost. If a seam does not protect domain meaning,
+make change safer, or enable a required adapter, it has not yet earned its place.
 
----
+## Stage 0: Put behaviour at the centre
 
-## Stage 0: Client and Database
+An [entity](/docs/concepts/ubiquitous-language#entity)-only model describes what
+data exists but not why the system exists. Modeller begins with
+[behaviour](/docs/concepts/ubiquitous-language#behaviour)—one complete,
+externally meaningful thing the system can do—as the organising principle.
 
-Every application starts here. If it's not talking to a database, it's not a data-driven app (Notepad and Solitaire excepted).
-
-```mermaid
-graph LR
-    Client --> SQL[(SQL Database)]
-```
-
-**Problem with stopping here:** talking to the database directly means leaking the schema into your application. Your app and your schema are now coupled, your app developers need to be good SQL developers, and SQL ends up mixed into your application code.
-
----
-
-## Stage 1: Introduce the API
-
-The API's job is to abstract the database away — separate the concern of "talking to SQL" from the concern of "being the app."
-
-```mermaid
-graph LR
-    Client --> API --> SQL[(SQL Database)]
-```
-
-This also solves a quieter problem: **database drivers**. Drivers need installing, versioning, and regular upgrading (mostly for security, not just speed). Moving the API next to the database means the driver dependency lives in one place — not baked into every client — and the API/client contract is now free to evolve at its own pace, as long as the surface area (the contract) stays stable.
-
-*Cross-cutting concern worth adding here, even though it won't help you yet: telemetry (OpenTelemetry is the default choice today). It does nothing for you during development — it earns its keep the day you're debugging a production issue with your boss standing behind you.*
-
----
-
-## Stage 2: Split reads from writes (CQRS) + a read replica
-
-Most applications are write-heavy and read-light, or the reverse. Splitting the API into write and read paths (physically or just logically) lets you scale each independently — without touching your codebase, you could deploy the same code twice and point writes at one and reads at the other.
+An [actor](/docs/concepts/ubiquitous-language#actor) participates through a named
+domain role. A [command](/docs/concepts/ubiquitous-language#command) requests
+potentially state-changing behaviour; a
+[query](/docs/concepts/ubiquitous-language#query) requests information without
+domain effects. An [event](/docs/concepts/ubiquitous-language#event) records a
+domain-significant fact after it occurs. A
+[workflow](/docs/concepts/ubiquitous-language#workflow) is itself a behaviour
+that coordinates other behaviours toward a domain outcome.
 
 ```mermaid
-graph LR
-    Client --> WriteAPI[Write API] --> WriteDB[(Write DB)]
-    Client --> ReadAPI[Read API] --> ReadDB[(Read DB)]
-    WriteDB -. replication .-> ReadDB
+flowchart LR
+    Actor --> Command
+    Actor --> Query
+    Command --> Behaviour
+    Query --> Behaviour
+    Workflow -- coordinates --> Behaviour
+    Behaviour --> Event
 ```
 
-This is cheap: it's a connection string and a second deployment. The catch is **eventual consistency** — replication is fast, but never instant (no tier of Azure increases the speed of light). A simultaneous read-after-write can return stale data. Know the caveat before you ship it.
+[Capabilities](/docs/concepts/ubiquitous-language#capability) group behaviours by
+enduring business purpose without becoming executable or prescribing the
+implementation structure.
 
----
+**Pressure introduced:** a behaviour needs typed inputs, participating entities,
+rules, effects, transitions, and events. Those concepts cannot remain prose if
+tools are expected to reason about them.
 
-## Stage 3: Split into services, and connect them with a service bus
+## Stage 1: Add the semantic model
 
-Once you have more than one backend concern, it often pays to split into separate services (micro or macro — the size doesn't matter, the isolation does). But now those services need to talk to each other.
-
-```mermaid
-graph LR
-    Client --> SvcA[Service A]
-    Client --> SvcB[Service B]
-    Client --> SvcC[Service C]
-    SvcA <--> Bus[Service Bus]
-    SvcB <--> Bus
-    SvcC <--> Bus
-    Bus --> DL[Dead Letter]
-```
-
-A service bus is a concept, not a specific product (Azure Service Bus is one implementation among many open-source options) — think of it as a postman: it takes a message and makes sure it gets delivered, with retries and timers along the way.
-
-Every service bus needs a **dead letter** story. Messages that can't be delivered land there — and if nobody is watching that queue, it's a silent failure waiting to happen. Adding a service bus means also owning what happens when it fails.
-
----
-
-## Stage 4: Connect to existing systems
-
-If your company has other systems already, the service bus becomes the shared integration point — not something owned by your solution, but a shared piece of infrastructure other systems plug into as well.
-
-```mermaid
-graph LR
-    Client --> SvcA[Service A]
-    SvcA <--> Bus[Service Bus]
-    Bus <--> SysA[System A]
-    Bus <--> SysB[System B]
-    Bus <--> SysC[System C]
-    Bus <--> SysD[System D]
-    Bus --> DL[Dead Letter]
-```
-
-Use this only when you need to *operationally* engage with those systems (trigger something as a result of what you did). If you're just merging data for reporting, you don't need this — you need the data lake (Stage 10).
-
----
-
-## Stage 5: Add an API Manager (APIM)
-
-If you have an API and no API manager / gateway in front of it, that's worth questioning. It costs you nothing at the start and everything the day you need to ship v2 of your API.
-
-```mermaid
-graph LR
-    Client --> APIM[API Manager]
-    APIM --> SvcA[Service A]
-    APIM --> SvcB[Service B]
-    APIM --> SvcC[Service C]
-```
-
-An APIM can transform a v1 payload into a v2 call transparently, handle A/B rollout, rate limiting, load balancing, and denial-of-service protection — and it makes several microservices look like one coherent API surface to the client. Skipping it doesn't hurt today; it hurts the next developer who has to version your API without one.
-
----
-
-## Stage 6: Make each service resilient — cache, retry, queue
-
-These are concepts you add *inside* each service, not new boxes on the big picture, but they matter enormously.
-
-```mermaid
-graph LR
-    Client --> API
-    API --> L1[L1 Cache in-memory]
-    API --> Retry[Retry Policy]
-    API --> Queue
-    Queue --> SQL[(Database)]
-    API -.-> Redis[(L2 Cache / Redis)]
-```
-
-- **L1 cache (in-memory):** the fastest thing you have. Even one second of cache on hot data (e.g. a country dropdown) transforms API capacity and prevents "stampeding" — many requests hitting a cold cache at once.
-- **L2 cache (Redis or similar):** a cheap key-value store for query results that are expensive to compute but cheap to look up again.
-- **Retry policy:** transient failures happen (network blip, timeout). Retry a bounded number of times (exponential backoff) before giving up — most drivers support this natively now.
-- **Queue (persisted, not in-memory):** when your API can accept more requests than your database can process, don't reject the excess — queue it. Tell the client "got it" immediately and process the backlog as capacity allows. This doesn't work for everything (credit card transactions, for instance) but it works for most things.
-
----
-
-## Stage 7: React to change — Event Hub, Functions, and pushing updates to the client
-
-A service bus moves messages you send. An **event hub** responds to things that happened — it ingests continuously and is built to never be overwhelmed.
-
-```mermaid
-graph LR
-    SQL[(Database)] -- change feed --> EventHub[Event Hub]
-    EventHub --> Function[Function]
-    Function --> Bus[Service Bus]
-    EventHub -. push .-> Client
-```
-
-Databases like SQL Server support **change event streaming** — every row change can be pushed to the event hub instead of clients polling ("did it change yet? did it change yet?"), which degrades database performance over time. The event hub triggers a function to do the actual work, which can in turn notify the service bus.
-
-The same event hub can push straight to the client (e.g. over WebSockets), which kills the "please don't refresh this page" anti-pattern — the UI updates itself the moment the backend is actually done, instead of the user hammering F5.
-
----
-
-## Stage 8: Serve the client efficiently — static content and CDN
-
-Not everything needs to hit your application server.
-
-```mermaid
-graph LR
-    Client --> CDN --> Static[Static Server]
-    Client --> APIM
-```
-
-Content that never changes (images, assets) shouldn't invoke your app server or middleware at all — serve it from a static host, and put a CDN in front of it so users far from your region aren't waiting on the speed of light.
-
----
-
-## Stage 9: Pick the right storage shape for each table
-
-"Database" isn't one thing — pick the storage engine per table, based on its access pattern:
+The semantic model gives those concepts stable, Modeller-owned meaning.
+[Entities](/docs/concepts/ubiquitous-language#entity) provide stable identity and
+continuity through changes in [state](/docs/concepts/ubiquitous-language#state).
+Their [lifecycle](/docs/concepts/ubiquitous-language#lifecycle) defines meaningful
+stages and permitted [transitions](/docs/concepts/ubiquitous-language#transition).
+[Guards](/docs/concepts/ubiquitous-language#guard) decide whether a behaviour or
+transition is currently allowed. Successful behaviours cause transitions;
+events record the significant facts that result. Persistence remains outside
+the domain meaning.
 
 ```mermaid
 graph TD
-    SQL[(SQL Server)] --> Row[Row Store — default]
-    SQL --> Column[Column Store — ~100x faster aggregates, same SQL]
-    SQL --> NoIndex[No-Index / Hash Table — fastest possible writes, no constraints]
-    SQL --> InMem[In-Memory Table — RAM-speed reads/writes]
-    SQL --> Graph[Graph — relationship/pathfinding queries]
-    SQL --> NoSQLT[NoSQL / JSON — flexible payloads, 2GB limit]
+    Model[Semantic model] --> Actor
+    Model --> Behaviour
+    Model --> Entity
+    Behaviour --> Outcome
+    Behaviour --> Effect
+    Behaviour --> Transition
+    Behaviour --> Event
+    Rule --> Conclusion
+    Decision --> Rule
+    Policy --> Rule
+    Guard --> Rule
+    Invariant --> Rule
+    Fact --> Rule
+    Entity --> State
+    Entity --> Lifecycle
+    Lifecycle --> Transition
+    Guard -- allows? --> Behaviour
+    Guard -- allows? --> Transition
+    Persistence -. adapter .-> Entity
 ```
 
-- **Row store** — the default, free, works like a spreadsheet.
-- **Column store** — a checkbox, not a new product. ~100x faster for aggregates, with dramatic compression, and no change to how you write SQL against it.
-- **No-index / hash table** — the fastest possible insert path (no clustered index reordering), but you give up constraints and relational guarantees. Google it before you reach for it.
-- **In-memory table** — RAM-speed reads and writes; choose whether writes also persist to disk (survives a restart) or not (pure speed, lost on recycle).
-- **Graph** — native support for relationship queries (shortest/cheapest path across a network — e.g. warehouse/shipping-lane routing) without moving data out of your relational store.
-- **NoSQL/JSON** — good for holding a payload you don't want to fully model yet; SQL Server stores it in a fast binary format, with a 2GB per-document ceiling.
+This is the first deep module: callers work with a small domain vocabulary while
+the model hides identity resolution, references, type relationships, and
+invariants.
 
----
+**Pressure introduced:** authors need a readable way to create the model, and old
+definitions need a controlled migration path.
 
-## Stage 10: Cut the boilerplate API layer — Data API Builder — and add AI
+## Stage 2: Separate authoring from meaning
 
-A large fraction of "create a Web API project, wire up EF Core, write CRUD controllers" work is copy-paste inheritance from one project to the next. **Data API Builder (DAB)** — open source, `aka.ms/dab` — generates REST and GraphQL endpoints directly from Postgres, SQL Server, Cosmos DB, or MySQL, and can replace the majority of hand-written data APIs.
+The authoring language is an input format, not the model itself. A parser turns
+source text into the semantic model and reports diagnostics in terms an author
+can act on. Future YAML, editor, or import adapters can reach the same model
+without becoming alternative sources of truth.
 
 ```mermaid
 graph LR
-    Client --> OpenAI[OpenAI]
-    OpenAI --> MCP[Remote MCP Server]
-    MCP --> API[API / DAB]
-    API --> SQL[(Database)]
+    Source[Authoring language] --> Parser
+    Importer[Legacy or external format] --> ImportAdapter[Import adapter]
+    Parser --> Model[Semantic model]
+    ImportAdapter --> Model
+    Model --> Diagnostics
 ```
 
-If you're adding AI to the client, don't let the model talk to your database directly — ever. Route it through an MCP server, which talks to your existing API, which is the only thing allowed to talk to the database.
+Keeping this seam explicit means syntax can improve without forcing every
+consumer to understand tokens or syntax trees. It also prevents a convenient
+exchange format from defining Modeller's semantics by accident.
 
----
+**Pressure introduced:** rules contain executable-looking expressions. Their
+meaning must remain stable across authoring syntax, generated code, and external
+decision engines.
 
-## Stage 11: Give the client an offline experience
+## Stage 3: Own rule-expression semantics
 
-The same cache + queue concepts from Stage 6 apply on the client, not just the server:
+Source expressions compile to a small, versioned, statically typed canonical
+representation. A bounded, pure reference interpreter defines what those
+expressions mean. Generated C# and external decision formats are adapters; they
+must preserve the canonical behaviour.
 
 ```mermaid
 graph LR
-    Client --> ClientCache[Cache requests]
-    Client --> ClientQueue[Queue responses]
-    ClientCache --> APIM
-    ClientQueue --> APIM
+    SourceExpression[Source expression] --> Compiler
+    Compiler --> ExpressionIR[Typed expression representation]
+    ExpressionIR --> Interpreter[Reference interpreter]
+    ExpressionIR --> CSharp[Generated C# adapter]
+    ExpressionIR --> External[External decision adapter]
+    Facts[Typed facts] --> Interpreter
+    Interpreter --> Conclusion[Explained conclusion]
 ```
 
-Cache outbound requests and queue results, and the app keeps working through a dropped connection — the same trick that makes Outlook tolerable when you're going through a tunnel.
+[Rules](/docs/concepts/ubiquitous-language#rule) evaluate typed
+[facts](/docs/concepts/ubiquitous-language#fact) and produce explained
+[conclusions](/docs/concepts/ubiquitous-language#conclusion).
+[Decisions](/docs/concepts/ubiquitous-language#decision) compose rules to resolve
+domain questions, with [findings](/docs/concepts/ubiquitous-language#finding)
+explaining how they arrived at a conclusion.
 
----
+[Policies](/docs/concepts/ubiquitous-language#policy) express choices about what
+is permitted, required, or entitled. Guards apply rules to whether a behaviour
+or transition is allowed now; [invariants](/docs/concepts/ubiquitous-language#invariant)
+protect every observable state. Behaviours, not any of these rule forms, own
+[effects](/docs/concepts/ubiquitous-language#effect). This keeps evaluation pure
+enough to test and explain while leaving state changes in the behaviour that
+requested them.
 
-## Stage 12: Feed a data lake, and close the loop with ML
+**Pressure introduced:** users and tools need different views of the same model,
+including diagrams, documentation, and code.
 
-Data siloed in one system has no cross-system value. Pull it (and data from other existing systems) into a lake via EL/ETL, and use it as the source for both reporting and ML.
+## Stage 4: Treat every view as a projection
+
+A diagram is useful, but the position of a box is not domain truth. The semantic
+model feeds projections for people and generators for machines. No projection is
+allowed to quietly become a second model.
+
+```mermaid
+graph TD
+    Model[Semantic model] --> Diagram[Diagram projection]
+    Model --> Docs[Documentation projection]
+    Model --> Plan[Generation plan]
+    Diagram --> Layout[Disposable layout]
+    Plan --> Templates[Template pack]
+    Templates --> Outputs[Generated outputs]
+```
+
+Diagram layout can be saved as presentation metadata, regenerated, or discarded.
+Documentation can emphasise behaviours and decisions. A generation plan can
+select the semantic inputs required by a template pack. All three remain views
+over one authority.
+
+**Pressure introduced:** generating files repeatedly is dangerous unless output
+ownership and overwrite rules are explicit.
+
+## Stage 5: Plan before writing
+
+Generation is split into planning, rendering, and writing. Template packs encode
+a chosen software architecture; they do not own the domain model. The plan makes
+the intended files and their ownership visible before the filesystem changes.
 
 ```mermaid
 graph LR
-    SQL[(Your DB)] --> ETL[EL / ETL]
-    SysA[System A] --> ETL
-    SysB[System B] --> ETL
-    ETL --> Lake[(Data Lake)]
-    Lake --> ML[ML / AI]
-    ML -. pushes insights back .-> SQL
-    ML -. pushes insights back .-> SysA
+    Model[Semantic model] --> Planner
+    Pack[Template pack] --> Planner
+    Planner --> Plan[Generation plan]
+    Plan --> Renderer
+    Renderer --> Files[Rendered files]
+    Files --> Writer[Ownership-aware writer]
+    Writer --> Generated[Generated files]
+    Writer -. preserves .-> Owned[Handwritten files]
 ```
 
-The lake by itself is just reporting. The value shows up when the ML layer's output is pushed *back* into the operational systems (e.g. product recommendations), not just displayed on a dashboard.
+Generated files carry traceability back to the model and template pack. Files
+owned by developers remain separate and are not overwritten. This turns
+regeneration from a risky replacement operation into an ordinary workflow.
 
----
+**Pressure introduced:** template engines, target languages, filesystems, and AI
+providers vary. They need extension points without being able to redefine the
+core.
 
-## Stage 13: Security — identity, tokens, and fine-grained access
+## Stage 6: Put integrations at the boundary
 
-Briefly, because it deserves its own talk:
-
-```mermaid
-graph LR
-    EntraID[Microsoft Entra ID] -- issues --> JWT[JWT]
-    Client -- JWT --> API
-    API -- validate & rewrite --> AppJWT[App-scoped JWT]
-    AppJWT --> SvcA[Service A]
-    AppJWT --> SvcB[Service B]
-```
-
-Entra ID (formerly Azure AD) issues a signed JWT containing your identity and group claims. You *can* push your application's fine-grained permission model into your tenant, but it's usually a better trade to keep high-level roles in the tenant and let your application rewrite the validated token with fine-grained, app-specific claims before passing it downstream. Get this wrong and it's one of the most dangerous mistakes in the whole diagram — read up before implementing.
-
----
-
-## The full picture
-
-Put every stage together and you get the reference architecture below — the one the talk opened with. Every box now maps to a specific problem from the sections above:
+Adapters translate between Modeller and the outside world. AI may help author,
+explain, or review a model, but it operates through explicit model operations.
+It does not become a hidden second implementation of the domain.
 
 ```mermaid
 graph TB
-    subgraph Identity
-        Entra[Entra ID]
-        JWT[JWT / RBAC]
+    subgraph Core[Modeller-owned core]
+        Model[Semantic model]
+        Expressions[Typed expressions]
+        Planner[Generation planner]
     end
 
-    subgraph ClientLayer[Client]
-        Client[Client]
-        Cache1[Cache]
-        Queue1[Queue]
-        Retry1[Retry]
-    end
-
-    Client --> OpenAI
-    Client --> MCP
-    Client --> APIM
-    Client --> CDN
-    Client --> Static
-
-    subgraph Services
-        SvcTop[Micro Service A<br/>API + SQL]
-        SvcMid[Write/Read Service<br/>CQRS]
-        SvcBottom[Micro Service B<br/>API + SQL]
-    end
-
-    APIM --> SvcTop
-    APIM --> SvcMid
-    APIM --> SvcBottom
-
-    SvcMid --> WriteDB[(Write DB)]
-    SvcMid --> ReadDB[(Read DB)]
-    WriteDB -. replicate .-> ReadDB
-
-    EventHub[Event Hub] --> Func[Function]
-    WriteDB -- change feed --> EventHub
-    EventHub -. push .-> Client
-
-    Bus[Service Bus]
-    SvcTop <--> Bus
-    SvcMid <--> Bus
-    SvcBottom <--> Bus
-    Bus --> DeadLetter[Dead Letter]
-    Func --> Bus
-
-    Bus <--> SysA[System A]
-    Bus <--> SysB[System B]
-    Bus <--> SysC[System C]
-    Bus <--> SysD[System D]
-
-    SysA --> ETL[EL / ETL]
-    SysB --> ETL
-    SysC --> ETL
-    SysD --> ETL
-    ETL --> Lake[(Lake)]
-    Lake --> ML[ML / AI]
-    ML -.-> SysA
-
-    SvcBottom --> Storage[Graph / In-Mem / Row /<br/>No-Index / Column / NoSQL]
+    CLI --> Core
+    Editor --> Core
+    AI[AI assistant] --> Operations[Explicit model operations]
+    Operations --> Core
+    Core --> Templates[Template-engine adapter]
+    Core --> Runtime[Runtime or decision adapter]
+    Core --> Storage[Filesystem or storage adapter]
 ```
 
----
+This is where dependency inversion becomes concrete: replaceable tools depend on
+Modeller's contracts. The core does not depend on a particular UI, host language,
+template engine, persistence product, or AI provider.
+
+## The full picture
+
+The complete architecture is a flow from authored intent to verified outputs,
+with one semantic authority in the middle.
+
+```mermaid
+flowchart LR
+    Author[Human or AI author] --> Authoring[Authoring language and operations]
+    Legacy[Legacy definitions] --> Import[Import adapter]
+    Authoring --> Parse[Parse and validate]
+    Import --> Parse
+    Parse --> Model[Canonical semantic model]
+
+    Model --> Rules[Typed rule expressions]
+    Rules --> Explain[Reference evaluation and explanation]
+
+    Model --> Projections[Diagram and documentation projections]
+    Model --> Planner[Generation planner]
+    Pack[Versioned template pack] --> Planner
+    Planner --> Render[Render adapters]
+    Render --> Write[Ownership-aware writer]
+    Write --> Output[Generated architecture]
+```
+
+The architecture is intentionally asymmetric. Many authoring and integration
+paths may enter or leave the system, but all of them pass through Modeller-owned
+semantics. That narrow waist is what lets the edges evolve without fragmenting
+the meaning of a model.
+
+## What is settled, and what is not
+
+This page applies the accepted [successor semantic baseline](/docs/architecture/decisions/successor-semantic-baseline)
+and [canonical rule-expression decision](/docs/architecture/decisions/canonical-rule-expressions).
+The accepted vocabulary is collected in the
+[ubiquitous language](/docs/concepts/ubiquitous-language). Architecture pages,
+model definitions, and implementation interfaces must use those terms
+consistently. The vocabulary was accepted through Wayfinder issue #15.
 
 ## The takeaway
 
-None of these boxes are free, and none of them are mandatory. Each one earns its place by removing a specific, named pain — and each one you *don't* add is one less thing that can break, one less thing to upgrade, one less thing the next developer has to understand before they can be productive.
+Modeller does not need every adapter, projection, or target language on day one.
+It does need one authoritative semantic model, explicit ownership of expression
+meaning, and a generation path that preserves handwritten work.
 
-**Defer decisions.** It feels like the architect's job is to decide everything up front, but the longer you can put a decision off, the cheaper it is to change your mind later. Simplicity is the best architecture.
+Defer replaceable choices. Be strict about meaning. Add each new box only when
+you can name the pressure it resolves.

@@ -1,0 +1,49 @@
+---
+title: Successor semantic baseline
+description: Preserve behaviour-first intent while rebuilding behind Modeller-owned meaning.
+---
+
+Status: **Accepted**
+
+Source: [Wayfinder issue #13](https://github.com/Allann/Modeller.Next/issues/13)
+
+## Decision
+
+The successor preserves Modeller's behaviour-first destination and the useful
+decision capabilities found in the legacy rules prototype. It does not transplant
+the legacy executable model or runtime. Those capabilities will be rebuilt behind
+a canonical semantic model owned by Modeller.
+
+The following relationships constrain later decisions:
+
+- [Behaviour](/docs/concepts/ubiquitous-language#behaviour) is the organising
+  principle.
+- [Entities](/docs/concepts/ubiquitous-language#entity) provide identity,
+  [lifecycle](/docs/concepts/ubiquitous-language#lifecycle), and
+  [state](/docs/concepts/ubiquitous-language#state).
+- [Rules](/docs/concepts/ubiquitous-language#rule) evaluate typed
+  [facts](/docs/concepts/ubiquitous-language#fact) and produce explained
+  [conclusions](/docs/concepts/ubiquitous-language#conclusion).
+- [Behaviours](/docs/concepts/ubiquitous-language#behaviour) own
+  [effects](/docs/concepts/ubiquitous-language#effect),
+  [transitions](/docs/concepts/ubiquitous-language#transition), and
+  [event](/docs/concepts/ubiquitous-language#event) publication.
+- Persistence remains a separate concern.
+- Diagrams project the authoritative semantic model; layout is never semantic
+  truth.
+- External rule formats and runtimes are adapters.
+
+## Consequences
+
+The existing entity- and endpoint-centred model is evidence, not the successor
+design. Participants, behaviours, rules,
+[guards](/docs/concepts/ubiquitous-language#guard), invariants, effects,
+[transitions](/docs/concepts/ubiquitous-language#transition), workflows, and
+diagram projections must become integrated semantic concepts before
+implementation begins.
+
+Legacy decision tables, graph evaluation, hit policies, traces, explanations,
+and editing concepts may be adapted. Object-typed facts and results, shared
+per-evaluation state, incomplete cancellation, hard-coded validation,
+unstructured statuses, mixed semantic/layout state, and ambiguous expression
+ownership must not be carried forward as architectural defaults.
