@@ -86,6 +86,18 @@ html > body[data-scroll-locked] { margin-right: 0 !important; --removed-body-scr
 
 .docs-brand-hero { display: block; overflow: hidden; margin: 0 0 2rem; border: 1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius: 1rem; box-shadow: 0 22px 55px rgba(5,30,34,.15); }
 .docs-brand-hero img { display: block; width: 100%; height: auto; }
+
+.mermaid-diagram {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.mermaid-diagram svg {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+}
 .theme-hero-dark { display: none !important; }
 .dark .theme-hero-light { display: none !important; }
 .dark .theme-hero-dark { display: block !important; }

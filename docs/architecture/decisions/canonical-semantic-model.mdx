@@ -1,0 +1,190 @@
+---
+title: Canonical semantic model and ownership graph
+description: Resolve independently owned bounded contexts into one reproducible, diagram-independent semantic graph.
+---
+
+Status: **Accepted**
+
+Source: [Wayfinder issue #16](https://github.com/Allann/Modeller.Next/issues/16)
+
+## Decision
+
+Modeller's canonical semantic graph is a resolved federation of independently
+versioned bounded contexts. It is not one whole-system aggregate.
+
+Every semantic concept has exactly one owning bounded context. Concepts shared by
+several contexts live in an explicitly named shared-kernel context and are
+consumed through the same import mechanism as any other dependency. Ownership is
+never implicit, duplicated, or inferred from source layout.
+
+Bounded contexts are mandatory logical implementation boundaries. They define
+ownership, dependency direction, testing seams, and the default packaging seam.
+They do not require separate assemblies, packages, repositories, processes, or
+deployments. Those physical choices remain later maintainability decisions and
+must not change semantic identity.
+
+## Representations
+
+The model has three deliberately separate representations:
+
+1. An **authored context model** is editable and may temporarily be incomplete or
+   contain unresolved references.
+2. A **resolved federation snapshot** is immutable, fully validated, and
+   authoritative for generation, architectural tests, documentation, and
+   analysis.
+3. **Projections** include diagrams, rendered documentation, generated code, and
+   external formats. Projections cannot add or change semantic meaning.
+
+Resolution either binds every reference to exactly one compatible exported
+concept or fails with structured diagnostics. Generators, architectural tests,
+and conformance checks consume only successfully resolved snapshots.
+
+## Ownership graph
+
+Ownership is an acyclic single-owner tree. Every concept has one immediate
+structural owner and therefore one path to its bounded context. Typed semantic
+references overlay that tree to form the full graph.
+
+```text
+Federation snapshot
+└── Bounded context
+    ├── Top-level semantic definitions
+    │   ├── Entity
+    │   │   └── Lifecycle
+    │   │       └── Stage
+    │   ├── Behaviour
+    │   │   ├── Outcome
+    │   │   ├── Effect
+    │   │   └── Transition
+    │   └── Rule or decision
+    │       ├── Conclusion
+    │       └── Finding
+    └── Documentation
+```
+
+Contexts directly own their top-level actors, capabilities, behaviours,
+commands, queries, workflows, entities, value types, facts, rules, decisions,
+policies, guards, invariants, lifecycles, and other reusable definitions. Nested
+semantic concepts belong to their defining parent.
+
+Capabilities group the concepts that realise an enduring business purpose by
+reference; they do not structurally own those concepts. This permits a behaviour
+or entity to participate in more than one capability without duplicated or
+ambiguous ownership.
+
+A semantic relationship has one authoritative declaration and a typed direction.
+Inverse navigation is derived during resolution. Routine reference edges carry
+their source, target, kind, and provenance but do not receive independent
+identity. A relationship that is itself named, documented, referenced, or given
+domain meaning becomes a first-class concept; transitions are one example.
+
+## Identity and names
+
+Every independently nameable, documentable, reusable, or referenceable semantic
+definition is a first-class graph concept with a persisted, opaque UUIDv7. IDs
+are created once by tooling and are not derived from a name, path, owner,
+content, or graph position. They survive renames, source moves, formatting, and
+serialization changes.
+
+Each owned concept also has:
+
+- a display name for readers;
+- an author-controlled slug unique among its siblings;
+- a qualified name derived from its ownership path; and
+- optional former qualified names retained as migration aliases.
+
+The UUID is canonical identity. Names and paths are authoring, navigation, and
+diagnostic affordances. Renaming preserves identity. Moving a concept to a new
+owner is an explicit semantic migration rather than a rename.
+
+Incidental structure such as parameter positions, expression syntax nodes,
+formatting, and anonymous inline values remains owned data without independent
+identity unless promoted to a named, reusable concept.
+
+## Exports, imports, and versioning
+
+Each bounded context publishes an explicit semantic surface. Other contexts may
+reference only exported concepts and must declare the owning context as an
+import. Internal concepts remain available to tooling and documentation inside
+their owner but cannot accidentally become cross-context dependencies.
+
+Authored references resolve through declared imports to exported UUIDs. Qualified
+names are readable authoring hints and diagnostic labels, not identity.
+Machine-readable ownership, exports, imports, and implementation mappings allow
+architectural tests to enforce context boundaries wherever the implementation
+provides a checkable physical seam.
+
+Versioning has two independent axes:
+
+- `languageVersion` identifies the Modeller semantic schema and canonical
+  expression semantics.
+- Each bounded context has its own release version. Imports declare compatible
+  version ranges.
+
+A resolved snapshot pins the exact context versions and content digests used so
+the graph is reproducible. Individual concepts retain their UUIDs and evolve
+through releases of their owning context; they do not carry independent semantic
+versions.
+
+## Documentation contract
+
+Documentation content is first-class model data. Rendered pages, headings,
+navigation, and URLs are projections of that content, so no documentation
+framework or filesystem layout becomes canonical meaning.
+
+Every bounded context, including a shared kernel, owns a complete documentation
+subtree. Every first-class concept follows the same ordered core so a reader who
+understands one concept page can immediately navigate another:
+
+1. Purpose
+2. Ownership and identity
+3. Semantic contract
+4. Relationships
+5. Invariants and constraints
+6. Acceptance examples
+7. Evolution and compatibility
+8. Implementation guidance
+
+Concept kinds may add standard kind-specific sections after the core, but do not
+reorder or silently omit the core. Documentation distinguishes normative
+semantic content, explanatory material, and non-binding implementation guidance.
+This lets the model guide implementation without making sample class layouts or
+deployment choices part of domain meaning.
+
+## Source provenance
+
+Source locations are multi-origin, non-semantic provenance. A concept and its
+significant members may record package-relative URIs, text spans, and an origin
+kind such as authored, imported, or generated. Provenance supports navigation,
+diagnostics, explanations, and traceability but never contributes to identity,
+equality, or semantic meaning.
+
+For example, the Child Care `Session Report` entity may be declared in
+`entities/session-report.modeller`, have its lifecycle attached from
+`lifecycles/session-report-lifecycle.modeller`, its withdrawal behaviour defined
+in `behaviours/withdraw-session-report.modeller`, and its guard expression
+defined in `rules/provider-may-withdraw.modeller`. The resolved graph combines
+those declarations under the same stable entity and related concept IDs while
+retaining each span for navigation and diagnostics. Moving or combining those
+files changes provenance only.
+
+## Diagram-independent meaning
+
+Diagrams are separate view definitions that reference semantic UUIDs. A view may
+define selection, grouping, labels, notation, position, and routing. It may not
+introduce semantic concepts or relationships: every meaningful edge must already
+exist in the resolved graph. Deleting every diagram leaves the model's meaning
+unchanged.
+
+## Consequences
+
+- Federation composition and dependency resolution must be designed before
+  generators or runtimes consume the successor model.
+- Context boundaries and public surfaces are enforceable rather than
+  documentation conventions.
+- Stable identity permits safe renames and source reorganisation.
+- Reproducible snapshots provide a deterministic input to generation and tests.
+- Uniform documentation exposes contracts and supplies a predictable guide for
+  implementation.
+- The legacy flat `Domain` aggregate, name-based references, and mixed
+  semantic/layout state are evidence to migrate, not successor defaults.
