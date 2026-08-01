@@ -56,6 +56,13 @@
     { "code": "release.evidence-catalogue.incomplete", "stage": "Release", "severity": "Error" },
     { "code": "release.generated-failure.unresolved", "stage": "Release", "severity": "Error" },
     { "code": "release.mutation.not-killed", "stage": "Release", "severity": "Error" },
-    { "code": "release.mutation.missing", "stage": "Release", "severity": "Error" }
+    { "code": "release.mutation.missing", "stage": "Release", "severity": "Error" },
+    { "code": "validation.extension.failed", "stage": "Extension", "severity": "Error" },
+    { "code": "validation.extension.output-invalid", "stage": "Extension", "severity": "Error" },
+    { "code": "validation.federation.lock-mismatch", "stage": "ReferencesAndFederation", "severity": "Error" },
+    { "code": "validation.limit.diagnostics-exceeded", "stage": "Validation", "severity": "Error" },
+    { "code": "validation.limit.work-exceeded", "stage": "IdentityAndOwnership", "severity": "Error" },
+    { "code": "validation.reference.fact-unresolved", "stage": "ReferencesAndFederation", "severity": "Error" },
+    { "code": "validation.reference.outcome-unresolved", "stage": "ReferencesAndFederation", "severity": "Error" }
   ]
 }

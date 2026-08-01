@@ -403,7 +403,8 @@ retain immutable historical artifacts. Expected observations are authored
 independently: two runtimes agreeing with one another does not prove that either
 matches the domain contract.
 
-Validation, evaluation, behaviour governance, projections, persistence, and
+[Semantic validation](/docs/concepts/ubiquitous-language#semantic-validation),
+evaluation, behaviour governance, projections, persistence, and
 migration are tested through their public module interfaces. Security,
 concurrency, cancellation, [explanation](/docs/concepts/ubiquitous-language#explanation)
 quality, and [canonical trace](/docs/concepts/ubiquitous-language#canonical-trace)
@@ -418,7 +419,8 @@ keeps only the architectural shape.
 
 Implementation proceeds from executable conformance fixtures to the semantic
 narrow waist: the canonical model, context persistence and federation, and
-staged validation. The reusable rules runtime and diagram projections build on
+[staged semantic validation](/docs/reference/semantic-validation). The reusable
+rules runtime and diagram projections build on
 that waist. Source and editor authoring follow, then configuration and template
 packs, generation planning, rendering, safe application, and optional boundary
 adapters such as AI. The CLI grows incrementally as each capability becomes

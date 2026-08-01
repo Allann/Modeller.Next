@@ -1,0 +1,87 @@
+---
+title: Semantic validation
+description: Explicit staged validation, deterministic diagnostics, extension isolation, and Child Care evidence.
+---
+
+The `Modeller.Validation` module performs explicit
+[semantic validation](/docs/concepts/ubiquitous-language#semantic-validation)
+through one interface. It accepts an immutable authored context, loaded
+[context package](/docs/concepts/ubiquitous-language#context-package), or
+resolved [federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot)
+plus a profile and returns ordered stage results and structured
+[diagnostics](/docs/concepts/ubiquitous-language#diagnostic). It never mutates,
+repairs, persists, or executes the supplied model.
+
+## Interface
+
+```csharp
+ValidationResult SemanticValidation.Validate(
+    ValidationRequest request,
+    CancellationToken cancellationToken = default)
+```
+
+`ValidationRequest.For(...)` creates the same request shape for an authored
+revision, a resolution candidate, or a snapshot plus its exactly locked
+packages. An authored revision skips Decode because no persisted representation
+was supplied. Package and snapshot subjects run every applicable stage.
+
+## Canonical stages
+
+Stages always appear in this order:
+
+1. Decode
+2. Identity and ownership
+3. References and federation
+4. Types and expressions
+5. Rules and decisions
+6. Behaviours
+7. Lifecycles
+8. Views
+
+An error fails its stage and skips unsafe dependent stages. Independent root
+errors within the stage remain visible in stable semantic-path order. Warnings
+do not reinterpret or repair meaning. Cancellation returns a cancelled stage
+and no partial semantic result. A deterministic work budget fails at the same
+semantic stage on every run.
+
+The initial executable checks cover typed Fact and Outcome references and exact
+Federation Snapshot locks. Later rule, behaviour, lifecycle, and projection
+increments deepen their existing stages without changing the interface.
+
+## Diagnostics and extensions
+
+Diagnostics carry a stable code, stage, severity, safe message, optional stable
+subject ID, and semantic path. Core errors cannot be suppressed or downgraded.
+
+Versioned `IValidationExtension` implementations are pure additions at a named
+stage. They run in stable ID/version order after core prerequisites pass.
+Exceptions are isolated without exposing their text; untrusted codes, wrong
+stages, or more than 32 diagnostics from one extension become a single core
+extension-output diagnostic.
+
+## Child Care evidence
+
+The accepted Child Care ACCS package passes all eight package stages. Replacing
+the first input Fact of **Determine ACCS eligibility** with an unknown stable ID
+produces exactly `validation.reference.fact-unresolved`, located on the Rule and
+its input-Fact path. A submission Transition that refers to no declared Outcome
+produces `validation.reference.outcome-unresolved`.
+
+The unknown-Fact observation is retained as executable conformance evidence and
+is compared only through the public validation interface.
+
+## Legacy disposition
+
+The legacy CLI and language server exposed parser exception text rather than
+stable semantic diagnostic identities. Equivalent parse failures remain Decode
+or `package.document.invalid` diagnostics at explicit import/package adapters;
+unsafe legacy exception text is not copied into successor diagnostics.
+
+Legacy configuration, template-folder, profile, and output-path messages are
+host workflow concerns and have no semantic-validation mapping. No legacy
+semantic error is silently accepted merely because it lacks a successor
+mapping.
+
+See the
+[validation and conformance decision](/docs/architecture/decisions/validation-conformance-explainability)
+for the full acceptance contract.

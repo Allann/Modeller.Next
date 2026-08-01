@@ -49,10 +49,11 @@ implementation.
 
 ## Child Care fixtures
 
-The initial corpus contains four independently authored observations:
+The initial corpus contains five independently authored observations:
 
 - the canonical-model ownership graph for the ACCS determination application;
 - canonical loading and exact snapshot locking of the Child Care context package;
+- staged rejection of an unknown ACCS eligibility Fact reference;
 - **Determine ACCS eligibility** with sufficient facts and an **Eligible**
   conclusion; and
 - the same decision without supporting evidence, producing **Information
@@ -65,8 +66,8 @@ Each fixture also carries the SHA-256 digest of its own normalized input; loadin
 a fixture whose input has changed without an explicit versioned update fails
 before an adapter runs.
 
-The canonical-model and context-package fixtures already pass through real
-adapters over their public interfaces. The two evaluation fixtures are marked adapter-pending
+The canonical-model, context-package, and semantic-validation fixtures already
+pass through real adapters over their public interfaces. The two evaluation fixtures are marked adapter-pending
 until the reusable rules runtime is delivered by issue #27; their expected
 domain meaning is already fixed and will not be regenerated from that runtime.
 

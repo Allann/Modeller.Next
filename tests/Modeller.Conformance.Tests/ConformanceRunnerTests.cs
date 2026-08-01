@@ -242,7 +242,8 @@ public sealed class ConformanceRunnerTests
                 "child-care.accs.eligible.v1",
                 "child-care.accs.information-required.v1",
                 "child-care.context-package.resolve.v1",
-                "child-care.model.ownership.v1"
+                "child-care.model.ownership.v1",
+                "child-care.validation.unknown-eligibility-fact.v1"
             ],
             catalog.Fixtures.Select(fixture => fixture.ScenarioId));
         Assert.All(catalog.Fixtures, fixture => Assert.Empty(fixture.PermittedVariance));

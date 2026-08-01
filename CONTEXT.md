@@ -235,6 +235,12 @@ partitioning, formatting, layout, provenance, and other non-semantic packaging
 details.
 _Avoid_: File hash, package digest, version
 
+**Semantic validation**:
+An explicit, staged analysis of authored or resolved semantic meaning that
+returns deterministic diagnostics without executing behaviours, repairing the
+model, or deciding whether a domain action is currently allowed.
+_Avoid_: Guard, invariant, rule evaluation, parser error
+
 **Source provenance**:
 Non-semantic information relating a stable semantic concept to one or more
 versioned source artifacts and locations. It explains origin without determining

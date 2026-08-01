@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0",
+  "scenarioId": "child-care.validation.unknown-eligibility-fact.v1",
+  "sourceDecision": "https://github.com/Allann/Modeller.Next/issues/22",
+  "capability": "semantic-validation",
+  "contractVersion": "1.0",
+  "inputDigest": "sha256:d9bf74ca9b4fa81dd64398084318988757354fafb16532456662d8568b5d8992",
+  "input": {
+    "artifact": "child-care-accs.context-package.v1.json",
+    "mutation": "unknown-eligibility-fact"
+  },
+  "expected": {
+    "isValid": false,
+    "diagnostics": [
+      {
+        "code": "validation.reference.fact-unresolved",
+        "stage": "ReferencesAndFederation",
+        "severity": "Error",
+        "subjectId": "0191f6d4-4ea0-7000-8000-000000000008",
+        "path": "/definitions/0191f6d4-4ea0-7000-8000-000000000008/inputFacts/0"
+      }
+    ]
+  },
+  "permittedVariance": []
+}

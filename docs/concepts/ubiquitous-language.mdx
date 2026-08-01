@@ -578,6 +578,25 @@ digest.
 See the [context-package reference](/docs/reference/context-packages) for the
 normalization rules and the executable Child Care digest.
 
+### Semantic validation
+
+An explicit, staged analysis of authored or resolved semantic meaning that
+returns deterministic [diagnostics](#diagnostic) without executing
+[behaviours](#behaviour), repairing the model, or deciding whether a domain
+action is currently allowed.
+
+For the Child Care package, semantic validation can report that **Determine ACCS
+eligibility** refers to an unknown [fact](#fact), or that **Submit ACCS
+determination application** has a [transition](#transition) whose
+[outcome](#outcome) is not declared. It does not evaluate ACCS eligibility or
+decide whether one application may be submitted now.
+
+Avoid using *guard*, *invariant*, *rule evaluation*, or *parser error* as
+synonyms for semantic validation.
+
+See the [semantic-validation reference](/docs/reference/semantic-validation)
+for the staged interface and extension contract.
+
 ### Source provenance
 
 Non-semantic information relating a stable semantic concept to one or more

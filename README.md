@@ -37,6 +37,10 @@ federation snapshots, and executes explicit schema migrations. Its public
 contract is documented in the
 [context-package reference](docs/reference/context-packages.mdx).
 
+`Modeller.Validation` validates authored contexts, package candidates, and
+resolved snapshots through one deterministic staged interface documented in the
+[semantic-validation reference](docs/reference/semantic-validation.mdx).
+
 For the complete development experience, open `Modeller.Next.code-workspace` in
 VS Code. Run the `setup`, `docs: dev`, or `verify` tasks from the task picker.
 Press F5 and choose **Modeller Docs** to start the development server and open
