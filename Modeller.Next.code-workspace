@@ -85,9 +85,16 @@
         "problemMatcher": ["$tsc"]
       },
       {
+        "label": "model: test",
+        "type": "process",
+        "command": "dotnet",
+        "args": ["test", "Modeller.slnx"],
+        "problemMatcher": "$msCompile"
+      },
+      {
         "label": "verify",
         "dependsOrder": "sequence",
-        "dependsOn": ["docs: lint", "docs: types", "docs: build"],
+        "dependsOn": ["model: test", "docs: lint", "docs: types", "docs: build"],
         "problemMatcher": []
       }
     ]

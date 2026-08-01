@@ -20,6 +20,13 @@ npm install
 npm run dev
 ```
 
+The successor implementation is a .NET 10 solution. Run its model contract
+tests independently of the documentation site:
+
+```bash
+dotnet test Modeller.slnx
+```
+
 For the complete development experience, open `Modeller.Next.code-workspace` in
 VS Code. Run the `setup`, `docs: dev`, or `verify` tasks from the task picker.
 Press F5 and choose **Modeller Docs** to start the development server and open

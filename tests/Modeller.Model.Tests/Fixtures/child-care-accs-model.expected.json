@@ -1,0 +1,70 @@
+{
+  "concepts": [
+    {
+      "id": "0191f6d4-4ea0-7000-8000-000000000002",
+      "kind": "Entity",
+      "qualifiedName": "child-care.accs-determination-application",
+      "ownerId": "0191f6d4-4ea0-7000-8000-000000000001"
+    },
+    {
+      "id": "0191f6d4-4ea0-7000-8000-000000000003",
+      "kind": "Lifecycle",
+      "qualifiedName": "child-care.accs-determination-application.accs-determination-application-lifecycle",
+      "ownerId": "0191f6d4-4ea0-7000-8000-000000000002"
+    },
+    {
+      "id": "0191f6d4-4ea0-7000-8000-000000000004",
+      "kind": "LifecycleStage",
+      "qualifiedName": "child-care.accs-determination-application.accs-determination-application-lifecycle.draft",
+      "ownerId": "0191f6d4-4ea0-7000-8000-000000000003"
+    },
+    {
+      "id": "0191f6d4-4ea0-7000-8000-000000000005",
+      "kind": "LifecycleStage",
+      "qualifiedName": "child-care.accs-determination-application.accs-determination-application-lifecycle.submitted",
+      "ownerId": "0191f6d4-4ea0-7000-8000-000000000003"
+    },
+    {
+      "id": "0191f6d4-4ea0-7000-8000-000000000006",
+      "kind": "Fact",
+      "qualifiedName": "child-care.active-enrolment",
+      "ownerId": "0191f6d4-4ea0-7000-8000-000000000001"
+    },
+    {
+      "id": "0191f6d4-4ea0-7000-8000-000000000008",
+      "kind": "Rule",
+      "qualifiedName": "child-care.determine-accs-eligibility",
+      "ownerId": "0191f6d4-4ea0-7000-8000-000000000001"
+    },
+    {
+      "id": "0191f6d4-4ea0-7000-8000-000000000009",
+      "kind": "Conclusion",
+      "qualifiedName": "child-care.determine-accs-eligibility.eligible",
+      "ownerId": "0191f6d4-4ea0-7000-8000-000000000008"
+    },
+    {
+      "id": "0191f6d4-4ea0-7000-8000-00000000000a",
+      "kind": "Behaviour",
+      "qualifiedName": "child-care.submit-accs-determination-application",
+      "ownerId": "0191f6d4-4ea0-7000-8000-000000000001"
+    },
+    {
+      "id": "0191f6d4-4ea0-7000-8000-00000000000b",
+      "kind": "Outcome",
+      "qualifiedName": "child-care.submit-accs-determination-application.application-submitted",
+      "ownerId": "0191f6d4-4ea0-7000-8000-00000000000a"
+    },
+    {
+      "id": "0191f6d4-4ea0-7000-8000-00000000000c",
+      "kind": "Outcome",
+      "qualifiedName": "child-care.submit-accs-determination-application.application-rejected",
+      "ownerId": "0191f6d4-4ea0-7000-8000-00000000000a"
+    },
+    {
+      "id": "0191f6d4-4ea0-7000-8000-00000000000d",
+      "kind": "Transition",
+      "qualifiedName": "child-care.submit-accs-determination-application.submit-application",
+      "ownerId": "0191f6d4-4ea0-7000-8000-00000000000a"
+    }
+  ]
+}

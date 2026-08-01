@@ -1,0 +1,84 @@
+---
+title: Canonical model interface
+description: The immutable authored-context model and typed operation seam used by successor modules.
+---
+
+The `Modeller.Model` module provides the first executable successor interface.
+It represents an authored [bounded context](/docs/concepts/ubiquitous-language#bounded-context)
+as an immutable revision and changes it only through explicit typed model
+operations.
+
+## Interface
+
+```csharp
+ModelOperationResult CanonicalModel.Apply(
+    AuthoredContextRevision revision,
+    params ReadOnlySpan<ModelOperation> operations)
+```
+
+An operation batch either returns one new revision or returns the original
+revision with structured [diagnostics](/docs/concepts/ubiquitous-language#diagnostic).
+No partial revision becomes observable. The initial operation set can add a
+top-level semantic definition or rename any top-level or nested first-class
+concept while preserving its stable UUIDv7 identity.
+
+The authored model represents [entities](/docs/concepts/ubiquitous-language#entity),
+[lifecycles](/docs/concepts/ubiquitous-language#lifecycle), stages,
+[behaviours](/docs/concepts/ubiquitous-language#behaviour),
+[outcomes](/docs/concepts/ubiquitous-language#outcome),
+[effects](/docs/concepts/ubiquitous-language#effect),
+[events](/docs/concepts/ubiquitous-language#event),
+[transitions](/docs/concepts/ubiquitous-language#transition), typed
+[facts](/docs/concepts/ubiquitous-language#fact), pure
+[rules](/docs/concepts/ubiquitous-language#rule),
+[conclusions](/docs/concepts/ubiquitous-language#conclusion), and explicit
+[rule bindings](/docs/concepts/ubiquitous-language#rule-binding).
+
+Every first-class definition may carry typed documentation fields in the
+canonical order: purpose, ownership and identity, semantic contract,
+relationships, invariants and constraints, acceptance examples, evolution and
+compatibility, and implementation guidance. Incomplete authored documentation
+can be represented; completeness is diagnosed by the validation module.
+
+Semantic relationships use nominal reference values. Entity, fact, rule,
+lifecycle, lifecycle-stage, and outcome references are different .NET types, so
+a caller cannot accidentally place a rule identity into an entity relationship
+without an explicit conversion. Binding those references to existing concepts
+remains the responsibility of staged validation and federation resolution.
+
+## Invariants
+
+- Every semantic concept has one opaque UUIDv7 identity.
+- Identity is unique across the complete bounded-context ownership tree.
+- An author-controlled slug is unique among siblings.
+- Renaming changes a name and slug but preserves identity.
+- A rename retains the former qualified name as a migration alias.
+- A failed batch returns the exact input revision.
+- Collections and revisions are immutable.
+
+`FindConcept` locates top-level and nested concepts by stable identity and
+returns their kind, immediate owner, and qualified name derived from the
+ownership path. Source files and diagram layout never participate in that path.
+
+The model test project carries a machine-readable Child Care conformance
+observation. It independently fixes the expected identities, kinds, qualified
+names, and immediate owners for the ACCS tracer slice and is checked only
+through the public model interface.
+
+An authored revision may contain unresolved references. Cross-reference,
+federation, expression, and behaviour-governance checks belong to the staged
+validation interface rather than this model-operation seam.
+
+## Child Care tracer slice
+
+The executable fixture creates the **Child Care** context with the **ACCS
+determination application** entity and lifecycle, typed enrolment fact,
+**Determine ACCS eligibility** rule and conclusion, and **Submit ACCS
+determination application** behaviour. The behaviour owns its outcomes and
+submission transition and refers to the reusable rule through a requirement
+binding.
+
+Persistence and the [semantic digest](/docs/concepts/ubiquitous-language#semantic-digest)
+are intentionally outside this module. They are delivered by the context-package
+and federation capability so canonical JSON does not leak into the model
+interface.
