@@ -13,18 +13,19 @@ architecture and decision records as Wayfinder work progresses.
 
 ## Current foundation
 
-Two decisions currently constrain the successor architecture:
-
-- The successor preserves Modeller's
-  [behaviour-first](/docs/concepts/ubiquitous-language#behaviour) intent and
-  useful legacy decision
-  [capabilities](/docs/concepts/ubiquitous-language#capability), but rebuilds
-  them behind a Modeller-owned semantic model.
-- Modeller owns its versioned, statically typed expression representation and
-  readable authoring language. Interpreters, generated code, host languages, and
-  external decision formats do not own domain meaning.
+The accepted foundation is [behaviour-first](/docs/concepts/ubiquitous-language#behaviour),
+with a Modeller-owned canonical semantic model, typed rule expressions,
+immutable context snapshots, pure explained evaluation, explicit lifecycle
+governance, deterministic persistence, and diagrams as projections. Executable
+validation, conformance, compatibility, security, and explainability evidence
+guards every implementation of those contracts.
 
 Read the [architecture decisions](/docs/architecture/decisions) for their full
 status, consequences, and source evidence. Terms used by those decisions are
-collected in the [ubiquitous language](/docs/concepts/ubiquitous-language), where
-the remaining vocabulary work is tracked explicitly.
+collected in the [ubiquitous language](/docs/concepts/ubiquitous-language).
+
+The decisions have been translated into the live
+[implementation handoff](https://github.com/Allann/Modeller.Next/issues/23).
+[Architecture 101](/docs/architecture/architecture-101#implementation-handoff)
+summarises the dependency sequence and first Child Care vertical slice without
+duplicating the GitHub backlog.

@@ -409,6 +409,36 @@ concurrency, cancellation, [explanation](/docs/concepts/ubiquitous-language#expl
 quality, and [canonical trace](/docs/concepts/ubiquitous-language#canonical-trace)
 stability are release gates rather than optional refinements.
 
+## Implementation handoff
+
+The accepted architecture is now expressed as a live
+[implementation handoff](https://github.com/Allann/Modeller.Next/issues/23) in
+the GitHub backlog. That backlog owns sequencing and delivery status; this page
+keeps only the architectural shape.
+
+Implementation proceeds from executable conformance fixtures to the semantic
+narrow waist: the canonical model, context persistence and federation, and
+staged validation. The reusable rules runtime and diagram projections build on
+that waist. Source and editor authoring follow, then configuration and template
+packs, generation planning, rendering, safe application, and optional boundary
+adapters such as AI. The CLI grows incrementally as each capability becomes
+usable.
+
+The first vertical slice is deliberately semantic. One canonical JSON Child
+Care package models the ACCS determination application, its lifecycle, the
+**Submit determination application** behaviour and outcomes, its transition and
+rule binding, and the **Determine ACCS eligibility** rule. The slice resolves
+and validates an exact snapshot, binds and evaluates the rule with sufficient
+and missing [facts](/docs/concepts/ubiquitous-language#fact), and verifies its
+[conclusion](/docs/concepts/ubiquitous-language#conclusion),
+[findings](/docs/concepts/ubiquitous-language#finding), missing facts,
+[explanation](/docs/concepts/ubiquitous-language#explanation), and
+[canonical trace](/docs/concepts/ubiquitous-language#canonical-trace).
+
+Readable DSL, editor UI, generation, and application behaviour execution are
+outside that first slice. This keeps the initial proof focused on the contracts
+that every later surface depends on.
+
 ## What is settled, and what is not
 
 This page applies the accepted [successor semantic baseline](/docs/architecture/decisions/successor-semantic-baseline)
@@ -417,6 +447,12 @@ The accepted vocabulary is collected in the
 [ubiquitous language](/docs/concepts/ubiquitous-language). Architecture pages,
 model definitions, and implementation interfaces must use those terms
 consistently. The vocabulary was accepted through Wayfinder issue #15.
+
+The remaining choices are bounded implementation details: exact DSL and
+language-server affordances, generated-code shape, and physical packaging.
+They may evolve inside their owning modules but cannot redefine the accepted
+semantic contracts. A proposed change to those contracts requires a focused
+architecture issue rather than an incidental implementation decision.
 
 ## The takeaway
 
