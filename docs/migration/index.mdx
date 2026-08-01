@@ -1,16 +1,22 @@
 ---
-title: Reconstructing Modeller
-description: How capabilities move from the legacy implementation into the successor.
+title: Legacy migration record
+description: How Modeller capabilities were reconsidered and implemented behind explicit seams.
 ---
 
-The successor is not a directory-level refactor of the legacy repository. Each
-[capability](/docs/concepts/ubiquitous-language#capability) is reconsidered at an
-explicit module seam, then reused, adapted, or rewritten according to the
-desired [behaviour](/docs/concepts/ubiquitous-language#behaviour).
+This section records the completed reconstruction method and the disposition of
+legacy capabilities. It is historical evidence, while the concept and reference
+sections describe the current product.
+
+Each [capability](/docs/concepts/ubiquitous-language#capability) was reconsidered
+at an explicit module seam rather than copied directory by directory:
 
 1. Record existing behaviour and tests.
 2. Confirm the behaviour that should survive.
-3. Define the new module interface and invariants.
-4. Implement behind that seam.
-5. Verify the interface with acceptance tests.
-6. Mark the legacy capability as superseded.
+3. Define the module interface and invariants.
+4. Reuse, adapt, rewrite, or retire the legacy implementation.
+5. Verify the interface with acceptance and conformance tests.
+6. Update current documentation to describe the accepted result.
+
+The [capability inventory](/docs/migration/inventory) maps that work to the
+implemented modules. [Wayfinder issues](/docs/migration/wayfinder) documents the
+issue contract used during reconstruction.

@@ -1,27 +1,27 @@
 ---
 title: Capability inventory
-description: Initial Wayfinder map for reconstructing the Modeller implementation.
+description: Disposition of legacy evidence and the current Modeller implementation.
 ---
 
-| [Capability](/docs/concepts/ubiquitous-language#capability) | Legacy evidence | Successor status |
+| [Capability](/docs/concepts/ubiquitous-language#capability) | Legacy evidence | Current implementation |
 | --- | --- | --- |
-| Domain definition parsing | `Modeller.Parser`, DSL reference, parser tests, and Child Care samples | Implemented in #2 — readable language 1.0, canonical compilation, source diagnostics, and explicit legacy root adapter |
-| Immutable domain model | `Modeller.Domain` | Implemented in #1 — canonical operation interface, typed ownership graph, and Child Care conformance slice |
-| Context-package persistence and federation | Legacy project definitions and parser loading | Implemented in #26 — canonical JSON, stable digests, exact import/export locks, and explicit schema migration |
-| Conformance and compatibility system | Legacy tests and accepted architecture decisions | Implemented in #25 — shared runner, evidence artifacts, mutation and generated-failure support |
-| Validation and diagnostics | Parser, CLI, and language-server validation paths | Implemented in #3 — explicit staged semantic validation, ordered diagnostics, extension isolation, cancellation, and work limits |
-| Generation planning | `Modeller.Generator` | Implemented in #4 — deterministic immutable plans, affected-artifact detection, compatibility, path safety, cancellation, and budgets |
-| Scriban rendering | Generator template engine | Implemented in #5 — pinned side-effect-free adapter, immutable output, provenance, bounded diagnostics, and resource limits |
-| Safe output ownership | `.g.*` generation convention | Implemented in #6 — manifest-proven ownership, preview/apply reports, handwritten conflicts, explicit stale policy, recovery, and confined atomic adapter batches |
-| Profiles and configuration | `.modeller/config.yaml` | Implemented in #7 — deterministic layered resolution, profiles, overrides, substitutions, provenance, redaction, and version checks |
-| Command-line workflows | `Modeller.Cli` | Implemented in #8 — System.CommandLine-based init, validate, plan, and generate preview/apply adapters with stable exit codes and JSON output |
-| Template packs | `templates/csharp/*` | Implemented in #9 — normalized manifests, pinned identities/contracts/renderers/templates, confined paths, and deterministic descriptors |
-| Editor assistance | VS Code extension | In progress in #11 — stable diagnostic, navigation, lifecycle/rule-decision projection, typed-edit, stale-document, cancellation, and hostile-URI workflows implemented |
-| AI-assisted modelling | Legacy experiments and future design | Discovery |
-
-This table is the seed for Wayfinder issues. An item becomes accepted only when
-its desired interface, invariants, acceptance criteria, and legacy disposition
-are explicit.
+| Domain definition parsing | Parser, DSL reference, tests, and Child Care samples | `Modeller.Parsing`: readable language 1.0, canonical compilation, source diagnostics, and an explicit legacy-root adapter |
+| Immutable domain model | `Modeller.Domain` | `Modeller.Model`: canonical operations, typed ownership graph, stable semantic identity, and Child Care conformance |
+| Context persistence and federation | Project definitions and parser loading | `Modeller.Contexts`: canonical JSON, stable digests, exact locks, imports/exports, and explicit schema migration |
+| Validation and diagnostics | Parser, CLI, and language-server paths | `Modeller.Validation`: ordered stages, typed diagnostics, extension isolation, cancellation, and work limits |
+| Rules and decisions | Mixed generated and application logic | `Modeller.Rules`: pure binding/evaluation, typed facts, findings, evidence, traces, and Unique decision tables |
+| Diagram views | Editor-specific model views | `Modeller.Projections`: behaviour, lifecycle, causality/event-flow, context, structural, and rule-decision projections |
+| Conformance and compatibility | Dispersed tests | `Modeller.Conformance`: shared fixtures, evidence, compatibility, mutation, and generated-failure checks |
+| Profiles and configuration | `.modeller/config.yaml` | `Modeller.Configuration`: deterministic layered resolution, profiles, overrides, provenance, redaction, and version checks |
+| Template packs | `templates/csharp/*` | `Modeller.Templates`: normalized pinned manifests, contracts, renderers, templates, paths, and descriptors |
+| Generation planning | `Modeller.Generator` | `Modeller.Generation`: deterministic immutable plans, affected-artifact detection, path safety, cancellation, and budgets |
+| Template rendering | Generator template engine | `Modeller.Rendering`: pinned side-effect-free Scriban adapter, immutable output, provenance, diagnostics, and limits |
+| Safe output ownership | `.g.*` convention | `Modeller.Output`: manifest-proven ownership, preview/apply reports, conflict and stale policies, recovery, and atomic adapter batches |
+| End-to-end generation | Generator orchestration | `Modeller.GenerationWorkflow`: explicit plan, render, and output composition |
+| Command-line workflows | Legacy command catalogue | `Modeller.Cli`: System.CommandLine-based init, validate, plan, and generate preview/apply workflows |
+| Editor assistance | VS Code extension | `Modeller.Editor`: diagnostics, navigation, projections, typed edits, generation, stale-document handling, cancellation, and hostile-URI protection |
 
 The [Child Care reference project](/docs/reference/reference-project) supplies
-the canonical end-to-end examples and acceptance data for this reconstruction.
+shared executable examples and acceptance data across these modules. Remaining
+product ideas are tracked in [GitHub issues](https://github.com/Allann/Modeller.Next/issues),
+not represented here as partially implemented legacy migrations.

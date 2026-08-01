@@ -75,11 +75,11 @@ is compared only through the public validation interface.
 The legacy CLI and language server exposed parser exception text rather than
 stable semantic diagnostic identities. Equivalent parse failures remain Decode
 or `package.document.invalid` diagnostics at explicit import/package adapters;
-unsafe legacy exception text is not copied into successor diagnostics.
+unsafe legacy exception text is not copied into current diagnostics.
 
 Legacy configuration, template-folder, profile, and output-path messages are
 host workflow concerns and have no semantic-validation mapping. No legacy
-semantic error is silently accepted merely because it lacks a successor
+semantic error is silently accepted merely because it lacks a current
 mapping.
 
 See the

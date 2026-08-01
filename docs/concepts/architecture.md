@@ -1,139 +1,37 @@
 ---
-title: "Architecture"
+title: Architecture concepts
+description: How Modeller preserves domain meaning through explicit module seams.
 ---
 
-# Architecture
+# Architecture concepts
 
-> ⚠️ **Legacy Documentation** - This describes the existing plugin-based C# implementation. For the future architecture, see [Future Specification](architecture/draft/README.md).
+Modeller separates durable domain meaning from source formats, generated code,
+editors, and external systems. The [canonical model](/docs/reference/canonical-model)
+is the authority shared by every workflow.
 
-Modeller uses a **plugin-based code generation architecture** where both definitions and templates are loaded dynamically at runtime.
+## Core boundaries
 
-## System Components
+| Boundary | Responsibility | Current reference |
+| --- | --- | --- |
+| Model | Stable identities, definitions, references, and typed operations | [Canonical model](/docs/reference/canonical-model) |
+| Contexts | Canonical persistence, package identity, imports, and federation | [Context packages](/docs/reference/context-packages) |
+| Parsing | Compile readable text and preserve source provenance | [Readable source](/docs/reference/readable-source-language) |
+| Validation | Ordered structural, reference, type, lifecycle, and policy checks | [Semantic validation](/docs/reference/semantic-validation) |
+| Rules | Bind and evaluate rules and decision tables with explanations | [Rules runtime](/docs/reference/rules-runtime) |
+| Projections | Derive behavioural, lifecycle, causality, context, structural, and rule views | [Diagram projections](/docs/reference/diagram-projections) |
+| Generation | Create deterministic proposed artifacts | [Generation plans](/docs/reference/generation-plans) |
+| Rendering | Render planned artifacts through bounded adapters | [Template rendering](/docs/reference/template-rendering) |
+| Output | Preview or atomically apply manifest-owned changes | [Output application](/docs/reference/output-application) |
+| Integrations | Present the same contracts through CLI and editor workflows | [CLI](/docs/reference/modeller-cli), [editor](/docs/reference/editor-integration) |
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                           Modeller.Tool                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌────────────┐  │
-│  │ BuildCommand│  │ ListCommand │  │ValidateCmd  │  │SettingsCmd │  │
-│  └──────┬──────┘  └─────────────┘  └─────────────┘  └────────────┘  │
-│         │                                                           │
-│         ▼                                                           │
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │                         Builder                             │    │
-│  │  ┌─────────┐  ┌──────────────┐  ┌────────────────────────┐  │    │
-│  │  │ Context │  │ CodeGenerator│  │    OutputStrategy      │  │    │
-│  │  └────┬────┘  └──────┬───────┘  └───────────┬────────────┘  │    │
-│  └───────┼──────────────┼──────────────────────┼───────────────┘    │
-└──────────┼──────────────┼──────────────────────┼────────────────────┘
-           │              │                      │
-           ▼              ▼                      ▼
-┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
-│DefinitionLoader  │ │ GeneratorLoader  │ │   FileWriter     │
-│                  │ │                  │ │                  │
-│ Loads definition │ │ Loads template   │ │ Writes output    │
-│ DLLs             │ │ DLLs             │ │ to disk          │
-└────────┬─────────┘ └────────┬─────────┘ └──────────────────┘
-         │                    │
-         ▼                    ▼
-┌──────────────────┐ ┌──────────────────┐
-│   Definitions/   │ │    Templates/    │
-│   *.dll          │ │    *.dll         │
-└──────────────────┘ └──────────────────┘
-```
+## Architectural rules
 
-## Core Interfaces
+- Source syntax compiles to the canonical model; it is not another domain model.
+- Validation and evaluation are explicit, deterministic operations.
+- Diagrams are projections of model meaning, never an independent authority.
+- Generation planning is pure; rendering and filesystem effects sit behind adapters.
+- Generated files require manifest-proven ownership before Modeller may replace them.
+- Integrations orchestrate modules without redefining their semantics.
 
-### IGenerator
-The fundamental interface for all code generators:
-
-```csharp
-public interface IGenerator
-{
-    IOutput Create();
-}
-```
-
-### IMetadata
-Provides metadata about a template for discovery:
-
-```csharp
-public interface IMetadata
-{
-    FileVersion Version { get; }
-    string Name { get; }
-    string Description { get; }
-    Type EntryPoint { get; }
-    IEnumerable<Type> ChildItems { get; }
-}
-```
-
-### IOutput
-Marker interface for all output types:
-
-```csharp
-public interface IOutput
-{
-    string Name { get; }
-}
-```
-
-## Output Hierarchy
-
-```
-IOutput
-├── File              # Single generated file
-├── FileGroup         # Collection of files (folder)
-├── Project           # .NET project with file groups
-└── Solution          # Solution containing projects
-    └── ISolution extends IFileGroup
-```
-
-## Generation Pipeline
-
-1. **Command Parsing**: CLI parses arguments and creates settings
-2. **Context Initialization**: Loads and validates definition and template
-3. **Definition Loading**: `DefinitionLoader` loads the definition DLL
-4. **Template Loading**: `GeneratorLoader` finds and loads the template
-5. **Code Generation**: `CodeGenerator` invokes the template's `Create()` method
-6. **Output Processing**: `OutputStrategy` routes output to appropriate `IFileCreator`
-7. **File Writing**: `FileWriter` persists generated files to disk
-
-## Plugin Loading
-
-Both definitions and templates are loaded using `McMaster.NETCore.Plugins`:
-
-```csharp
-public sealed class AssemblyLoader
-{
-    public static Assembly Load(string filePath)
-    {
-        using var loader = PluginLoader.CreateFromAssemblyFile(
-            filePath, 
-            sharedTypes: new[] { typeof(Settings), typeof(ServiceData) });
-        return loader.LoadDefaultAssembly();
-    }
-}
-```
-
-## Settings
-
-The `Settings` record carries configuration through the pipeline:
-
-```csharp
-public sealed record Settings
-{
-    public required string TemplateFolder { get; init; }
-    public required string DefinitionFolder { get; init; }
-    public required string OutputFolder { get; init; }
-    public required string Target { get; init; }
-    public string? TemplateName { get; init; }
-    public string? DefinitionName { get; init; }
-    public bool SupportRegen { get; init; }
-    
-    // Runtime context (not serialized)
-    public Enterprise? Enterprise { get; set; }
-    public Service? DomainService { get; set; }
-    public Entity? Entity { get; set; }
-}
-```
-
+See [Architecture 101](/docs/architecture/architecture-101) for the full flow and
+the [decision records](/docs/architecture/decisions) for design rationale.

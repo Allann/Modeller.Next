@@ -1,340 +1,112 @@
 ---
-title: "Modeller CLI Reference"
+title: Modeller CLI reference
+description: Commands, output formats, and exit codes for the implemented CLI.
 ---
 
-# Modeller CLI Reference
+# Modeller CLI reference
 
-Complete reference for the Modeller command-line interface.
+The `modeller` CLI exposes the same parsing, planning, rendering, and safe-output
+contracts used by other integrations. It is implemented with
+`System.CommandLine`; usage errors and cancellation are handled consistently.
 
-> **Successor implementation status:** the executable successor provides
-> `init`, `validate`, `plan`, and `generate`. The command tree,
-> required arguments, options, validation, help, and invocation are implemented
-> with System.CommandLine 2.0.10; command handlers remain thin adapters over the
-> stable Modeller interfaces. Some remaining sections below retain legacy or
-> intended workflow details and are not syntax authority.
+## Run from source
 
-Commands that produce reports accept `--format human|json`. Machine output uses the
-versioned deterministic JSON contract and never contains ANSI presentation.
-
-Current executable syntax:
-
-```bash
-modeller init [--path .modeller/config.json] [--force]
-modeller validate <source> [--format human|json]
-modeller plan <request> [--format human|json]
-modeller generate <request> [--dry-run] [--format human|json]
+```powershell
+dotnet run --project src/Modeller.Cli -- --help
 ```
 
-`generate` consumes a versioned workflow request containing the resolved
-snapshot, generation configuration, validated pack descriptor, pinned template
-content, and optional ownership manifest. `--dry-run` performs no writes.
-
-## Global Usage
-
-```bash
-modeller [command] [options]
-```
+When installed as a .NET tool, replace the prefix with `modeller`.
 
 ## Commands
 
-### init
+### `init`
 
-Initialize a new `.modeller` configuration in the current directory.
+Create a minimal versioned JSON configuration.
 
-```bash
-modeller init [options]
+```text
+modeller init [--path <path>] [--force]
 ```
 
-**Options:**
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `--path` | `.modeller/config.json` | Workspace-relative configuration path |
+| `--force` | `false` | Replace an existing configuration |
 
-| Option | Alias | Required | Description |
-|--------|-------|----------|-------------|
-| `--template-source` | `-t` | Yes | Source path/URL for templates (e.g., `file://C:/templates`) |
-| `--pack` | `-p` | Yes | Template pack to use (e.g., `csharp/clean-architecture`) |
-| `--domain` | `-d` | No | Path to domain definitions folder (default: `.`) |
-| `--force` | `-f` | No | Overwrite existing configuration |
+The generated configuration declares version `1.0`, generation contract `1.0`,
+logical output root `generated`, and profile `default`.
 
-**Examples:**
+### `validate`
 
-```bash
-# Initialize with local templates
-modeller init -t file://C:/templates -p csharp/clean-architecture
+Compile and validate one readable-source document.
 
-# Initialize with specific domain path
-modeller init -t file://C:/templates -p csharp/clean-architecture -d ./domain
-
-# Force overwrite existing configuration
-modeller init -t file://C:/templates -p csharp/clean-architecture -f
+```text
+modeller validate <source> [--format human|json]
 ```
 
-**Creates:**
-- `.modeller/config.yaml` - Main configuration file
-- `.modeller/profiles/default.yaml` - Default generation profile
-- `.modeller/templates/` - Copy of templates from source
+`source` must be workspace-relative and cannot traverse above the workspace.
+Human output is concise. JSON output has `outputVersion`, `valid`, and ordered
+diagnostics with code, message, document, line, column, and length.
 
----
-
-### generate
-
-Generate code from domain definitions using templates.
-
-```bash
-modeller generate [options]
+```powershell
+modeller validate tests/Modeller.Parsing.Tests/Fixtures/child-care-accs.modeller
+modeller validate tests/Modeller.Parsing.Tests/Fixtures/child-care-accs.modeller --format json
 ```
 
-**Options:**
+### `plan`
 
-| Option | Alias | Required | Description |
-|--------|-------|----------|-------------|
-| `--profile` | `-p` | No | Profile to use (default: from `config.yaml`) |
-| `--layer` | `-l` | No | Generate only a specific layer |
-| `--var` | `-v` | No | Override variables (format: `key=value`). Can be repeated. |
-| `--dry-run` | `-n` | No | Preview without writing files |
+Create a deterministic generation plan without rendering or writing files.
 
-**Examples:**
-
-```bash
-# Generate using default profile
-modeller generate
-
-# Preview what would be generated
-modeller generate --dry-run
-
-# Generate specific layer only
-modeller generate --layer Infrastructure
-
-# Generate with variable overrides
-modeller generate --var company=Acme --var product=Sales
-
-# Use a different profile
-modeller generate --profile infrastructure-only
-
-# Combine options
-modeller generate -p infrastructure-only -l Domain -n
+```text
+modeller plan <request> [--format human|json]
 ```
 
-**Output Symbols:**
+The JSON request is a serialized `GenerationPlanningRequest`: it contains the
+resolved semantic snapshot, validated configuration, validated template-pack
+descriptor, and previous generation state. Machine output includes the plan and
+stable diagnostics.
 
-| Symbol | Color | Meaning |
-|--------|-------|---------|
-| `+` | Green | File created |
-| `~` | Yellow | File overwritten |
-| `.` | Gray | File skipped (user-owned) |
-| `X` | Red | Generation failed |
-| `?` | Gray | Dry run preview |
+### `generate`
 
----
+Plan, render, and preview or apply generated output.
 
-### validate
-
-Validate project configuration and domain definitions.
-
-```bash
-modeller validate
+```text
+modeller generate <request> [--dry-run] [--format human|json]
 ```
 
-**Checks:**
-- `.modeller/` folder exists
-- `config.yaml` parses correctly
-- Template source is accessible
-- Domain folder exists and contains valid definitions
-- All profiles are valid
+The workflow request contains a `GenerationPlanningRequest`, template content
+keyed by template ID, and an optional ownership manifest. `--dry-run` selects
+preview mode; without it, output is applied atomically through the safe output
+contract. Both modes report each path as create, change, unchanged, conflict,
+stale, or remove.
 
-**Output:**
-- ✓ Green - Check passed
-- ⚠ Yellow - Warning (non-fatal)
-- ✗ Red - Error (fatal)
+Always preview a new request before apply:
 
----
-
-### templates list
-
-List available template packs from a source.
-
-```bash
-modeller templates list [options]
+```powershell
+modeller generate child-care-generation.json --dry-run
+modeller generate child-care-generation.json
 ```
 
-**Options:**
+## Output format
 
-| Option | Alias | Required | Description |
-|--------|-------|----------|-------------|
-| `--source` | `-s` | No | Template source path (default: project templates) |
+`--format` accepts only `human` or `json` and defaults to `human`. JSON payloads
+carry `outputVersion: "1.0"` so automation can reject incompatible changes.
+Diagnostics use stable codes; exception text and secrets are not exposed.
 
-**Example:**
+## Exit codes
 
-```bash
-# List packs from project templates
-modeller templates list
+| Code | Name | Meaning |
+| --- | --- | --- |
+| `0` | Success | The requested workflow completed |
+| `2` | Validation failed | Readable source contains diagnostics |
+| `64` | Usage | Arguments, options, or paths are invalid |
+| `66` | Input unavailable | A requested input does not exist or cannot be read |
+| `78` | Configuration | Configuration, planning, rendering, or output application failed |
+| `130` | Cancelled | Cancellation was requested |
 
-# List packs from external source
-modeller templates list --source file://C:/templates
-```
+## Related contracts
 
----
-
-### templates info
-
-Show details about a specific template pack.
-
-```bash
-modeller templates info <pack> [options]
-```
-
-**Arguments:**
-
-| Argument | Required | Description |
-|----------|----------|-------------|
-| `<pack>` | Yes | Pack name (e.g., `csharp/clean-architecture`) |
-
-**Options:**
-
-| Option | Alias | Required | Description |
-|--------|-------|----------|-------------|
-| `--source` | `-s` | No | Template source path (default: project templates) |
-
-**Example:**
-
-```bash
-modeller templates info csharp/clean-architecture
-```
-
----
-
-### snippet list
-
-List available template snippets.
-
-```bash
-modeller snippet list [options]
-```
-
-**Options:**
-
-| Option | Alias | Required | Description |
-|--------|-------|----------|-------------|
-| `--source` | `-s` | No | Template source path (default: project templates) |
-
-**Example:**
-
-```bash
-modeller snippet list
-```
-
----
-
-### snippet show
-
-Display the content of a specific snippet.
-
-```bash
-modeller snippet show <name> [options]
-```
-
-**Arguments:**
-
-| Argument | Required | Description |
-|----------|----------|-------------|
-| `<name>` | Yes | Snippet name (e.g., `header`, `property`) |
-
-**Options:**
-
-| Option | Alias | Required | Description |
-|--------|-------|----------|-------------|
-| `--source` | `-s` | No | Template source path (default: project templates) |
-
-**Example:**
-
-```bash
-modeller snippet show header
-modeller snippet show property --source file://C:/templates
-```
-
----
-
-## Configuration Files
-
-### config.yaml
-
-Main project configuration in `.modeller/config.yaml`:
-
-```yaml
-version: 1
-
-domain: ./domain                    # Path to domain definitions
-template_source: file://C:/templates  # Where templates came from
-
-variables:                          # Global variables for templates
-  company: Acme
-  product: Sales
-  copyright: "© 2024 Acme Corp"
-  root_namespace: Acme.Sales
-
-output:
-  root: ./src                       # Output directory
-  project_pattern: "{variables.company}.{variables.product}.{layer}"
-
-default_profile: default            # Profile to use when none specified
-
-files:
-  generated_suffix: ".g"            # Suffix for regeneratable files
-  line_ending: auto                 # lf | crlf | auto
-  encoding: utf-8
-```
-
-### Profile Configuration
-
-Profile files in `.modeller/profiles/*.yaml`:
-
-```yaml
-name: Full Stack
-description: Generates all layers
-pack: csharp/clean-architecture
-
-layers:
-  - name: Infrastructure
-    template: infrastructure
-    output: "{variables.company}.{variables.product}.Infrastructure"
-
-  - name: Sdk
-    template: sdk
-    output: "{variables.company}.{variables.product}.Sdk"
-
-  - name: Api
-    template: api
-    output: "{variables.company}.{variables.product}.Api"
-
-include:
-  entities: all          # or list: [Customer, Order]
-  enums: all
-  commands: all
-  queries: all
-
-exclude:
-  entities: []
-
-layer_variables:         # Per-layer variable overrides
-  Infrastructure:
-    use_audit_fields: true
-```
-
----
-
-## Exit Codes
-
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | Error occurred |
-
----
-
-## Environment
-
-The CLI operates in the current working directory. It looks for `.modeller/` folder to determine if a project is initialized.
-
-## See Also
-
-- [Quick Start Guide](quick-start.md)
-- [Deep Dive](deep-dive-instruction.md)
-- [Definitions DSL](definitions.md)
+- [Readable source](/docs/reference/readable-source-language)
+- [Configuration](/docs/reference/configuration)
+- [Generation plans](/docs/reference/generation-plans)
+- [Template rendering](/docs/reference/template-rendering)
+- [Output application](/docs/reference/output-application)

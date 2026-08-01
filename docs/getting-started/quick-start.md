@@ -1,216 +1,79 @@
 ---
-title: "Quick Start Guide"
+title: Quick start
+description: Build Modeller and validate the Child Care reference model.
 ---
 
-# Quick Start Guide
-
-Get up and running with Modeller in minutes. This guide walks you through generating C# code from domain definitions.
+# Quick start
 
 ## Prerequisites
 
-- .NET 10.0 SDK or later
-- A template pack (e.g., `csharp/clean-architecture`)
+- .NET 10 SDK or later
+- Git
 
-## Installation
+## Build and test
 
-### Option 1: Install as Global Tool (Recommended)
+From the repository root:
 
-Install the Modeller CLI as a global .NET tool:
-
-```bash
-# From the repository root
-dotnet pack src/Modeller.Cli/Modeller.Cli.csproj -c Release
-dotnet tool install --global --add-source src/Modeller.Cli/bin/Release Modeller.Cli
+```powershell
+dotnet build Modeller.Next.slnx
+dotnet test Modeller.Next.slnx
 ```
 
-Now `modeller` is available from any directory:
+Run the CLI from source while developing:
 
-```bash
-modeller --help
+```powershell
+dotnet run --project src/Modeller.Cli -- --help
 ```
 
-To update later:
+## Create a workspace configuration
 
-```bash
-dotnet tool update --global --add-source src/Modeller.Cli/bin/Release Modeller.Cli
+```powershell
+dotnet run --project src/Modeller.Cli -- init
 ```
 
-To uninstall:
+This creates `.modeller/config.json`, a minimal versioned configuration with a
+generation contract, logical output root, and default profile. Use `--force`
+only when you intend to replace an existing file.
 
-```bash
-dotnet tool uninstall --global Modeller.Cli
+## Validate the Child Care model
+
+The readable-source fixture is the smallest executable slice of the
+[Child Care reference project](/docs/reference/reference-project):
+
+```powershell
+dotnet run --project src/Modeller.Cli -- validate tests/Modeller.Parsing.Tests/Fixtures/child-care-accs.modeller
 ```
 
-### Option 2: Run from Source
+A successful model reports `Valid: no diagnostics.` For stable machine-readable
+diagnostics, add `--format json`.
 
-Run directly using `dotnet run`:
+The source uses the same language documented in the
+[readable-source reference](/docs/reference/readable-source-language). Parsing
+produces the canonical model; semantic validation and downstream workflows do
+not maintain a second interpretation of the domain.
 
-```bash
-dotnet run --project src/Modeller.Cli/Modeller.Cli.csproj -- --help
+## Plan and generate output
+
+Generation consumes an explicit JSON request containing the resolved semantic
+snapshot, configuration, template-pack descriptor, and previous generation
+state. This makes planning reproducible and keeps filesystem access outside the
+planner.
+
+```powershell
+dotnet run --project src/Modeller.Cli -- plan path/to/plan-request.json
+dotnet run --project src/Modeller.Cli -- generate path/to/workflow-request.json --dry-run
+dotnet run --project src/Modeller.Cli -- generate path/to/workflow-request.json
 ```
 
-## Step 1: Initialize Your Project
+Start with `--dry-run`. Apply mode writes only through the
+[safe output-application contract](/docs/reference/output-application), which
+uses manifest-proven ownership and reports conflicts with handwritten files.
 
-Navigate to your project folder and initialize Modeller:
+## Next steps
 
-```bash
-cd my-project
-
-modeller init \
-  --template-source file://C:/templates \
-  --pack csharp/clean-architecture \
-  --domain ./domain
-```
-
-This creates a `.modeller/` folder with:
-- `config.yaml` - Main configuration
-- `profiles/default.yaml` - Generation profile
-- `templates/` - Copied template files
-
-## Step 2: Create Domain Definitions
-
-Create domain definition files in your domain folder:
-
-**`domain/entities/customer.entity`**
-```
-entity Customer
-  "A customer in the system"
-  
-  Name: text(100) "Customer name"
-  Email: text(255) "Email address"
-  Active: boolean, default(true) "Is customer active"
-  CreatedAt: datetime "When created"
-end
-
-key Customer
-  CustomerId: guid, generated
-  index [Email] unique
-  index [Active]
-end
-```
-
-**`domain/enums/customer-status.enum`**
-```
-enum CustomerStatus
-  "Customer account status"
-  
-  Pending = 0 "Awaiting verification"
-  Active = 1 "Active customer"
-  Suspended = 2 "Account suspended"
-  Closed = 3 "Account closed"
-end
-```
-
-**`domain/behaviours/create-customer.command`**
-```
-command CreateCustomer
-  "Creates a new customer"
-  
-  Name: text(100), required
-  Email: text(255), required
-end
-```
-
-## Step 3: Configure Your Project
-
-Edit `.modeller/config.yaml`:
-
-```yaml
-version: 1
-
-domain: ./domain
-template_source: file://C:/templates
-
-variables:
-  company: Acme
-  product: CustomerManagement
-  copyright: "© 2024 Acme Corp"
-  root_namespace: Acme.CustomerManagement
-
-output:
-  root: ./src
-  project_pattern: "{variables.company}.{variables.product}.{layer}"
-
-default_profile: default
-
-files:
-  generated_suffix: ".g"
-  line_ending: auto
-  encoding: utf-8
-```
-
-## Step 4: Preview Generation
-
-Use `--dry-run` to preview what will be generated:
-
-```bash
-modeller generate --dry-run
-```
-
-Output shows the files that would be created:
-```
-Generating with profile: Default
-  Pack: csharp/clean-architecture
-  Domain: ./domain
-  Output: ./src
-
-[DRY RUN - No files will be written]
-
-  [Domain]
-    Files to generate: 3
-    [?] Acme.CustomerManagement.Domain/Entities/Customer.g.cs
-    [?] Acme.CustomerManagement.Domain/Enums/CustomerStatus.g.cs
-    [?] Acme.CustomerManagement.Domain/Commands/CreateCustomer.g.cs
-```
-
-## Step 5: Generate Code
-
-Run without `--dry-run` to generate files:
-
-```bash
-modeller generate
-```
-
-Generated files have `.g.` in their name (e.g., `Customer.g.cs`) and are **safe to overwrite** on regeneration. User-modified files without `.g.` are never touched.
-
-## Step 6: Customize and Extend
-
-The generated code uses partial classes, so you can extend without modifying generated files:
-
-**`Customer.g.cs`** (generated - don't edit):
-```csharp
-public sealed partial record Customer
-{
-    public Guid CustomerId { get; init; }
-    public string Name { get; init; } = string.Empty;
-    public string Email { get; init; } = string.Empty;
-    public bool Active { get; init; } = true;
-}
-```
-
-**`Customer.cs`** (your file - never overwritten):
-```csharp
-public sealed partial record Customer
-{
-    public string DisplayName => $"{Name} ({Email})";
-}
-```
-
-## Common Commands
-
-| Command | Description |
-|---------|-------------|
-| `modeller init` | Initialize a new project |
-| `modeller generate` | Generate code |
-| `modeller generate --dry-run` | Preview generation |
-| `modeller generate --layer Domain` | Generate specific layer |
-| `modeller validate` | Validate configuration and domain |
-| `modeller templates list` | List available template packs |
-| `modeller snippet list` | List available snippets |
-
-## Next Steps
-
-- See [CLI Reference](cli-reference.md) for all command options
-- See [Deep Dive](deep-dive-instruction.md) for architecture details
-- See [Definitions](definitions.md) for DSL syntax reference
-
+- Learn all command arguments and exit codes in the
+  [CLI reference](/docs/reference/modeller-cli).
+- Follow the implemented pipeline through
+  [Architecture 101](/docs/architecture/architecture-101).
+- Explore parsing, validation, rules, projections, generation, and editor APIs
+  from the [reference index](/docs/reference).

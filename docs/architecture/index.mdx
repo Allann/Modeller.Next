@@ -1,31 +1,34 @@
 ---
 title: Architecture
-description: The architectural principles and module seams of Modeller.
+description: The implemented architectural principles and module seams of Modeller.
 ---
 
-The successor is reconstructed as a set of deep modules: each module exposes a
-small interface while hiding the complexity of parsing, validation, planning,
-generation, or external integration behind that interface.
+Modeller is organised as a set of deep modules. Each exposes a small, stable
+interface while hiding parsing, validation, rule evaluation, projection,
+planning, rendering, output, and integration details.
 
-The legacy architecture documents are retained as design evidence. They are not
-automatically authoritative; accepted decisions will move into the canonical
-architecture and decision records as Wayfinder work progresses.
+## Implemented foundation
 
-## Current foundation
+The architecture is [behaviour-first](/docs/concepts/ubiquitous-language#behaviour),
+with a Modeller-owned [canonical model](/docs/reference/canonical-model), typed
+rule expressions, immutable [context snapshots](/docs/reference/context-packages),
+pure explained evaluation, explicit lifecycle governance, deterministic
+persistence, and [diagrams as projections](/docs/reference/diagram-projections).
 
-The accepted foundation is [behaviour-first](/docs/concepts/ubiquitous-language#behaviour),
-with a Modeller-owned canonical semantic model, typed rule expressions,
-immutable context snapshots, pure explained evaluation, explicit lifecycle
-governance, deterministic persistence, and diagrams as projections. Executable
-validation, conformance, compatibility, security, and explainability evidence
-guards every implementation of those contracts.
+The executable path is:
 
-Read the [architecture decisions](/docs/architecture/decisions) for their full
-status, consequences, and source evidence. Terms used by those decisions are
-collected in the [ubiquitous language](/docs/concepts/ubiquitous-language).
+1. Compile [readable source](/docs/reference/readable-source-language) into the canonical model.
+2. Run [staged semantic validation](/docs/reference/semantic-validation).
+3. Resolve configuration and a validated [template pack](/docs/reference/template-packs).
+4. Create a deterministic [generation plan](/docs/reference/generation-plans).
+5. Render templates through a bounded adapter.
+6. Preview or safely apply owned output.
+7. Expose the same contracts through the CLI and editor integration.
 
-The decisions have been translated into the live
-[implementation handoff](https://github.com/Allann/Modeller.Next/issues/23).
-[Architecture 101](/docs/architecture/architecture-101#implementation-handoff)
-summarises the dependency sequence and first Child Care vertical slice without
-duplicating the GitHub backlog.
+Executable conformance, compatibility, security, and explanation evidence guard
+these contracts. [Architecture 101](/docs/architecture/architecture-101) gives
+the concise system tour; the [architecture decisions](/docs/architecture/decisions)
+record why each boundary exists.
+
+Historical source material remains under legacy drafts and the migration record.
+It is evidence for the implemented architecture, not competing current guidance.

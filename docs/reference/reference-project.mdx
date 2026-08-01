@@ -3,24 +3,29 @@ title: Child Care reference project
 description: The canonical domain used to exercise and explain Modeller end to end.
 ---
 
-The **Child Care** definition is Modeller's canonical reference project. It is a
-large, realistic domain covering
-[entities](/docs/concepts/ubiquitous-language#entity), values, shared definitions, enums,
-flags, [commands](/docs/concepts/ubiquitous-language#command),
-[queries](/docs/concepts/ubiquitous-language#query), keys, services, and
-projections.
+**Child Care** is Modeller's canonical reference project. Its Australian Child
+Care Subsidy (ACCS) examples connect [facts](/docs/concepts/ubiquitous-language#fact),
+[rules](/docs/concepts/ubiquitous-language#rule), decisions, behaviours,
+outcomes, lifecycles, guards, and transitions without falling back to generic
+order-processing examples.
 
-The current definition lives at
-[`samples/child-care`](https://github.com/CSharp-Catalyst/Modeller/tree/main/samples/child-care)
-in the legacy repository while implementation capabilities are reconstructed in
-the successor.
+## Executable assets
+
+- `tests/Modeller.Parsing.Tests/Fixtures/child-care-accs.modeller` is the readable source.
+- `conformance/inputs/child-care-accs.context-package.v1.json` is its canonical package.
+- `conformance/inputs/child-care-accs-decision-table.context-package.v1.json` exercises a Unique decision table.
+- `conformance/fixtures/child-care/` holds validation, runtime, persistence, and projection scenarios.
+
+These assets are used by parser, validation, rules, projections, conformance,
+CLI, and editor tests. Their semantic digests prove that readable source and
+canonical JSON preserve the same domain meaning.
 
 ## What the reference project is for
 
-- Demonstrating the modelling language with connected, realistic concepts.
-- Exercising parsing and domain loading across the complete definition set.
-- Verifying generation plans and rendered output at representative scale.
-- Providing stable examples for documentation, editor tooling, and AI-assisted modelling.
+- Demonstrating connected modelling concepts in a realistic bounded context.
+- Exercising module contracts with shared acceptance data.
+- Verifying deterministic diagnostics, decisions, traces, projections, and output.
+- Keeping documentation, tooling, and generated examples in one domain language.
 
-Small examples may still be used to explain one syntax feature at a time, but
-Child Care is the integration reference and source of end-to-end acceptance examples.
+Small examples can isolate one syntax feature, but new end-to-end examples
+should extend Child Care unless a different domain is essential to the concept.

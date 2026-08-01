@@ -3,20 +3,19 @@ title: Wayfinder issues
 description: The issue contract used to reconstruct each Modeller capability.
 ---
 
-A Wayfinder issue connects product intent to implementation evidence. It should
-be understandable without first learning the shape of the legacy source tree.
+Wayfinder issues connected product intent, legacy evidence, and implementation
+acceptance without requiring contributors to learn the old source-tree shape.
+They used this contract:
 
-## Required sections
-
-1. **[Outcome](/docs/concepts/ubiquitous-language#outcome)** — the user-visible
-   or system-visible [capability](/docs/concepts/ubiquitous-language#capability).
-2. **Why now** — why this belongs in the next reconstruction slice.
-3. **Interface** — everything a caller must know, including invariants and errors.
+1. **[Outcome](/docs/concepts/ubiquitous-language#outcome)** — the visible capability.
+2. **Why now** — why the reconstruction slice mattered.
+3. **Interface** — caller-visible inputs, invariants, and errors.
 4. **Acceptance examples** — concrete inputs and observable results.
-5. **Legacy evidence** — relevant code, tests, documents, and known
-   [behaviour](/docs/concepts/ubiquitous-language#behaviour).
-6. **Disposition** — what will be reused, adapted, rewritten, or retired.
-7. **Documentation impact** — canonical pages that must change when accepted.
+5. **Legacy evidence** — relevant code, tests, documents, and known behaviour.
+6. **Disposition** — what was reused, adapted, rewritten, or retired.
+7. **Documentation impact** — canonical pages changed with the implementation.
 
-An issue is complete only when the successor behaviour is verified at the new
-module seam and its documentation describes the accepted result.
+The issue was complete when behaviour was verified at the new module seam and
+the current documentation described the accepted result. This page remains as a
+record of that migration discipline; new work can use the same evidence-based
+shape without describing the current product as a successor.

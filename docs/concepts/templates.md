@@ -1,168 +1,40 @@
 ---
-title: "Templates"
+title: Templates
+description: How validated template packs realise Modeller generation plans.
 ---
 
 # Templates
 
-> ⚠️ **Legacy Documentation** - This describes the existing C# template implementation. For the future text-based templating approach using Scriban, see [Future Templates](architecture/draft/10-templates.md).
+A [template pack](/docs/concepts/ubiquitous-language#template-pack) is a pinned,
+validated set of templates that turns proposed artifacts into text. It does not
+discover domain meaning, choose output ownership, or write files.
 
-Templates are **code generators** that transform definitions into source code. Each template is a compiled C# DLL that implements the `IGenerator` interface.
+## Pack contract
 
-## Template Structure
+A pack declares:
 
-```
-MyTemplate.v1.0/
-├── MyTemplate.v1.0.csproj
-├── Generator.cs              # Main entry point (IGenerator)
-├── GeneratorDetails.cs       # Metadata (IMetadata)
-├── GlobalUsings.cs
-├── ProjectFile.cs            # Generates .csproj
-├── EntityFile.cs             # Generates entity classes
-└── SubFolder/
-    └── FeatureGroup.cs       # Groups related files
-```
+- a stable pack ID and version;
+- the supported generation-contract version;
+- a renderer ID and version;
+- artifact IDs, logical paths, owners, template IDs, and semantic inputs;
+- the content of each referenced template.
 
-## Creating a Template
+`TemplatePackLoader` normalises and validates this manifest before planning.
+Unsafe paths, duplicate identities, missing templates, incompatible contracts,
+and unsupported renderers are diagnostics, not best-effort fallbacks.
 
-### 1. Generator Entry Point
+## Generation flow
 
-```csharp
-public class Generator : IGenerator
-{
-    private readonly Settings _settings;
-    private readonly Enterprise _enterprise;
+1. [Configuration](/docs/reference/configuration) selects compatible inputs.
+2. The validated pack contributes deterministic artifact descriptors.
+3. The [generation planner](/docs/reference/generation-plans) produces proposed artifacts with ownership and provenance.
+4. A bounded [renderer adapter](/docs/reference/template-rendering) renders those artifacts.
+5. [Output application](/docs/reference/output-application) previews or applies owned changes.
 
-    public Generator(Settings settings)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-        ArgumentNullException.ThrowIfNull(settings.Enterprise);
+The reference renderer uses Scriban behind `IRendererAdapter`. Templates receive
+an immutable artifact rendering context; they cannot read arbitrary files,
+mutate the model, or choose additional output paths.
 
-        _settings = settings;
-        _enterprise = settings.Enterprise.Value;
-    }
-
-    public IOutput Create()
-    {
-        var project = (IProject)new ProjectFile(_settings).Create();
-        
-        project.FileGroups.First().AddFile(new ProgramFile(_settings).Create());
-        project.AddFileGroup((IFileGroup)new EntitiesGroup(_settings).Create());
-
-        return project;
-    }
-}
-```
-
-### 2. Generator Metadata
-
-```csharp
-public class GeneratorDetails : MetadataBase
-{
-    public static GeneratorDetails Instance { get; } = new();
-
-    public GeneratorDetails() : base("1.0.0") { }
-
-    public override string Name => "My Template";
-    public override string Description => "Generates my project structure";
-    public override Type EntryPoint => typeof(Generator);
-    public override IEnumerable<Type> ChildItems => [typeof(Header.Generator)];
-}
-```
-
-## Output Types
-
-### File
-A single generated file:
-
-```csharp
-var content = "public class MyClass { }";
-return new File("MyClass.cs", content, Path: "src", CanOverwrite: true);
-```
-
-### FileGroup
-A folder containing files:
-
-```csharp
-var group = new FileGroup("Entities");
-group.AddFile(new EntityFile(settings).Create());
-group.AddFile(new AnotherFile(settings).Create());
-return group;
-```
-
-### Project
-A .NET project with file groups:
-
-```csharp
-var project = new Project("MyProject", "MyProject.csproj");
-project.AddFileGroup(new FileGroup("Models"));
-project.AddFileGroup((IFileGroup)new ServicesGroup(settings).Create());
-return project;
-```
-
-### Solution
-A solution containing projects:
-
-```csharp
-var solution = new Solution();
-solution.AddProject(new ApiProjectGenerator(settings).Create());
-solution.AddProject(new DomainProjectGenerator(settings).Create());
-solution.AddFile(new SolutionFile(settings).Create());
-return solution;
-```
-
-## StringBuilder Extensions
-
-Templates use helper extensions for building code:
-
-```csharp
-var sb = new StringBuilder();
-sb.Al("namespace MyNamespace;");     // Append line
-sb.B();                               // Blank line
-sb.A("public ");                      // Append (no newline)
-sb.I(1).Al("private int _id;");      // Indent + append line
-sb.I(2, 4).Al("// comment");         // Indent 2 levels, 4 spaces each
-sb.AppendIf("text", () => condition); // Conditional append
-sb.TrimEnd(Environment.NewLine);      // Remove trailing newlines
-```
-
-## Composing Templates
-
-Templates can use other templates as snippets:
-
-```csharp
-// Use Header template
-sb.Al(((ISnippet)new Header.Generator(settings.SupportRegen, metadata).Create()).Content);
-
-// Use Property template for each field
-foreach (var field in entity.Fields)
-{
-    sb.Al(((ISnippet)new Property.Generator(field, indent: 1).Create()).Content);
-}
-```
-
-## Available Context
-
-Templates receive context through `Settings`:
-
-```csharp
-settings.Enterprise      // The full domain model
-settings.DomainService   // Current service being processed
-settings.Entity          // Current entity being processed
-settings.SupportRegen    // Whether to generate regeneratable code
-settings.Target          // Target framework (e.g., "net8.0")
-settings.Version         // Template version
-```
-
-## Built-in Templates
-
-| Template | Description |
-|----------|-------------|
-| `ApiSolution` | Complete API solution structure |
-| `ApiProject` | Web API project |
-| `ApiDomainProject` | Domain layer project |
-| `ApiInfrastructureProject` | Infrastructure layer |
-| `DatabaseProject` | Database schema (DBML) |
-| `SdkProject` | Client SDK |
-| `Header` | File header snippet |
-| `Property` | Property generation snippet |
-
+See [template packs](/docs/reference/template-packs) for manifest validation and
+[template rendering](/docs/reference/template-rendering) for limits,
+diagnostics, and provenance.
