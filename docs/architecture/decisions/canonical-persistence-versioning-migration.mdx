@@ -1,0 +1,187 @@
+---
+title: Canonical persistence, versioning, and migration
+description: Define context packages, persisted semantics, non-semantic companions, versions, and migrations.
+---
+
+Status: **Accepted**
+
+Source: [Wayfinder issue #20](https://github.com/Allann/Modeller.Next/issues/20)
+
+## Canonical terms
+
+[Bounded context](/docs/concepts/ubiquitous-language#bounded-context) ·
+[Context package](/docs/concepts/ubiquitous-language#context-package) ·
+[Context version](/docs/concepts/ubiquitous-language#context-version) ·
+[Federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot) ·
+[Migration](/docs/concepts/ubiquitous-language#migration) ·
+[Schema version](/docs/concepts/ubiquitous-language#schema-version) ·
+[Semantic digest](/docs/concepts/ubiquitous-language#semantic-digest) ·
+[Source provenance](/docs/concepts/ubiquitous-language#source-provenance)
+
+## Decision
+
+### Persistence unit and authority
+
+The independently versioned persistence unit is a
+[context package](/docs/concepts/ubiquitous-language#context-package) owned by one
+[bounded context](/docs/concepts/ubiquitous-language#bounded-context). It
+contains:
+
+- a manifest identifying the bounded context, schema version, context version,
+  and content digests;
+- canonical semantic definitions and relationships;
+- optional layout documents keyed by stable semantic IDs;
+- optional source-provenance records keyed by those same IDs; and
+- explicit import and export declarations.
+
+Semantic documents are authoritative. Layout and source provenance are
+non-semantic companions: rearranging a diagram, moving a definition between
+source files, or authoring the same context through another supported syntax
+cannot change domain meaning.
+
+A [federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot)
+is a derived, immutable lock of exact context-package versions and content
+digests. It is the resolved authority consumed by evaluation, generation,
+documentation, and conformance checks, but it is not an editable source format.
+
+For the Child Care reference project, ACCS semantics remain unchanged when a
+diagram is rearranged or its definitions move between files, provided the
+canonical semantic content is unchanged.
+
+### Canonical encoding and partitioning
+
+Canonical semantic persistence uses schema-validated UTF-8 JSON documents. A
+context-package loader combines any number of semantic documents by stable ID
+and rejects duplicate definitions, conflicting ownership, and unresolved local
+references.
+
+Document names, directory structure, document order, whitespace, property
+order, and definition order are non-semantic. The loader normalizes the package
+into one semantic graph. A
+[semantic digest](/docs/concepts/ubiquitous-language#semantic-digest) is computed
+from a deterministic canonical serialization of that graph, excluding layout,
+source provenance, and packaging details.
+
+Readable DSLs and external formats may compile or import into canonical JSON,
+but are not parallel authorities. Splitting ACCS rules into different files for
+maintainability does not change their semantic digest.
+
+### Stable identities
+
+Every first-class semantic concept persists its opaque UUIDv7 stable ID in the
+canonical document. References use stable IDs; qualified names are readable
+labels and lookup aids rather than identity.
+
+Renaming a concept, moving it between documents, or changing its source syntax
+preserves its ID. Copying a concept creates a new ID. Moving ownership to another
+bounded context is an explicit model migration that preserves the ID only when
+the migration also rewrites ownership, exports, imports, and all affected
+references atomically.
+
+Deleted IDs are retained as tombstones in package migration history and cannot
+be silently reused. Imports, merges, or migrations that introduce an ID
+collision fail validation rather than choosing a winner.
+
+### Schema and context versions
+
+The manifest records two independent versions:
+
+- [Schema version](/docs/concepts/ubiquitous-language#schema-version) identifies
+  the persisted representation understood by the loader and migration tools. It
+  says nothing about Child Care domain meaning.
+- [Context version](/docs/concepts/ubiquitous-language#context-version) is the
+  immutable SemVer release of the bounded context. Breaking changes to exported
+  semantics require a major version, compatible exported additions require a
+  minor version, and internal, layout, provenance, or representation-only
+  changes require a patch version.
+
+Every published context-version and package-digest pair is immutable. A changed
+package is a new version even where its semantic digest remains equal. This
+permits representation or layout maintenance without pretending domain meaning
+changed, while preventing mutable releases.
+
+### Imports, exports, and snapshot locking
+
+Exports explicitly list the stable IDs and kinds exposed by a bounded context.
+Imports identify the provider context, an allowed context-version range, and the
+stable IDs and expected kinds consumed. Names and local aliases aid readers but
+do not resolve identity.
+
+Resolution selects one exact immutable package version and digest for every
+context, validates the complete import/export graph, and records those choices
+in the federation snapshot. Resolution never means "latest", and evaluation or
+generation never resolves dependencies dynamically.
+
+Two snapshots with the same normalized semantic graph have the same semantic
+digest even if their source partitioning differs. Their snapshot identities
+remain distinct when package versions or package digests differ, preserving
+reproducible provenance.
+
+### External imports and exports
+
+An external import adapter produces native canonical definitions plus a
+non-semantic import record containing the format, adapter identity and version,
+external source identity, source version or digest, and mappings between
+external identifiers and Modeller stable IDs. Re-import compares against the
+previous import record and current native definitions; conflicts are reported
+and never silently overwrite authored changes.
+
+An export adapter consumes a resolved federation snapshot and produces a
+projection with an export record identifying the snapshot, adapter version, and
+ID mappings. Generated runtime code, decision-table files, and other exported
+artifacts are reproducible outputs, not persisted semantic authorities and not
+implicit round-trip sources.
+
+### Layout and source provenance
+
+Layout documents are independently schema-versioned projections keyed by a
+stable view ID and semantic concept IDs. They may store positions, routing,
+grouping, collapsed state, and other presentation choices but never ownership,
+relationships, rule meaning, or lifecycle meaning. Missing or stale layout
+produces a diagnostic or a default layout, not an invalid semantic package.
+
+[Source provenance](/docs/concepts/ubiquitous-language#source-provenance) records
+one or more source artifact identities, content digests, and spans for a stable
+semantic ID. A location is valid only for the recorded source digest. Stale
+locations are diagnosed and discarded rather than treated as semantic changes.
+
+Orphaned layout and provenance entries are retained or removed only by an
+explicit maintenance operation. They never resurrect a deleted semantic
+concept.
+
+### Migration
+
+A [migration](/docs/concepts/ubiquitous-language#migration) is an explicit,
+deterministic transformation from one declared schema or context version to
+another. Each step accepts an immutable package and produces a new package plus
+a structured report of changed documents, preserved or introduced IDs,
+diagnostics, and before-and-after digests.
+
+Schema migrations change representation only and must preserve the semantic
+digest. A transformation that changes domain meaning is a model migration: it
+is an authored semantic change, receives an appropriate new context version,
+and cannot masquerade as automatic schema maintenance.
+
+Loaders never silently migrate. An unsupported older schema returns a
+migration-required diagnostic; an unknown newer schema is rejected. Migration
+runs against a retained original, follows an explicit version-to-version chain,
+validates every step, and publishes the result atomically only after final
+validation succeeds. Failure leaves the original untouched.
+
+Reversibility is not assumed. Recovery uses the retained original unless an
+explicit, tested reverse migration exists. Layout and provenance migrations may
+fail independently without altering an otherwise valid semantic package.
+
+## Consequences
+
+- Semantic authority survives file moves, formatting, layout edits, and source
+  syntax changes.
+- Stable IDs make references and history durable across renames and deliberate
+  ownership moves.
+- Schema evolution cannot be confused with Child Care domain evolution.
+- Published packages and resolved snapshots are immutable and reproducible;
+  dependency selection never occurs during evaluation.
+- External formats retain traceable identity mappings without becoming
+  authoritative or silently overwriting native changes.
+- Explicit, validated, atomic migrations favour safety and auditability over
+  transparent convenience.

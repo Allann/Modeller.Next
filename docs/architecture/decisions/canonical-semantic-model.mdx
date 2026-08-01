@@ -7,6 +7,31 @@ Status: **Accepted**
 
 Source: [Wayfinder issue #16](https://github.com/Allann/Modeller.Next/issues/16)
 
+## Canonical terms
+
+[Actor](/docs/concepts/ubiquitous-language#actor) ·
+[Behaviour](/docs/concepts/ubiquitous-language#behaviour) ·
+[Bounded context](/docs/concepts/ubiquitous-language#bounded-context) ·
+[Capability](/docs/concepts/ubiquitous-language#capability) ·
+[Command](/docs/concepts/ubiquitous-language#command) ·
+[Conclusion](/docs/concepts/ubiquitous-language#conclusion) ·
+[Decision](/docs/concepts/ubiquitous-language#decision) ·
+[Effect](/docs/concepts/ubiquitous-language#effect) ·
+[Entity](/docs/concepts/ubiquitous-language#entity) ·
+[Evidence](/docs/concepts/ubiquitous-language#evidence) ·
+[Fact](/docs/concepts/ubiquitous-language#fact) ·
+[Federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot) ·
+[Finding](/docs/concepts/ubiquitous-language#finding) ·
+[Guard](/docs/concepts/ubiquitous-language#guard) ·
+[Invariant](/docs/concepts/ubiquitous-language#invariant) ·
+[Lifecycle](/docs/concepts/ubiquitous-language#lifecycle) ·
+[Outcome](/docs/concepts/ubiquitous-language#outcome) ·
+[Rule](/docs/concepts/ubiquitous-language#rule) ·
+[Source provenance](/docs/concepts/ubiquitous-language#source-provenance) ·
+[State](/docs/concepts/ubiquitous-language#state) ·
+[Transition](/docs/concepts/ubiquitous-language#transition) ·
+[Workflow](/docs/concepts/ubiquitous-language#workflow)
+
 ## Decision
 
 Modeller's canonical semantic graph is a resolved federation of independently
@@ -29,7 +54,8 @@ The model has three deliberately separate representations:
 
 1. An **authored context model** is editable and may temporarily be incomplete or
    contain unresolved references.
-2. A **resolved federation snapshot** is immutable, fully validated, and
+2. A [resolved federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot)
+   is immutable, fully validated, and
    authoritative for generation, architectural tests, documentation, and
    analysis.
 3. **Projections** include diagrams, rendered documentation, generated code, and
@@ -153,7 +179,8 @@ deployment choices part of domain meaning.
 
 ## Source provenance
 
-Source locations are multi-origin, non-semantic provenance. A concept and its
+[Source locations](/docs/concepts/ubiquitous-language#source-provenance) are
+multi-origin, non-semantic provenance. A concept and its
 significant members may record package-relative URIs, text spans, and an origin
 kind such as authored, imported, or generated. Provenance supports navigation,
 diagnostics, explanations, and traceability but never contributes to identity,

@@ -1,0 +1,200 @@
+---
+title: Reusable rules runtime architecture
+description: Define the reusable runtime module, its immutable bound plans, and request-local evaluation state.
+---
+
+Status: **Accepted**
+
+Source: [Wayfinder issue #19](https://github.com/Allann/Modeller.Next/issues/19)
+
+## Canonical terms
+
+[Classification](/docs/concepts/ubiquitous-language#classification) ·
+[Conclusion](/docs/concepts/ubiquitous-language#conclusion) ·
+[Decision](/docs/concepts/ubiquitous-language#decision) ·
+[Evidence](/docs/concepts/ubiquitous-language#evidence) ·
+[Fact](/docs/concepts/ubiquitous-language#fact) ·
+[Federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot) ·
+[Finding](/docs/concepts/ubiquitous-language#finding) ·
+[Rule](/docs/concepts/ubiquitous-language#rule) ·
+[Runtime plan](/docs/concepts/ubiquitous-language#runtime-plan)
+
+## Decision
+
+### Deep runtime module
+
+The reusable rules runtime exposes one deep, two-stage module interface:
+
+1. Bind a [resolved federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot)
+   and its versioned deterministic function
+   catalog to produce an immutable [runtime plan](/docs/concepts/ubiquitous-language#runtime-plan).
+2. Evaluate that plan repeatedly and concurrently using an immutable request and
+   caller-provided cancellation signal.
+
+The module keeps definition validation, decision-table execution, expression
+evaluation, finding construction, explanation construction, and canonical trace
+generation behind that interface. Callers do not orchestrate those internal
+stages or depend on their implementation structure.
+
+A runtime plan is a derived, disposable optimisation keyed by the canonical
+semantic snapshot and relevant runtime versions. It is never an authoritative
+model, persisted source definition, or substitute for the semantic snapshot.
+
+All mutable evaluation state is request-local. A bound runtime plan owns no
+shared per-evaluation state and is therefore safe for concurrent reuse. For
+example, one plan containing the ACCS eligibility rules may concurrently
+evaluate applications for many children without sharing their
+[facts](/docs/concepts/ubiquitous-language#fact),
+[findings](/docs/concepts/ubiquitous-language#finding), traces, or cancellation
+state.
+
+### Validation extensibility
+
+The runtime owns validation ordering and a non-replaceable set of core semantic
+invariants. Additional validators register at bind time by semantic concept kind
+and receive immutable definitions. They are pure, deterministic, and explicitly
+versioned; they return structured diagnostics and cannot rewrite definitions,
+perform I/O, or inspect evaluation facts.
+
+Core validation runs for every binding and cannot be disabled, replaced, or
+downgraded by an extension. Any error diagnostic prevents creation of a runtime
+plan. Validator identities and versions contribute to plan identity so a cached
+plan cannot silently outlive the validation contract under which it was built.
+
+For example, a Child Care extension may diagnose an ACCS classification whose
+values are not exhaustively mapped. It cannot silently introduce a default
+mapping or query an external government system to make the definition valid.
+
+### Declared-function adapters
+
+Declared functions use one narrow adapter seam. Each adapter registers under a
+stable function ID and explicit version, accepts only its declared typed
+arguments and the evaluation cancellation signal, and returns either its
+declared typed value or a structured expected failure.
+
+The runtime validates arguments and results, constructs diagnostics, applies
+disclosure policy, and normalizes trace entries. Function adapters cannot
+construct findings or traces, reinterpret missing information, or control
+[rule](/docs/concepts/ubiquitous-language#rule) evaluation order.
+
+Adapters must be pure and deterministic. They cannot access the network,
+filesystem, ambient clock, locale, randomness, mutable global state, or other
+evaluation requests. Changing Child Care information, such as the effective
+date of an ACCS determination, enters evaluation as a typed fact rather than
+being fetched or read implicitly by a function.
+
+### Alternate runtime implementations
+
+A reference interpreter, generated .NET runtime, and any future execution
+runtime are peer implementations of the complete bind-and-evaluate module
+interface. An alternate runtime is not invoked as an expression adapter from
+inside another runtime.
+
+Every implementation consumes the same canonical semantic snapshot, returns the
+same evaluation-result contract, and must pass shared conformance fixtures for
+conclusions, findings, diagnostics, canonical traces, missing facts,
+cancellation, and deterministic ordering.
+
+Where stronger isolation is required, a host adapter may run an implementation
+in a process, worker, or sandbox. That deployment topology remains outside the
+semantic model and cannot change results. No generated form, host protocol, or
+external runtime becomes authoritative over the canonical snapshot.
+
+### Resource limits and isolation
+
+Evaluation options may declare deterministic work budgets, including maximum
+evaluation steps, expression depth, collection size, and canonical trace size.
+All conforming runtimes count the same semantic work. Exceeding a budget returns
+a failed result with a stable structured diagnostic and never a domain
+conclusion.
+
+Wall-clock timeouts, memory ceilings, worker recycling, and process termination
+are operational host-isolation controls. They may cancel or terminate an
+evaluation but cannot produce or reinterpret a semantic result because machine
+speed and deployment conditions are nondeterministic.
+
+Consequently, an ACCS evaluation exceeds the same declared work budget on every
+conforming runtime, while an overloaded host may independently cancel it
+without treating cancellation as an ineligible
+[conclusion](/docs/concepts/ubiquitous-language#conclusion).
+
+### Cancellation enforcement
+
+Cancellation is cooperative inside the runtime and declared-function adapters.
+The runtime checks the caller's signal at bounded evaluation points and passes
+that same signal to every declared function. In-process adapters must stop
+promptly when cancellation is observed; unbounded or uncancellable adapters are
+non-conforming.
+
+An isolated process or worker host may apply a grace period and terminate an
+unresponsive runtime. Such termination remains cancellation or operational
+failure and never becomes a partial evaluation result. Findings, conclusions,
+and canonical traces from an abandoned evaluation are not published.
+
+### Decision-table execution
+
+[Decision](/docs/concepts/ubiquitous-language#decision) tables are canonical
+semantic expressions evaluated within the same rules runtime. They do not
+introduce a separate rules engine, public interface, or adapter seam.
+
+Binding may compile a table into an optimized internal representation, but its
+hit policy, semantic row order, missing-information behaviour, findings, and
+trace identities remain defined by the canonical semantic model. The compiled
+representation belongs only to the disposable runtime plan and cannot alter
+observable results.
+
+An ACCS table may produce a
+[classification](/docs/concepts/ubiquitous-language#classification) from typed
+eligibility facts, but a caller still uses the same `Evaluate` operation and
+receives the same result contract as for any other decision.
+
+### Trace and explanation projections
+
+The runtime returns structured canonical findings, diagnostics,
+[evidence](/docs/concepts/ubiquitous-language#evidence) references, and trace
+graphs under the requested disclosure policy. Projection modules render those
+structures afterward as localized prose, decision-table highlights, diagrams,
+logs, or documentation views.
+
+Projection modules cannot re-evaluate rules, fetch facts, reveal redacted
+values, or change an evaluation status or conclusion. Their output is a
+presentation of the semantic result, not new semantic evidence.
+
+The host may also expose evaluation activity through OpenTelemetry for later
+administrative traceability. OTEL spans and events are operational projections:
+they may correlate to canonical trace paths and semantic IDs but add operational
+timestamps, durations, host data, and export status. Sensitive fact values and
+protected findings are omitted unless an explicit telemetry disclosure policy
+allows them. Telemetry availability or export failure never changes, delays, or
+invalidates the evaluation result.
+
+For example, the same ACCS finding may be concise in a provider view and more
+detailed in an authorized audit view, while both remain projections of the same
+disclosure-safe structured result. An administrator may correlate that result
+with OTEL activity without making the OTEL record authoritative.
+
+### Runtime-plan caching and lifecycle
+
+Runtime-plan caching is an optional host concern rather than shared mutable
+state inside the rules module. A complete cache key includes the canonical
+semantic snapshot digest, evaluator version, declared-function identities and
+versions, and extension-validator identities and versions.
+
+Hosts may coalesce concurrent binding requests and apply bounded eviction, but
+callers receive only immutable plans. Cache hits, misses, eviction, and
+rebinding are semantically invisible and may appear only in operational
+telemetry.
+
+## Consequences
+
+- Callers learn one bind-and-evaluate interface while the runtime hides
+  validation, expression and decision-table execution, explanations, and traces.
+- Immutable runtime plans and request-local state permit safe concurrent reuse.
+- Validation and declared-function extension points are deterministic,
+  versioned, and unable to weaken canonical semantics.
+- Alternate runtimes remain conforming peer implementations; generated or
+  isolated forms cannot become semantic authorities.
+- Deterministic work budgets are semantic, while machine-dependent limits and
+  OpenTelemetry remain operational concerns.
+- Rendering, telemetry export, caching, and deployment topology cannot change
+  an evaluation result.

@@ -69,6 +69,12 @@ transition is currently allowed. Successful behaviours cause transitions;
 events record the significant facts that result. Persistence remains outside
 the domain meaning.
 
+Independently versioned
+[bounded contexts](/docs/concepts/ubiquitous-language#bounded-context) own these
+concepts and expose explicit semantic surfaces. They federate into one resolved
+[snapshot](/docs/concepts/ubiquitous-language#federation-snapshot) without
+requiring separate packages, processes, or deployments.
+
 ```mermaid
 graph TD
     Model[Semantic model] --> Actor
@@ -106,6 +112,15 @@ source text into the semantic model and reports diagnostics in terms an author
 can act on. Future YAML, editor, or import adapters can reach the same model
 without becoming alternative sources of truth.
 
+The [persistence decision](/docs/architecture/decisions/canonical-persistence-versioning-migration)
+stores each bounded context as an independently versioned
+[context package](/docs/concepts/ubiquitous-language#context-package). Canonical
+UTF-8 JSON documents carry semantic meaning; file partitioning, layout, and
+[source provenance](/docs/concepts/ubiquitous-language#source-provenance) do not.
+Stable IDs survive renames and file moves, while a
+[semantic digest](/docs/concepts/ubiquitous-language#semantic-digest) identifies
+normalized meaning independently of those presentation choices.
+
 ```mermaid
 graph LR
     Source[Authoring language] --> Parser
@@ -114,6 +129,22 @@ graph LR
     ImportAdapter --> Model
     Model --> Diagnostics
 ```
+
+```mermaid
+flowchart LR
+    Package[Versioned context package] --> Resolve[Resolve imports and exports]
+    Resolve --> Snapshot[Immutable federation snapshot]
+    Layout[Layout companion] -. projects .-> Snapshot
+    Provenance[Source provenance] -. locates .-> Snapshot
+    Snapshot --> Runtime[Evaluation and generation]
+```
+
+[Schema versions](/docs/concepts/ubiquitous-language#schema-version) describe
+persistence structure; [context versions](/docs/concepts/ubiquitous-language#context-version)
+describe compatibility of exported domain meaning. Explicit
+[migrations](/docs/concepts/ubiquitous-language#migration) keep those concerns
+separate: schema migrations preserve the semantic digest, while model migrations
+are authored semantic changes. Loaders never silently upgrade packages.
 
 Keeping this seam explicit means syntax can improve without forcing every
 consumer to understand tokens or syntax trees. It also prevents a convenient
@@ -156,27 +187,61 @@ protect every observable state. Behaviours, not any of these rule forms, own
 enough to test and explain while leaving state changes in the behaviour that
 requested them.
 
-The [rule evaluation interface](/docs/architecture/decisions/rule-evaluation-interface)
-binds a resolved snapshot and deterministic function catalog once, then exposes
-one concurrent `Evaluate` operation. Requests carry typed facts and
+The [reusable rules runtime](/docs/architecture/decisions/reusable-rules-runtime)
+implements the [rule evaluation interface](/docs/architecture/decisions/rule-evaluation-interface).
+It binds a resolved snapshot and deterministic function catalog into an
+immutable [runtime plan](/docs/concepts/ubiquitous-language#runtime-plan), then
+exposes one concurrent `Evaluate` operation. Requests carry typed facts and
 [evidence](/docs/concepts/ubiquitous-language#evidence); immutable results
 separate conclusions and findings from diagnostics and optional canonical
 traces.
 
 ```mermaid
 flowchart LR
-    Snapshot[Resolved snapshot] --> Engine[Bound evaluation engine]
-    Functions[Versioned pure functions] --> Engine
-    Request[Typed facts and evidence] --> Engine
-    Engine --> Result[Determined, indeterminate, invalid, or failed]
+    Snapshot[Resolved snapshot] --> Plan[Immutable runtime plan]
+    Functions[Versioned pure functions] --> Plan
+    Validators[Versioned validators] --> Plan
+    Request[Typed facts and evidence] --> Evaluate[Concurrent evaluation]
+    Plan --> Evaluate
+    Evaluate --> Result[Determined, indeterminate, invalid, or failed]
     Result --> Findings[Findings and evidence references]
     Result --> Trace[Optional canonical trace]
+    Trace --> OTEL[Operational OTEL projection]
 ```
 
 Missing information is neither false nor null. It produces an indeterminate
 result only when the conclusion logically depends on it. Canonical results and
 traces exclude ambient time, locale, randomness, network state, and operational
 timing so equivalent evaluations remain structurally equal.
+
+Decision tables execute within the same runtime rather than a separate engine.
+Alternate interpreters and generated runtimes implement the same complete
+interface and pass common conformance fixtures. Deterministic work budgets
+produce stable failures; host timeouts, process isolation, caching, rendered
+explanations, and OpenTelemetry are operational concerns that cannot change a
+semantic result.
+
+The [behaviour-governance decision](/docs/architecture/decisions/rules-governing-behaviours)
+connects that pure evaluation module to domain action through explicit
+[rule bindings](/docs/concepts/ubiquitous-language#rule-binding). Authorization,
+requirements, classifications, transition guards, and invariants evaluate
+before a behaviour commits its outcome, transition, effects, and durable event
+intents.
+
+```mermaid
+flowchart LR
+    Request --> Authorization
+    Authorization --> Requirements
+    Requirements --> Decision[Classification and outcome]
+    Decision --> Guard[Transition guard]
+    Guard --> Plan[Effect and event plan]
+    Plan --> Invariants[Candidate-state invariants]
+    Invariants --> Commit[Atomic commit]
+    Commit --> Adapters[Publication and interaction adapters]
+```
+
+Rules explain; behaviours act. No rule evaluation executes effects, and no
+adapter runs before the final invariant check and atomic commit.
 
 **Pressure introduced:** users and tools need different views of the same model,
 including diagrams, documentation, and code.

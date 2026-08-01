@@ -1,0 +1,232 @@
+---
+title: Rules governing behaviours and lifecycles
+description: Define how behaviours reuse pure rules to govern requirements, authorization, invariants, transitions, outcomes, and effects.
+---
+
+Status: **Accepted**
+
+Source: [Wayfinder issue #18](https://github.com/Allann/Modeller.Next/issues/18)
+
+## Canonical terms
+
+[Actor](/docs/concepts/ubiquitous-language#actor) ·
+[Authorization policy](/docs/concepts/ubiquitous-language#authorization-policy) ·
+[Behaviour](/docs/concepts/ubiquitous-language#behaviour) ·
+[Bounded context](/docs/concepts/ubiquitous-language#bounded-context) ·
+[Classification](/docs/concepts/ubiquitous-language#classification) ·
+[Conclusion](/docs/concepts/ubiquitous-language#conclusion) ·
+[Decision](/docs/concepts/ubiquitous-language#decision) ·
+[Effect](/docs/concepts/ubiquitous-language#effect) ·
+[Entity](/docs/concepts/ubiquitous-language#entity) ·
+[Event](/docs/concepts/ubiquitous-language#event) ·
+[Fact](/docs/concepts/ubiquitous-language#fact) ·
+[Finding](/docs/concepts/ubiquitous-language#finding) ·
+[Guard](/docs/concepts/ubiquitous-language#guard) ·
+[Invariant](/docs/concepts/ubiquitous-language#invariant) ·
+[Lifecycle](/docs/concepts/ubiquitous-language#lifecycle) ·
+[Outcome](/docs/concepts/ubiquitous-language#outcome) ·
+[Policy](/docs/concepts/ubiquitous-language#policy) ·
+[Requirement](/docs/concepts/ubiquitous-language#requirement) ·
+[Rule](/docs/concepts/ubiquitous-language#rule) ·
+[Rule binding](/docs/concepts/ubiquitous-language#rule-binding) ·
+[State](/docs/concepts/ubiquitous-language#state) ·
+[Transition](/docs/concepts/ubiquitous-language#transition) ·
+[Transition guard](/docs/concepts/ubiquitous-language#transition-guard) ·
+[Workflow](/docs/concepts/ubiquitous-language#workflow)
+
+## Decision
+
+### Rule bindings
+
+A behaviour never embeds a rule expression. It owns explicit rule bindings that
+reference reusable rule or decision definitions by stable semantic ID.
+
+Each binding declares its governing role, maps behaviour inputs, actor roles,
+and entity state to the rule's typed facts, identifies the relevant conclusions,
+and states how those conclusions contribute to declared behaviour outcomes.
+
+For **Withdraw session report**, a transition-guard binding may reference
+**Provider may withdraw session report**, mapping the provider actor, report
+lifecycle stage, and government-processing state to its facts. The rule remains
+pure and reusable; the binding explains why and how the behaviour uses it.
+
+### Requirements
+
+A requirement binding determines whether the domain prerequisites for
+attempting a behaviour are satisfied.
+
+- A satisfied conclusion allows evaluation to continue.
+- An unsatisfied conclusion maps to an explicitly declared rejection outcome.
+- An indeterminate evaluation maps to a distinct **Information required**
+  outcome identifying missing facts; it is neither rejection nor `false`.
+- Invalid or failed evaluation remains a technical evaluation result rather than
+  a domain outcome.
+- Requirements produce explanations only and never effects.
+
+For **Submit ACCS determination application**, requirements may establish that
+an enrolment exists for the relevant child and that the necessary application
+information is available.
+
+### Authorization policies
+
+An authorization binding determines whether the requesting actor may attempt a
+behaviour for the referenced domain subject. It consumes typed actor, role,
+capability, and subject facts; authentication itself remains outside the rules
+module.
+
+- **Allowed** permits evaluation to continue.
+- **Denied** maps to an explicit **Not authorized** rejection outcome.
+- Indeterminate, invalid, or failed authorization fails closed and cannot permit
+  the behaviour.
+- Public explanations follow a disclosure policy and cannot reveal protected
+  facts or confirm that a hidden subject exists.
+- Full findings are available only to appropriately protected audit or
+  diagnostic channels.
+- Authorization policies never produce effects.
+
+### Invariant enforcement
+
+Invariants bind to the entity or lifecycle whose state they protect rather than
+separately to every behaviour. Any behaviour proposing changes to that state
+automatically inherits those invariant bindings.
+
+The runtime checks current state before evaluation and the complete candidate
+state before publishing any transition, event, or other effect. A pre-existing
+violation indicates corrupted or incompatible state and is a technical failure,
+not a domain rejection. A candidate-state violation indicates a behaviour or
+model defect; the candidate state and every planned effect are discarded.
+
+Indeterminate, invalid, or failed invariant evaluation fails closed. Expected
+user-facing rejection belongs in requirements or guards before the invariant
+safety net.
+
+### Transition guards
+
+A transition owns its guard binding; behaviours reference the transition rather
+than duplicating its guard. The guard evaluates current state plus the
+behaviour's typed facts.
+
+- **Allowed** permits the declared transition.
+- **Denied** maps to an explicit transition-rejection outcome.
+- **Indeterminate** maps to **Information required** only where disclosure is
+  safe; otherwise it uses the applicable protected rejection.
+- Invalid or failed evaluation prevents the transition and remains technical.
+- Guards produce no effects.
+
+Guards do not select the first passing transition. A behaviour or decision
+explicitly selects its intended transition, after which that transition's guard
+validates it. This prevents order-dependent transition semantics.
+
+### Classifications
+
+A classification is a typed conclusion produced by a reusable rule or decision,
+not a special rule kind or a state mutation. Its definition declares a closed
+set of meaningful values such as **Approve**, **Reject**, or **No change**.
+
+Behaviour rule bindings explicitly map classification values to outcomes,
+transitions, or planned effects. Every value must be mapped; there is no implicit
+default branch. Several behaviours may reuse the same classification decision
+while mapping its conclusions to their own locally owned outcomes.
+Classification decisions remain pure and cause no effects.
+
+For session-report processing, **Determine session-report disposition** may
+classify the response, while separate behaviours define what each classification
+means for their own outcomes and lifecycle transitions.
+
+### Outcome ownership and mapping
+
+Each behaviour owns a closed set of stable, explicitly declared outcomes. Every
+completed behaviour attempt produces exactly one outcome, categorised as
+**Success**, **Rejection**, or another named non-success category such as
+**Information required**.
+
+Every determined rule conclusion or classification value maps explicitly to one
+outcome. Indeterminate evaluation maps only through an explicit
+missing-information mapping. Invalid and failed evaluation never masquerades as
+a domain outcome.
+
+Every possible conclusion must be mapped. Unreachable, overlapping, default, or
+fall-through mappings make the model invalid. Outcome identity belongs to the
+behaviour even where several behaviours reuse the same rule or decision.
+
+### Effect ownership and planning
+
+Behaviours own declarative effect definitions; rules, decisions, policies,
+guards, and invariants never do. Each behaviour outcome explicitly selects an
+ordered effect plan.
+
+Effect planning occurs only after an outcome and intended transition are
+determined. It creates candidate state changes and external-interaction intents
+without executing them. The complete candidate state is checked against
+inherited invariants. If validation succeeds, state changes commit atomically;
+otherwise the entire plan is discarded.
+
+External interactions execute through adapters from durable committed intents,
+never inside rule evaluation or before state commit. Rejection and
+information-required outcomes have no effects unless the model explicitly
+declares safe outcome-specific effects.
+
+### Event ownership and publication
+
+Event definitions are owned by their bounded context. Behaviours explicitly
+declare which events each outcome may publish.
+
+Event occurrences are constructed from the committed outcome, transition, and
+resulting state rather than speculative candidate state. Payload mappings are
+typed semantic mappings, not runtime serialization expressions. State changes
+and durable event-publication intents commit atomically; publication adapters
+run afterward and may retry without re-running the behaviour.
+
+Publication failure does not reinterpret or roll back the committed domain
+outcome. Multiple events from one behaviour have deterministic declared order
+and shared causation and correlation references. Rejection events are permitted
+only where explicitly declared and must respect authorization disclosure rules.
+
+### Workflow progression
+
+A workflow owns explicit progression bindings that reference reusable rules or
+decisions. Completed child-behaviour outcomes and consumed events become typed
+facts for progression evaluation.
+
+Progression conclusions map exhaustively to a next step, wait state, workflow
+outcome, or rejection; no implicit default path exists. A workflow may request a
+child behaviour but cannot bypass that behaviour's requirements, authorization
+policies, guards, or inherited invariants.
+
+Each child behaviour and workflow progression commits independently; the model
+does not imply a distributed transaction. Waiting for an event or required
+information is explicit workflow state rather than a blocked evaluator thread.
+Retries reuse durable workflow state and causation identity instead of repeating
+already committed child behaviours.
+
+### Governance phase order
+
+Governance follows a fixed semantic order:
+
+1. Validate request shape and fact types without revealing domain information.
+2. Evaluate authorization under its disclosure policy.
+3. Verify inherited invariants on current protected state.
+4. Evaluate behaviour requirements.
+5. Evaluate classifications and decisions to select the outcome and intended
+   transition.
+6. Evaluate the selected transition guard.
+7. Build the outcome's declarative effect and event plan.
+8. Verify inherited invariants against complete candidate state.
+9. Atomically commit state, workflow progress, and durable publication and
+   interaction intents.
+10. Run publication and external-interaction adapters after commit.
+
+If authorization fails, later findings are neither evaluated nor exposed. No
+phase may execute effects before the final invariant check and atomic commit.
+
+## Consequences
+
+- Reusable rules stay pure while rule bindings make their governing purpose and
+  fact mappings explicit.
+- Missing requirements remain distinguishable from rejection, while
+  authorization and invariants fail closed.
+- Outcomes, transitions, effects, and events are exhaustively and explicitly
+  mapped; source order and implicit defaults cannot change domain meaning.
+- Candidate state and planned effects are validated as one unit before commit.
+- Workflows coordinate independently committed behaviours through durable state
+  rather than distributed transactions or blocked evaluator threads.

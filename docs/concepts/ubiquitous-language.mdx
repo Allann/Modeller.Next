@@ -24,6 +24,19 @@ being its actor.
 
 Avoid using *user*, *account*, or *persona* as synonyms for actor.
 
+### Authorization policy
+
+A [policy](#policy) deciding whether an [actor](#actor) may attempt a
+[behaviour](#behaviour) for a domain subject. It fails closed when permission
+cannot be determined.
+
+Authentication establishes actor facts outside rule evaluation. An
+authorization policy evaluates those facts, maps denial to **Not authorized**,
+and limits public explanations so protected information is not disclosed.
+
+Avoid using *authentication*, *requirement*, or *guard* as synonyms for
+authorization policy.
+
 ### Behaviour
 
 One complete, externally meaningful thing a system can do. [Commands](#command),
@@ -37,6 +50,20 @@ An [actor](#actor) participates in a behaviour through a named domain role. A
 
 Avoid using *operation*, *endpoint*, or *use case* as synonyms for behaviour.
 
+### Bounded context
+
+An independently versioned domain ownership scope with an explicit semantic
+surface. It owns its concepts and controls their exports and imports without
+implying a separate package, process, or deployment.
+
+Bounded contexts federate into one resolved
+[federation snapshot](#federation-snapshot). Every concept has exactly one owning
+bounded context; concepts shared by several contexts belong to an explicitly
+named shared-kernel context and are imported like any other dependency.
+
+Avoid using *service*, *module*, or *deployment unit* as synonyms for bounded
+context.
+
 ### Capability
 
 An enduring ability or responsibility of a system, realised through one or more
@@ -48,6 +75,19 @@ behaviours such as **record parent attendance**, **record staff attendance**, an
 **clear attendance** in the Child Care reference project.
 
 Avoid using *module*, *service*, or *feature* as synonyms for capability.
+
+### Classification
+
+A typed [conclusion](#conclusion) selecting one value from a closed set of domain
+meanings. It describes an evaluation result without changing [state](#state) or
+causing [effects](#effect).
+
+For session-report processing, **Determine session-report disposition** may
+classify a response as **Approve**, **Reject**, or **No change**. A
+[rule binding](#rule-binding) maps each value explicitly to meaning owned by the
+governing behaviour.
+
+Avoid using *status*, *outcome*, or *enumeration* as synonyms for classification.
 
 ### Command
 
@@ -73,6 +113,34 @@ the evaluation arrived there. An [outcome](#outcome) is instead the domain resul
 of a completed behaviour.
 
 Avoid using *outcome*, *effect*, or *return value* as synonyms for conclusion.
+
+### Context package
+
+The independently versioned persisted unit owned by one
+[bounded context](#bounded-context). It contains that context's canonical
+semantic definitions and explicit imports and exports, while layout and source
+provenance remain non-semantic companions.
+
+For example, the Child Care ACCS bounded context may be distributed as a context
+package without implying that its diagram layout or source-file arrangement is
+part of ACCS domain meaning.
+
+Avoid using *project file*, *deployment package*, or *federation snapshot* as
+synonyms for a context package.
+
+### Context version
+
+The immutable semantic release version of one [bounded context](#bounded-context).
+It communicates compatibility of that context's exported meaning independently
+of persistence [schema versions](#schema-version) and resolved dependency
+versions.
+
+For example, adding an optional exported ACCS fact may advance the Child Care
+context's minor version, while changing an existing conclusion's meaning
+requires a major version.
+
+Avoid using *schema version*, *snapshot version*, or *latest* as synonyms for a
+context version.
 
 ### Decision
 
@@ -151,6 +219,22 @@ risk reasons, relevant dates, and whether supporting evidence is held.
 
 Avoid using *variable*, *parameter*, or *raw data* as synonyms for fact.
 
+### Federation snapshot
+
+An immutable, reproducible resolution of exact [context package](#context-package)
+versions, content digests, imports, and exports. It is the authority consumed by
+evaluation and generation, but is derived rather than directly authored.
+
+For example, an ACCS evaluation identifies the exact Child Care context package
+and imported package versions captured by its federation snapshot rather than
+silently using whichever versions are newest.
+
+Avoid using *context package*, *workspace*, or *latest version* as synonyms for
+a federation snapshot.
+
+See the [canonical persistence decision](/docs/architecture/decisions/canonical-persistence-versioning-migration)
+for package resolution and snapshot-locking constraints.
+
 ### Finding
 
 An explained observation produced while evaluating a [rule](#rule) or
@@ -205,6 +289,20 @@ the domain permits it. A lifecycle describes how one entity may change; a
 
 Avoid using *workflow*, *status*, or *state* as synonyms for lifecycle.
 
+### Migration
+
+An explicit, deterministic transformation from one declared
+[schema version](#schema-version) or [context version](#context-version) to
+another. A schema migration preserves meaning; a model migration is an authored
+change to meaning.
+
+For example, moving an ACCS definition between JSON documents needs no model
+migration, while moving its ownership to another bounded context requires an
+explicit model migration that preserves its stable ID and rewrites references.
+
+Avoid using *silent upgrade*, *loader fallback*, or *data repair* as synonyms
+for migration.
+
 ### Outcome
 
 The explicit domain result of a completed [behaviour](#behaviour), including
@@ -247,6 +345,19 @@ state-changing behaviour.
 
 Avoid using *command*, *lookup*, or *report* as synonyms for query.
 
+### Requirement
+
+A domain prerequisite that must be satisfied before a
+[behaviour](#behaviour) may proceed. Missing information is distinct from an
+unsatisfied requirement.
+
+For **Submit ACCS determination application**, requirements may establish that
+an enrolment exists for the relevant child and that the necessary application
+information is available. A [rule binding](#rule-binding) connects those
+requirements to reusable rules or decisions.
+
+Avoid using *guard*, *invariant*, or *validation* as synonyms for requirement.
+
 ### Rule
 
 A named, reusable definition that evaluates typed [facts](#fact) and produces an
@@ -260,6 +371,76 @@ report**. [Guards](#guard), [policies](#policy), [invariants](#invariant), and
 rule evaluation.
 
 Avoid using *condition*, *validation*, or *business logic* as synonyms for rule.
+
+### Rule binding
+
+An explicit semantic relationship stating why and how a governing concept uses
+a reusable [rule](#rule) or [decision](#decision). It maps available domain
+information to typed [facts](#fact) and relevant [conclusions](#conclusion) to
+their governing purpose.
+
+For example, **Withdraw session report** may own a transition-guard binding to
+**Provider may withdraw session report**, mapping the provider actor, report
+lifecycle stage, and government-processing state to the rule's facts.
+
+Avoid using *embedded expression*, *callback*, or *rule copy* as synonyms for a
+rule binding.
+
+### Runtime plan
+
+An immutable, disposable executable projection derived from a resolved semantic
+snapshot and its relevant runtime versions. It is safe for concurrent reuse but
+is never an authoritative model or persisted source definition.
+
+For example, one runtime plan may bind the ACCS eligibility rules once and then
+evaluate applications for many children concurrently. Each evaluation still
+owns its own [facts](#fact), [findings](#finding), trace, and cancellation state.
+
+Avoid using *runtime model*, *compiled source*, or *authoritative executable* as
+synonyms for a runtime plan.
+
+See the [reusable rules runtime architecture decision](/docs/architecture/decisions/reusable-rules-runtime)
+for its binding, concurrency, conformance, isolation, and caching constraints.
+
+### Schema version
+
+The version of a persisted representation's structural contract. It determines
+which loader or [migration](#migration) is required but says nothing about
+domain meaning or compatibility of a bounded context's exports.
+
+For example, representing source spans in a new JSON shape changes the schema
+version even when the ACCS semantic digest remains unchanged.
+
+Avoid using *context version*, *model version*, or *product version* as synonyms
+for schema version.
+
+### Semantic digest
+
+A deterministic digest of normalized semantic meaning. It excludes source
+partitioning, formatting, layout, [source provenance](#source-provenance), and
+other non-semantic packaging details.
+
+Two Child Care packages with the same ACCS definitions but different filenames
+or diagram positions have the same semantic digest.
+
+Avoid using *file hash*, *package digest*, or *version* as synonyms for semantic
+digest.
+
+### Source provenance
+
+Non-semantic information relating a stable semantic concept to one or more
+versioned source artifacts and locations. It explains origin without determining
+meaning or identity.
+
+For example, an ACCS rule may retain spans into both an imported decision table
+and a readable DSL file. A span becomes stale when its recorded source digest no
+longer matches, without changing the rule itself.
+
+Avoid using *ownership*, *identity*, or *semantic relationship* as synonyms for
+source provenance.
+
+See the [canonical persistence decision](/docs/architecture/decisions/canonical-persistence-versioning-migration)
+for source-digest and lifecycle constraints.
 
 ### State
 
@@ -288,6 +469,19 @@ requesting approval nor the resulting **session report approved** event.
 Avoid using *command*, *event*, or the broader *state change* as synonyms for
 transition.
 
+### Transition guard
+
+A [guard](#guard) owned by a lifecycle [transition](#transition) that determines
+whether that declared transition is currently allowed. It validates an
+explicitly selected transition rather than selecting among transitions.
+
+For example, **Can withdraw session report** may guard the transition from
+**submitted** to **withdrawn**. A behaviour selects that transition explicitly;
+the transition guard then determines whether it is allowed now.
+
+Avoid using *transition selector*, *requirement*, or *invariant* as synonyms for
+transition guard.
+
 ### Workflow
 
 A [behaviour](#behaviour) that coordinates multiple behaviours toward a domain
@@ -313,8 +507,9 @@ The accepted semantic baseline establishes these relationships:
 - Diagrams are projections; layout is not semantic truth.
 - Modeller owns canonical semantic and expression meaning; external formats and
   runtimes are adapters.
-- Independently versioned bounded contexts federate through explicit exports and
-  imports; every concept has exactly one owner and stable identity.
+- Independently versioned [bounded contexts](#bounded-context) federate through
+  explicit exports and imports; every concept has exactly one owner and stable
+  identity.
 - Documentation is first-class model content, while rendered pages and source
   locations remain projections and provenance.
 

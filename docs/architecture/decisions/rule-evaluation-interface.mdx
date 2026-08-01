@@ -7,12 +7,27 @@ Status: **Accepted**
 
 Source: [Wayfinder issue #17](https://github.com/Allann/Modeller.Next/issues/17)
 
+## Canonical terms
+
+[Classification](/docs/concepts/ubiquitous-language#classification) ·
+[Conclusion](/docs/concepts/ubiquitous-language#conclusion) ·
+[Decision](/docs/concepts/ubiquitous-language#decision) ·
+[Evidence](/docs/concepts/ubiquitous-language#evidence) ·
+[Fact](/docs/concepts/ubiquitous-language#fact) ·
+[Federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot) ·
+[Finding](/docs/concepts/ubiquitous-language#finding) ·
+[Policy](/docs/concepts/ubiquitous-language#policy) ·
+[Rule](/docs/concepts/ubiquitous-language#rule) ·
+[Runtime plan](/docs/concepts/ubiquitous-language#runtime-plan) ·
+[State](/docs/concepts/ubiquitous-language#state)
+
 ## Decision
 
 ### Fact input contract
 
 Evaluation accepts an immutable set of facts keyed by stable semantic fact IDs
-from a resolved federation snapshot. Every supplied value must conform to its
+from a [resolved federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot).
+Every supplied value must conform to its
 fact's declared Modeller type before evaluation begins. Arbitrary string keys,
 object-typed values, inferred runtime types, and silent coercion are rejected.
 
@@ -171,7 +186,7 @@ wins. Once a result is published, it remains valid.
 The rules module exposes a two-stage deep interface:
 
 1. Bind a resolved federation snapshot and versioned deterministic function
-   catalog to create an immutable evaluation engine.
+   catalog to create an immutable [runtime plan](/docs/concepts/ubiquitous-language#runtime-plan).
 2. Call one `Evaluate(request, cancellation)` operation repeatedly and
    concurrently.
 
@@ -180,7 +195,7 @@ immutable typed facts and evidence, trace level and disclosure policy, and a
 caller request identity used only for correlation and excluded from semantic
 equality.
 
-The bound engine validates definitions once, owns no shared per-evaluation
+The runtime plan validates definitions once, owns no shared per-evaluation
 state, performs no filesystem or network access, and is safe for concurrent
 reuse.
 
