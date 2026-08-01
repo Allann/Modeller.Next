@@ -15,10 +15,13 @@ html > body[data-scroll-locked] {
 .modeller-home { flex: 1; overflow: hidden; background: radial-gradient(circle at 78% 18%, color-mix(in srgb, var(--modeller-mint) 34%, transparent), transparent 30rem), linear-gradient(145deg, #fbfaf7 0%, var(--modeller-paper) 100%); color: var(--modeller-ink); }
 .dark .modeller-home { background: radial-gradient(circle at 78% 18%, rgba(15,118,110,.28), transparent 30rem), linear-gradient(145deg, #071419 0%, #0d2025 100%); color: #edfdf9; }
 .brand-hero-shell { width: min(1200px,calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 3.5rem; }
-.brand-hero-shell picture { display: block; overflow: hidden; border: 1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius: 1rem; box-shadow: 0 28px 70px rgba(5,30,34,.18); }
+.brand-hero-image { display: block; overflow: hidden; border: 1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius: 1rem; box-shadow: 0 28px 70px rgba(5,30,34,.18); }
 .brand-hero-shell img { display: block; width: 100%; height: auto; }
 .docs-brand-hero { display: block; overflow: hidden; margin: 0 0 2rem; border: 1px solid color-mix(in srgb,currentColor 12%,transparent); border-radius: 1rem; box-shadow: 0 22px 55px rgba(5,30,34,.15); }
 .docs-brand-hero img { display: block; width: 100%; height: auto; }
+.theme-hero-dark { display: none !important; }
+.dark .theme-hero-light { display: none !important; }
+.dark .theme-hero-dark { display: block !important; }
 .hero-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; max-width: 1040px; margin: 2rem auto 0; }
 .hero-intro > p { max-width: 43rem; color: color-mix(in srgb,currentColor 72%,transparent); font-size: clamp(1rem,2vw,1.22rem); line-height: 1.65; }
 .hero-shell { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(24rem,.95fr); gap: clamp(3rem,7vw,7rem); align-items: center; width: min(1160px,calc(100% - 3rem)); min-height: 68vh; margin: 0 auto; padding: 6rem 0 4rem; }

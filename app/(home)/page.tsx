@@ -5,14 +5,18 @@ export default function HomePage() {
   return (
     <main className="modeller-home">
       <section className="brand-hero-shell">
-        <picture>
-          <source media="(prefers-color-scheme: dark)" srcSet="/brand/modeller-hero-dark.png" />
-          <source media="(prefers-color-scheme: light)" srcSet="/brand/modeller-hero-light.png" />
+        <div className="brand-hero-image">
           <img
+            className="theme-hero-light"
             src="/brand/modeller-hero-light.png"
             alt="Modeller — Describe the system. Generate the structure."
           />
-        </picture>
+          <img
+            className="theme-hero-dark"
+            src="/brand/modeller-hero-dark.png"
+            alt="Modeller — Describe the system. Generate the structure."
+          />
+        </div>
         <div className="hero-intro">
           <p>
             Modeller turns concise domain definitions into consistent, production-ready
