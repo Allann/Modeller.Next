@@ -1,0 +1,206 @@
+---
+title: Rule evaluation interface and explanations
+description: Define typed evaluation inputs, results, explanations, traces, determinism, and cancellation.
+---
+
+Status: **Accepted**
+
+Source: [Wayfinder issue #17](https://github.com/Allann/Modeller.Next/issues/17)
+
+## Decision
+
+### Fact input contract
+
+Evaluation accepts an immutable set of facts keyed by stable semantic fact IDs
+from a resolved federation snapshot. Every supplied value must conform to its
+fact's declared Modeller type before evaluation begins. Arbitrary string keys,
+object-typed values, inferred runtime types, and silent coercion are rejected.
+
+For an ACCS evaluation, typed facts may include the child and enrolment
+identifiers, risk reasons, relevant dates, and whether supporting evidence is
+held.
+
+### Missing information
+
+A missing fact is not interpreted as `false`, zero, empty, or `null`. `null` is
+an explicit value and is accepted only where the fact's declared Modeller type
+permits it.
+
+Missing information makes an evaluation indeterminate only when the requested
+conclusion cannot be determined without it. Ordinary logical reasoning still
+applies: `false AND missing` can conclude `false`, and `true OR missing` can
+conclude `true`. An indeterminate result carries structured findings for every
+missing fact that prevented a conclusion.
+
+### Evaluation statuses
+
+Every completed evaluation has exactly one status:
+
+- **Determined** — evaluation produced a typed conclusion. A `false`, rejected,
+  or ineligible conclusion is still determined.
+- **Indeterminate** — valid evaluation could not reach a conclusion because
+  necessary facts were missing.
+- **Invalid** — the definition, request, or supplied facts violated the semantic
+  contract, so evaluation could not validly begin or continue.
+- **Failed** — evaluation encountered an expected runtime failure, such as a
+  declared function or adapter being unavailable.
+
+Cancellation is separate control flow rather than an evaluation result.
+Unexpected implementation defects escape as exceptions rather than being
+converted to failed evaluations.
+
+### Finding contract
+
+Findings are structured explanation records rather than free-text-only messages.
+Each finding occurrence contains:
+
+- an authored finding-definition ID, or a stable system finding code for a
+  finding produced by the evaluator;
+- a disposition of **Supporting**, **Qualifying**, or **Preventing**;
+- references to the rules, decisions, and facts involved;
+- typed parameters needed to render its explanation;
+- references to supporting evidence where available; and
+- a deterministic local identity and order within the evaluation.
+
+Human-readable wording is a projection rendered from that structure. Diagnostic
+severity does not belong on findings: a finding may explain an ordinary
+successful conclusion and is not inherently an error.
+
+### Evidence contract
+
+Evidence is immutable provenance supplied with facts and referenced by findings.
+The evaluator preserves and relates evidence; it does not fetch documents,
+mutate sources, or independently decide whether an external source is
+trustworthy.
+
+An evidence record contains a request-local ID, its kind and source reference, a
+content digest or version where available, the fact IDs it supports, optional
+structured metadata or a bounded explanation-safe excerpt, and its
+sensitivity/redaction classification.
+
+For an ACCS evaluation, supporting-document metadata may be evidence for the
+fact **supporting evidence is held**. The rules module sees that typed fact and
+its evidence reference; it does not open or interpret the underlying
+child-protection document.
+
+### Evaluation result
+
+The result is an immutable discriminated union keyed by evaluation status rather
+than one record containing nullable fields:
+
+- **DeterminedResult** contains a typed conclusion, findings, referenced
+  evidence, and an optional trace.
+- **IndeterminateResult** contains missing fact IDs, findings, referenced
+  evidence, and an optional trace, but no conclusion.
+- **InvalidResult** contains structured diagnostics and no conclusion.
+- **FailedResult** contains structured failure diagnostics and any safe partial
+  trace, but no conclusion.
+
+Every variant identifies the resolved federation snapshot, evaluated rule or
+decision, and evaluation request. A conclusion must conform to the definition's
+declared conclusion type or ID. Illegal combinations such as a determined result
+without a conclusion or an invalid result with one are not representable at the
+module interface.
+
+### Diagnostic contract
+
+Diagnostics report problems with the evaluation contract or runtime; findings
+explain domain reasoning. The two are separate.
+
+Each diagnostic contains a stable machine-readable code, a severity of
+**Error**, **Warning**, or **Information**, the evaluation stage, relevant
+semantic IDs and source provenance where available, typed message parameters,
+optional remediation guidance, and a deterministic order. Failure diagnostics
+also carry a safe cause category without leaking sensitive fact values or
+arbitrary exception details.
+
+Invalid results use diagnostics for bad definitions, requests, or facts. Failed
+results use them for expected runtime failures. Human-readable messages are
+rendered projections.
+
+### Trace contract
+
+Findings are always available; traces are optional diagnostic detail with levels
+of **None**, **Summary**, and **Full**. A trace is an immutable, ordered graph of
+evaluation steps.
+
+Each trace node records its deterministic local path, semantic rule or
+expression ID, status, referenced fact and evidence IDs, result, child steps,
+and any short-circuit or skipped reason. Sensitive values are omitted by default
+and included only under an explicit disclosure policy.
+
+Canonical traces exclude timestamps, durations, random IDs, and
+machine-specific data. Operational telemetry records those separately.
+Equivalent evaluations against the same snapshot, facts, and options produce
+structurally identical canonical traces.
+
+### Determinism and ordering
+
+The resolved snapshot, evaluation request, typed facts, evaluator version, and
+declared function versions completely determine the semantic result, findings,
+diagnostics, evidence references, and canonical trace.
+
+Rules cannot read ambient time, locale, randomness, environment variables,
+network state, or mutable global state. Changing information such as time and
+exchange rates enters as typed facts. Declared functions must be pure, versioned,
+and deterministic; foreign or nondeterministic functions cannot participate in
+a canonical evaluation.
+
+Parallel evaluation is permitted internally, but observable ordering is
+normalized by semantic definition order rather than completion timing. Repeated
+evaluation produces structurally equal results, excluding explicitly separate
+operational telemetry.
+
+### Cancellation
+
+Every evaluation accepts a caller-provided cancellation signal. Cancellation is
+checked before evaluation and at bounded points between evaluation steps;
+declared function adapters receive and must propagate the same signal.
+
+Cancellation stops scheduling new work and discards per-evaluation state. It
+produces the platform's normal cancellation control flow rather than an
+evaluation result, conclusion, finding, or failure diagnostic. A partial trace
+may be emitted only as separately labelled operational telemetry and is never a
+canonical semantic result.
+
+If cancellation is observed before atomic result publication, cancellation
+wins. Once a result is published, it remains valid.
+
+### Module interface
+
+The rules module exposes a two-stage deep interface:
+
+1. Bind a resolved federation snapshot and versioned deterministic function
+   catalog to create an immutable evaluation engine.
+2. Call one `Evaluate(request, cancellation)` operation repeatedly and
+   concurrently.
+
+An evaluation request contains the target rule or decision semantic ID,
+immutable typed facts and evidence, trace level and disclosure policy, and a
+caller request identity used only for correlation and excluded from semantic
+equality.
+
+The bound engine validates definitions once, owns no shared per-evaluation
+state, performs no filesystem or network access, and is safe for concurrent
+reuse.
+
+Its error modes are explicit:
+
+- binding failure returns structured diagnostics and no engine;
+- invalid requests or facts return an invalid result;
+- missing necessary facts return an indeterminate result;
+- expected declared-function failures return a failed result;
+- cancellation uses cancellation control flow; and
+- implementation defects escape as exceptions.
+
+## Consequences
+
+- The public interface is small while hiding validation, partial logic,
+  evaluation ordering, explanation construction, and trace generation.
+- Immutable definitions and request-local state make concurrent reuse safe.
+- Findings and evidence explain domain reasoning without being confused with
+  diagnostics or operational telemetry.
+- Deterministic results and canonical traces support conformance fixtures,
+  caching, replay, and cross-runtime comparison.
+- Host-specific exceptions, untyped fact dictionaries, ambient dependencies,
+  and shared evaluation state cannot become semantic contracts.

@@ -1,0 +1,16 @@
+---
+title: Security and Identity
+description: Authentication, authorization, and defensive coding practices for identity-related flows.
+---
+
+These standards cover preventing access-control vulnerabilities (IDOR), correctly implementing
+account/email flows, issuing and validating tokens, and integrating with identity providers and
+gateways. Apply them whenever a feature touches authentication, authorization, or per-user data
+ownership.
+
+- [Email Verification Flow](/docs/coding-standards/security-and-identity/email-verification)
+- [Enforcing Email Uniqueness](/docs/coding-standards/security-and-identity/email-uniqueness)
+- [Generating JWTs for Authentication](/docs/coding-standards/security-and-identity/generating-jwts)
+- [Keycloak Authentication in ASP.NET Core](/docs/coding-standards/security-and-identity/keycloak-dotnet)
+- [Per-Route Authorization on a YARP Gateway](/docs/coding-standards/security-and-identity/yarp-auth)
+- [Scope Every Query by Owner at the Data-Access Layer to Prevent IDOR](/docs/coding-standards/security-and-identity/idor-attack)

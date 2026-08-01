@@ -56,6 +56,12 @@ from a behaviour or report something that occurred externally, and is neither a
 request nor an instruction.
 _Avoid_: Command, notification, message
 
+**Evidence**:
+Immutable provenance supplied with facts and referenced by findings. Evidence
+supports an explanation but does not by itself establish that a source is
+trustworthy.
+_Avoid_: Fact, attachment, document
+
 **Fact**:
 A typed piece of domain information supplied to rule or decision evaluation as
 known for that evaluation. Facts are inputs to reasoning, not mutable evaluation

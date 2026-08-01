@@ -1,0 +1,15 @@
+---
+title: Performance
+description: Choosing the right data structure and measuring before optimizing.
+---
+
+These standards cover reasoning about algorithmic complexity, picking collection types that match
+the access pattern, and measuring before trading readability for speed. Apply them whenever
+choosing a data structure or considering a performance-motivated rewrite.
+
+- [Avoid SelectMany + Per-Element Allocation for Grouping/Counting](/docs/coding-standards/performance/selectmany-performance)
+- [Benchmark LINQ Against Manual Loops Before Assuming Either Is Faster](/docs/coding-standards/performance/linq-benchmark)
+- [Choosing Primary Key Types: UUID vs ULID vs Clustered Surrogate](/docs/coding-standards/performance/uuid-vs-ulid)
+- [Model Ordered Work Queues with `PriorityQueue<T>`](/docs/coding-standards/performance/dotnet-priority-queue)
+- [Pick the Right Collection Type for the Access Pattern](/docs/coding-standards/performance/collections-cheat-sheet)
+- [Reason About and Document Algorithmic Complexity](/docs/coding-standards/performance/big-o-notation)

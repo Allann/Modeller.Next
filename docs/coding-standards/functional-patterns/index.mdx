@@ -1,0 +1,23 @@
+---
+title: Functional Patterns, Results, and Errors
+description: Composing behaviour and handling expected failure functionally instead of with exceptions and mutable state.
+---
+
+These standards cover representing expected failure as a value (`Result`/`Option`) instead of
+exceptions, composing behaviour with delegates and higher-order functions instead of class
+hierarchies, and working correctly with closures, iterators, and immutable collections. Apply
+them whenever a method's failure is expected and recoverable, or when composing behaviour that
+would otherwise become a class hierarchy.
+
+- [Build Functional Types from Smart Constructors and Closed Unions](/docs/coding-standards/functional-patterns/master-functional-types)
+- [Chain Async Operations Through Result](/docs/coding-standards/functional-patterns/async-result-pipelines)
+- [Compose Result Values with Map/Bind/And/MapError](/docs/coding-standards/functional-patterns/functional-result-type)
+- [Exceptions Are Dynamically Scoped](/docs/coding-standards/functional-patterns/exceptions-dynamic-scoping)
+- [Expose Immutable State via Persistent Collections](/docs/coding-standards/functional-patterns/immutable-collections)
+- [Fast Immutable Design](/docs/coding-standards/functional-patterns/fast-immutable-design)
+- [Implement GoF Patterns as Delegates and Higher-Order Functions](/docs/coding-standards/functional-patterns/gof-patterns-as-delegates)
+- [Prefer Result Types Over Exceptions for Expected Failures](/docs/coding-standards/functional-patterns/beyond-exceptions)
+- [The Option Type Instead of Nullable Reference Chains](/docs/coding-standards/functional-patterns/option)
+- [Understand Closures Capture Variables by Reference](/docs/coding-standards/functional-patterns/closures)
+- [Use a `Result<T, TError>` Type for Expected Failures](/docs/coding-standards/functional-patterns/result-type)
+- [Write Iterator Methods with yield return](/docs/coding-standards/functional-patterns/yield-return)

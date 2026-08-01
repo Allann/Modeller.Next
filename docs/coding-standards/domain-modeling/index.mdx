@@ -1,0 +1,23 @@
+---
+title: Domain Modeling
+description: How domain state and behaviour should be shaped so invalid states cannot exist.
+---
+
+These standards govern how a domain concept becomes a type: where behaviour lives, how invariants
+are protected, and how to avoid the anemic, flag-driven models that push logic into services and
+callers instead of the type itself. Apply them whenever defining or reworking an entity, aggregate,
+or value object.
+
+- [Avoid Anemic Domain Models](/docs/coding-standards/domain-modeling/anemic-domain-model)
+- [Avoid the Combinatorial Explosion Trap From Anemic Models](/docs/coding-standards/domain-modeling/combinatorial-explosion-trap)
+- [Build External API Queries With a Lightweight Query Specification](/docs/coding-standards/domain-modeling/query-specification)
+- [Clean Architecture Use Cases](/docs/coding-standards/domain-modeling/ca-usecase)
+- [Eliminate Data Clumps with Value Objects](/docs/coding-standards/domain-modeling/data-clumps)
+- [Enforce Invariants in Constructors via Factory Methods](/docs/coding-standards/domain-modeling/constructor-validation-and-invariants)
+- [Express Business Rules as Composable, Injectable Rule Objects](/docs/coding-standards/domain-modeling/rules-pattern)
+- [Immutable Domain Models](/docs/coding-standards/domain-modeling/immutable-domain-model)
+- [Model EF Core Aggregates as Immutable Types](/docs/coding-standards/domain-modeling/immutable-domain-repository)
+- [Push Type-Specific Branching Into Polymorphic Methods](/docs/coding-standards/domain-modeling/anemic-vs-polymorphic)
+- [Refactor Anemic State-Bag Models](/docs/coding-standards/domain-modeling/refactoring-anemic-model)
+- [Replace Boolean Status Flags With Closed Type Hierarchies](/docs/coding-standards/domain-modeling/avoid-boolean-state-flags)
+- [Use Records as Functional Values, Not Objects With Hidden State](/docs/coding-standards/domain-modeling/records-as-functional-values)

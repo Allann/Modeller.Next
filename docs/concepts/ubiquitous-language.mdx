@@ -125,11 +125,26 @@ changed**. Downstream reactions do not change the event's meaning.
 
 Avoid using *command*, *notification*, or *message* as synonyms for event.
 
+### Evidence
+
+Immutable provenance supplied with [facts](#fact) and referenced by
+[findings](#finding). Evidence supports an explanation but does not by itself
+establish that a source is trustworthy.
+
+For an ACCS evaluation, supporting-document metadata may be evidence for the
+fact **supporting evidence is held**. Rule evaluation preserves that relationship
+without opening or interpreting the underlying child-protection document.
+
+Avoid using *fact*, *attachment*, or *document* as synonyms for evidence.
+
 ### Fact
 
 A typed piece of domain information supplied to [rule](#rule) or
 [decision](#decision) evaluation as known for that evaluation. Facts are inputs
 to reasoning, not mutable evaluation state or untyped property bags.
+
+Facts may reference [evidence](#evidence) recording their provenance; the fact
+remains the typed input used by evaluation.
 
 For an ACCS determination, facts may include the child's enrolment, identified
 risk reasons, relevant dates, and whether supporting evidence is held.
@@ -140,7 +155,8 @@ Avoid using *variable*, *parameter*, or *raw data* as synonyms for fact.
 
 An explained observation produced while evaluating a [rule](#rule) or
 [decision](#decision) that supports, qualifies, or prevents a
-[conclusion](#conclusion). A finding is not necessarily an error.
+[conclusion](#conclusion). A finding may reference [evidence](#evidence) and is
+not necessarily an error.
 
 For example, **supporting evidence is held** may support an ACCS conclusion,
 while **enrolment is not active for the requested period** may prevent it.

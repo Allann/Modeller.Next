@@ -1,0 +1,27 @@
+---
+title: Coding standards
+description: Practical implementation guidance for code generated from and written around Modeller domains.
+---
+
+Coding standards guide how Modeller domains are realised in implementation.
+They complement the canonical [ubiquitous language](/docs/concepts/ubiquitous-language)
+and [architecture decisions](/docs/architecture/decisions), but do not redefine
+their semantic meaning.
+
+Use these standards when designing generated output, handwritten extensions,
+tests, and application code. Each page follows the same shape: **the standard**,
+**why**, a **before/after** code comparison, and a compact list of **rules for
+LLMs / agents** intended to be turned into skills or instructions that constrain
+how AI assistants write code in this codebase.
+
+Standards are grouped by category below; open a category for its full list of pages.
+
+- [Domain Modeling](/docs/coding-standards/domain-modeling) — shaping entities, aggregates, and value objects so invalid states can't exist.
+- [EF Core and Data](/docs/coding-standards/ef-core-and-data) — persisting rich domain types and querying/serializing at scale.
+- [Functional Patterns, Results, and Errors](/docs/coding-standards/functional-patterns) — expressing failure as a value and composing behaviour functionally.
+- [General](/docs/coding-standards/general) — cross-cutting habits that don't fit elsewhere.
+- [Performance](/docs/coding-standards/performance) — choosing the right data structure and measuring before optimizing.
+- [Security and Identity](/docs/coding-standards/security-and-identity) — authentication, authorization, and defensive coding.
+- [Types, Records, and Modern C#](/docs/coding-standards/types-and-records) — choosing `class`/`record`/`struct` and using modern language features cleanly.
+- [Web APIs and Services](/docs/coding-standards/web-apis-and-services) — Minimal APIs, DI, caching, and service-to-service calls.
+- [Working with AI Assistants](/docs/coding-standards/ai-assisted-development) — writing AI-facing instructions and verifying AI-generated code.

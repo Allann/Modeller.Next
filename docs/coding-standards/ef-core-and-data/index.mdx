@@ -1,0 +1,18 @@
+---
+title: EF Core and Data
+description: Persisting rich domain types with EF Core, and querying/serializing data correctly at scale.
+---
+
+These standards cover keeping EF Core entities from degrading into primitive-obsessed data bags,
+mapping discriminated unions and value objects onto relational storage, and avoiding the query
+and serialization mistakes (cartesian explosion, exposing entities over the wire) that only show
+up under real data volumes. Apply them whenever an EF Core entity or query is being designed.
+
+- [Avoiding Cartesian Explosion in EF Core Queries](/docs/coding-standards/ef-core-and-data/cartesian-explosion)
+- [Domain Model Serialization: DTOs, Not Domain Entities, Cross the Wire](/docs/coding-standards/ef-core-and-data/domain-model-serialization)
+- [EF Core Value Conversions for Rich Domain Types](/docs/coding-standards/ef-core-and-data/ef-core-value-conversions)
+- [Model EF Core Discriminated Unions as Abstract Record Hierarchies](/docs/coding-standards/ef-core-and-data/ef-core-discriminated-union)
+- [No Primitive Obsession in EF Core Entities](/docs/coding-standards/ef-core-and-data/ef-core-no-primitive-types)
+- [Seed Large Volumes of Test Data With Deterministic, Lazy Generators](/docs/coding-standards/ef-core-and-data/database-seeding-with-generators)
+- [Stream Large JSON Payloads Instead of Buffering Whole Arrays](/docs/coding-standards/ef-core-and-data/streaming-json)
+- [Tracking Rich Domain Types With EF Core](/docs/coding-standards/ef-core-and-data/ef-core-record-type-tracking)

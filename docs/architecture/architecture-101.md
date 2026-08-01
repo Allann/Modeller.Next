@@ -156,6 +156,28 @@ protect every observable state. Behaviours, not any of these rule forms, own
 enough to test and explain while leaving state changes in the behaviour that
 requested them.
 
+The [rule evaluation interface](/docs/architecture/decisions/rule-evaluation-interface)
+binds a resolved snapshot and deterministic function catalog once, then exposes
+one concurrent `Evaluate` operation. Requests carry typed facts and
+[evidence](/docs/concepts/ubiquitous-language#evidence); immutable results
+separate conclusions and findings from diagnostics and optional canonical
+traces.
+
+```mermaid
+flowchart LR
+    Snapshot[Resolved snapshot] --> Engine[Bound evaluation engine]
+    Functions[Versioned pure functions] --> Engine
+    Request[Typed facts and evidence] --> Engine
+    Engine --> Result[Determined, indeterminate, invalid, or failed]
+    Result --> Findings[Findings and evidence references]
+    Result --> Trace[Optional canonical trace]
+```
+
+Missing information is neither false nor null. It produces an indeterminate
+result only when the conclusion logically depends on it. Canonical results and
+traces exclude ambient time, locale, randomness, network state, and operational
+timing so equivalent evaluations remain structurally equal.
+
 **Pressure introduced:** users and tools need different views of the same model,
 including diagrams, documentation, and code.
 
