@@ -1,0 +1,18 @@
+{
+  "fixtureVersion": "1.0",
+  "description": "Retained unknown-future persistence schema rejection contract.",
+  "package": {
+    "schemaVersion": "99.0",
+    "languageVersion": "1.0",
+    "context": {
+      "id": "0191f6d4-4ea0-7000-8000-000000000001",
+      "name": "Child Care",
+      "slug": "child-care",
+      "version": "1.0.0"
+    },
+    "imports": [],
+    "exports": [],
+    "definitions": []
+  },
+  "expectedDiagnostic": "package.schema.unsupported"
+}

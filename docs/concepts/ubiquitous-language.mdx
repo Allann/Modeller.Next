@@ -178,10 +178,15 @@ provenance remain non-semantic companions.
 
 For example, the Child Care ACCS bounded context may be distributed as a context
 package without implying that its diagram layout or source-file arrangement is
-part of ACCS domain meaning.
+part of ACCS domain meaning. Its exact persisted bytes have a
+[package digest](#package-digest), while normalized meaning has a distinct
+[semantic digest](#semantic-digest).
 
 Avoid using *project file*, *deployment package*, or *federation snapshot* as
 synonyms for a context package.
+
+See the [context-package reference](/docs/reference/context-packages) for the
+executable load, persistence, resolution, and migration interface.
 
 ### Context version
 
@@ -324,8 +329,9 @@ Avoid using *variable*, *parameter*, or *raw data* as synonyms for fact.
 ### Federation snapshot
 
 An immutable, reproducible resolution of exact [context package](#context-package)
-versions, content digests, imports, and exports. It is the authority consumed by
-evaluation and generation, but is derived rather than directly authored.
+versions, [package digests](#package-digest), imports, and exports. It is the
+authority consumed by evaluation and generation, but is derived rather than
+directly authored.
 
 For example, an ACCS evaluation identifies the exact Child Care context package
 and imported package versions captured by its federation snapshot rather than
@@ -335,7 +341,9 @@ Avoid using *context package*, *workspace*, or *latest version* as synonyms for
 a federation snapshot.
 
 See the [canonical persistence decision](/docs/architecture/decisions/canonical-persistence-versioning-migration)
-for package resolution and snapshot-locking constraints.
+for package resolution and snapshot-locking constraints, and the
+[context-package reference](/docs/reference/context-packages) for the executable
+interface.
 
 ### Finding
 
@@ -422,6 +430,9 @@ explicit model migration that preserves its stable ID and rewrites references.
 Avoid using *silent upgrade*, *loader fallback*, or *data repair* as synonyms
 for migration.
 
+See the [context-package reference](/docs/reference/context-packages) for the
+explicit migration interface, reports, and failure guarantees.
+
 ### Outcome
 
 The explicit domain result of a completed [behaviour](#behaviour), including
@@ -434,6 +445,22 @@ change** outcomes. Each is meaningful to the actor even when no state transition
 occurs.
 
 Avoid using *conclusion*, *effect*, or *response* as synonyms for outcome.
+
+### Package digest
+
+A deterministic digest of the exact persisted bytes of one
+[context package](#context-package). It identifies packaging and reproducible
+provenance independently of the package's normalized semantic meaning.
+
+Two Child Care packages may share a [semantic digest](#semantic-digest) after a
+layout or representation-only change while retaining different package digests
+and package versions in their [federation snapshots](#federation-snapshot).
+
+Avoid using *semantic digest*, *context version*, or *file name* as synonyms for
+package digest.
+
+See the [context-package reference](/docs/reference/context-packages) for the
+canonical persistence and snapshot-lock contracts.
 
 ### Policy
 
@@ -533,6 +560,9 @@ version even when the ACCS semantic digest remains unchanged.
 Avoid using *context version*, *model version*, or *product version* as synonyms
 for schema version.
 
+See the [context-package reference](/docs/reference/context-packages) for
+supported-schema and explicit-migration behaviour.
+
 ### Semantic digest
 
 A deterministic digest of normalized semantic meaning. It excludes source
@@ -544,6 +574,9 @@ or diagram positions have the same semantic digest.
 
 Avoid using *file hash*, *package digest*, or *version* as synonyms for semantic
 digest.
+
+See the [context-package reference](/docs/reference/context-packages) for the
+normalization rules and the executable Child Care digest.
 
 ### Source provenance
 

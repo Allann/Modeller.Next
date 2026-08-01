@@ -1,0 +1,91 @@
+---
+title: Context packages and federation
+description: Canonical persistence, exact dependency resolution, stable digests, and explicit schema migration.
+---
+
+The `Modeller.Contexts` module is the persistence and federation interface for
+independently versioned [bounded contexts](/docs/concepts/ubiquitous-language#bounded-context).
+It loads a canonical [context package](/docs/concepts/ubiquitous-language#context-package),
+resolves explicit Imports against public Exports, persists deterministic JSON,
+and runs only explicitly requested [migrations](/docs/concepts/ubiquitous-language#migration).
+It performs no application-specific database, filesystem, or network work.
+
+## Interface
+
+```csharp
+ContextPackageLoadResult ContextPackageSystem.Load(ReadOnlyMemory<byte> document)
+
+ContextPackageLoadResult ContextPackageSystem.Load(
+    IEnumerable<ContextPackageDocument> documents)
+
+FederationResolutionResult ContextPackageSystem.Resolve(
+    IEnumerable<ReadOnlyMemory<byte>> documents,
+    ContextPackageIdentity root,
+    CancellationToken cancellationToken = default)
+
+ContextPackagePersistenceResult ContextPackageSystem.Persist(
+    LoadedContextPackage package)
+
+ContextPackageMigrationResult ContextPackageSystem.Migrate(
+    ReadOnlyMemory<byte> document,
+    string targetSchemaVersion,
+    IEnumerable<IContextPackageMigration> migrations,
+    CancellationToken cancellationToken = default)
+```
+
+Every operation returns immutable values or structured
+[diagnostics](/docs/concepts/ubiquitous-language#diagnostic). Resolution never
+means “latest”: the requested root is exact, every Import declares a compatible
+version range and expected stable IDs and kinds, and exactly one supplied
+package must satisfy each dependency. The resulting
+[federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot)
+locks each context ID and version to its package and semantic digests.
+
+The plural load form combines source fragments by stable identity before model
+decode. Fragment order and names are packaging provenance only; duplicate
+definitions or mismatched package identities are rejected rather than merged by
+guesswork.
+
+## Digests and canonical persistence
+
+A [package digest](/docs/concepts/ubiquitous-language#package-digest) identifies
+the exact UTF-8 package bytes supplied or persisted. A
+[semantic digest](/docs/concepts/ubiquitous-language#semantic-digest) identifies
+normalized meaning. Property order, definition order, whitespace, layout,
+source provenance, persistence schema, context version, and Import compatibility
+ranges do not affect semantic digest. Language versions, stable identities,
+definitions, imported stable IDs and kinds, and Exports do. Package and context
+versions remain exact provenance in the Federation Snapshot lock.
+
+`Persist` emits one deterministic JSON document. It deliberately omits layout
+and provenance companions from semantic persistence while retaining the
+[schema version](/docs/concepts/ubiquitous-language#schema-version) needed by a
+loader.
+
+## Resolution and failure
+
+The resolver rejects unresolved or ambiguous versions, non-public or
+kind-mismatched Exports, dependency cycles, mutable published
+context-version/package combinations, unsupported schemas, duplicate JSON
+properties, invalid definitions, excessive package size, and cancellation with
+stable diagnostic codes. Input order does not affect the snapshot lock order.
+
+For the Child Care reference project, the `child-care@1.0.0` ACCS package
+resolves to an immutable one-package snapshot with semantic digest
+`sha256:26b35b94c741cae8ffb8aafac1ad7cefb7bb5bf106cddc5db27544f5ccdfcd16`.
+That result is retained as executable conformance evidence.
+
+## Explicit migration
+
+A schema migration names one source and target schema version and transforms an
+immutable input document. The module follows an explicit chain, validates the
+final package, verifies that semantic digest and stable IDs are unchanged, and
+returns a report containing every step. A missing, ambiguous, cancelled, or
+meaning-changing chain returns diagnostics and no publishable document; the
+caller’s original bytes are never changed.
+
+Changing Child Care meaning is a model migration and a new
+[context version](/docs/concepts/ubiquitous-language#context-version), not a
+schema-migration workaround. See the
+[canonical persistence decision](/docs/architecture/decisions/canonical-persistence-versioning-migration)
+for the governing constraints.

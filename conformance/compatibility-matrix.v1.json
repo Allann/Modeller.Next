@@ -3,8 +3,8 @@
   "support": {
     "fixtureSchemas": ["1.0"],
     "conformanceContracts": ["1.0"],
-    "persistenceSchemas": [],
-    "contextVersions": [],
+    "persistenceSchemas": ["1.0"],
+    "contextVersions": ["child-care@1.0.0"],
     "runtimeContracts": [],
     "projectionVersions": [],
     "adapterVersions": []

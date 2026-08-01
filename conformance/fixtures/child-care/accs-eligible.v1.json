@@ -17,7 +17,7 @@
     "traceLevel": "Full"
   },
   "expected": {
-    "semanticDigest": "sha256:584a7d68d3f635c33fb4f1e37ff860ffccadfd8323b8315789512cb2fec74b7c",
+    "semanticDigest": "sha256:26b35b94c741cae8ffb8aafac1ad7cefb7bb5bf106cddc5db27544f5ccdfcd16",
     "status": "Determined",
     "conclusion": {
       "kind": "Truth",

@@ -182,6 +182,12 @@ rejection, or another defined result. It is distinct from the conclusions used
 to reach it and the effects it authorises.
 _Avoid_: Conclusion, effect, response
 
+**Package digest**:
+A deterministic digest of the exact persisted bytes of one context package. It
+identifies packaging and provenance independently of the package's normalized
+semantic meaning.
+_Avoid_: Semantic digest, context version, file name
+
 **Policy**:
 A named rule or decision expressing a domain choice about what is permitted,
 required, or entitled. Behaviours enforce policies; policies do not cause

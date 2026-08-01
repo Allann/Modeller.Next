@@ -238,7 +238,12 @@ public sealed class ConformanceRunnerTests
         var catalog = ConformanceFixtureCatalog.Load(documents);
 
         Assert.Equal(
-            ["child-care.accs.eligible.v1", "child-care.accs.information-required.v1", "child-care.model.ownership.v1"],
+            [
+                "child-care.accs.eligible.v1",
+                "child-care.accs.information-required.v1",
+                "child-care.context-package.resolve.v1",
+                "child-care.model.ownership.v1"
+            ],
             catalog.Fixtures.Select(fixture => fixture.ScenarioId));
         Assert.All(catalog.Fixtures, fixture => Assert.Empty(fixture.PermittedVariance));
     }

@@ -21,7 +21,7 @@
     },
     { "contractId": "behaviour.lifecycle-governance", "sourceDecision": 18, "fixtures": [], "status": "Planned" },
     { "contractId": "runtime.bind-evaluate", "sourceDecision": 19, "fixtures": [], "status": "Planned" },
-    { "contractId": "persistence.canonical-package", "sourceDecision": 20, "fixtures": [], "status": "Planned" },
+    { "contractId": "persistence.canonical-package", "sourceDecision": 20, "fixtures": ["child-care.context-package.resolve.v1"], "status": "Executable" },
     { "contractId": "projection.initial-views", "sourceDecision": 21, "fixtures": [], "status": "Planned" },
     { "contractId": "acceptance.release-gates", "sourceDecision": 22, "fixtures": ["child-care.accs.eligible.v1", "child-care.accs.information-required.v1"], "status": "AdapterPending" }
   ]

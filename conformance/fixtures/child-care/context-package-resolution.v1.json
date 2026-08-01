@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0",
+  "scenarioId": "child-care.context-package.resolve.v1",
+  "sourceDecision": "https://github.com/Allann/Modeller.Next/issues/20",
+  "capability": "context-package-resolution",
+  "contractVersion": "1.0",
+  "inputDigest": "sha256:570bc0b0637b259b31ad13405d5b4d4edf6748732413fa90186464d5fa5aee3a",
+  "input": {
+    "artifact": "child-care-accs.context-package.v1.json",
+    "contextId": "0191f6d4-4ea0-7000-8000-000000000001",
+    "contextVersion": "1.0.0"
+  },
+  "expected": {
+    "semanticDigest": "sha256:26b35b94c741cae8ffb8aafac1ad7cefb7bb5bf106cddc5db27544f5ccdfcd16",
+    "packages": [
+      {
+        "contextId": "0191f6d4-4ea0-7000-8000-000000000001",
+        "contextSlug": "child-care",
+        "contextVersion": "1.0.0",
+        "packageDigest": "sha256:f2df2c4aeb847cda98e0fe7e642d54f49dfadba646c2ad8a3783fdc68bd1daf7"
+      }
+    ]
+  },
+  "permittedVariance": []
+}
