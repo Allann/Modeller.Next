@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "criteria": [
+    "correctness",
+    "relevance",
+    "completeness",
+    "audience-vocabulary",
+    "actionable-missing-information",
+    "protected-disclosure"
+  ],
+  "requiredReviewPerspectives": [
+    "child-care-domain-reader",
+    "modeller-author",
+    "security"
+  ]
+}

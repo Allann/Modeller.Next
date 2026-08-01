@@ -27,6 +27,10 @@ tests independently of the documentation site:
 dotnet test Modeller.slnx
 ```
 
+Versioned acceptance assets live in `conformance/`. The `Modeller.Conformance`
+module runs those fixtures against capability adapters without inspecting their
+implementations.
+
 For the complete development experience, open `Modeller.Next.code-workspace` in
 VS Code. Run the `setup`, `docs: dev`, or `verify` tasks from the task picker.
 Press F5 and choose **Modeller Docs** to start the development server and open

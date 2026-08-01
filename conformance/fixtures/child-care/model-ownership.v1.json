@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "1.0",
+  "scenarioId": "child-care.model.ownership.v1",
+  "sourceDecision": "https://github.com/Allann/Modeller.Next/issues/16",
+  "capability": "canonical-model",
+  "contractVersion": "1.0",
+  "inputDigest": "sha256:38c2b09643846c5c3f1567bc890229f622c195b065bc62e603cf4f016bf44567",
+  "input": {
+    "boundedContext": "child-care"
+  },
+  "expected": {
+    "concepts": [
+      {
+        "id": "0191f6d4-4ea0-7000-8000-000000000002",
+        "kind": "Entity",
+        "ownerId": "0191f6d4-4ea0-7000-8000-000000000001",
+        "qualifiedName": "child-care.accs-determination-application"
+      },
+      {
+        "id": "0191f6d4-4ea0-7000-8000-000000000003",
+        "kind": "Lifecycle",
+        "ownerId": "0191f6d4-4ea0-7000-8000-000000000002",
+        "qualifiedName": "child-care.accs-determination-application.application-lifecycle"
+      },
+      {
+        "id": "0191f6d4-4ea0-7000-8000-000000000004",
+        "kind": "LifecycleStage",
+        "ownerId": "0191f6d4-4ea0-7000-8000-000000000003",
+        "qualifiedName": "child-care.accs-determination-application.application-lifecycle.draft"
+      },
+      {
+        "id": "0191f6d4-4ea0-7000-8000-000000000005",
+        "kind": "LifecycleStage",
+        "ownerId": "0191f6d4-4ea0-7000-8000-000000000003",
+        "qualifiedName": "child-care.accs-determination-application.application-lifecycle.submitted"
+      }
+    ]
+  },
+  "permittedVariance": []
+}

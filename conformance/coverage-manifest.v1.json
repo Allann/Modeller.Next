@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "contracts": [
+    {
+      "contractId": "canonical-model.ownership",
+      "sourceDecision": 16,
+      "fixtures": ["child-care.model.ownership.v1"],
+      "status": "Executable"
+    },
+    {
+      "contractId": "rule-evaluation.determined",
+      "sourceDecision": 17,
+      "fixtures": ["child-care.accs.eligible.v1"],
+      "status": "AdapterPending"
+    },
+    {
+      "contractId": "rule-evaluation.missing-information",
+      "sourceDecision": 17,
+      "fixtures": ["child-care.accs.information-required.v1"],
+      "status": "AdapterPending"
+    },
+    { "contractId": "behaviour.lifecycle-governance", "sourceDecision": 18, "fixtures": [], "status": "Planned" },
+    { "contractId": "runtime.bind-evaluate", "sourceDecision": 19, "fixtures": [], "status": "Planned" },
+    { "contractId": "persistence.canonical-package", "sourceDecision": 20, "fixtures": [], "status": "Planned" },
+    { "contractId": "projection.initial-views", "sourceDecision": 21, "fixtures": [], "status": "Planned" },
+    { "contractId": "acceptance.release-gates", "sourceDecision": 22, "fixtures": ["child-care.accs.eligible.v1", "child-care.accs.information-required.v1"], "status": "AdapterPending" }
+  ]
+}

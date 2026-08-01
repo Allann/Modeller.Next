@@ -1,0 +1,125 @@
+{
+  "schemaVersion": "1.0",
+  "languageVersion": "1.0",
+  "context": {
+    "id": "0191f6d4-4ea0-7000-8000-000000000001",
+    "name": "Child Care",
+    "slug": "child-care",
+    "version": "1.0.0"
+  },
+  "imports": [],
+  "exports": [
+    "0191f6d4-4ea0-7000-8000-000000000006",
+    "0191f6d4-4ea0-7000-8000-000000000007",
+    "0191f6d4-4ea0-7000-8000-000000000008"
+  ],
+  "definitions": [
+    {
+      "kind": "Entity",
+      "id": "0191f6d4-4ea0-7000-8000-000000000002",
+      "name": "ACCS determination application",
+      "slug": "accs-determination-application",
+      "lifecycle": {
+        "id": "0191f6d4-4ea0-7000-8000-000000000003",
+        "name": "ACCS determination application lifecycle",
+        "slug": "accs-determination-application-lifecycle",
+        "stages": [
+          {
+            "id": "0191f6d4-4ea0-7000-8000-000000000004",
+            "name": "Draft",
+            "slug": "draft"
+          },
+          {
+            "id": "0191f6d4-4ea0-7000-8000-000000000005",
+            "name": "Submitted",
+            "slug": "submitted"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Fact",
+      "id": "0191f6d4-4ea0-7000-8000-000000000006",
+      "name": "Active enrolment exists",
+      "slug": "active-enrolment-exists",
+      "type": "Truth"
+    },
+    {
+      "kind": "Fact",
+      "id": "0191f6d4-4ea0-7000-8000-000000000007",
+      "name": "Supporting evidence is held",
+      "slug": "supporting-evidence-is-held",
+      "type": "Truth"
+    },
+    {
+      "kind": "Rule",
+      "id": "0191f6d4-4ea0-7000-8000-000000000008",
+      "name": "Determine ACCS eligibility",
+      "slug": "determine-accs-eligibility",
+      "inputFacts": [
+        "0191f6d4-4ea0-7000-8000-000000000006",
+        "0191f6d4-4ea0-7000-8000-000000000007"
+      ],
+      "expression": {
+        "kind": "And",
+        "operands": [
+          {
+            "kind": "Fact",
+            "factId": "0191f6d4-4ea0-7000-8000-000000000006"
+          },
+          {
+            "kind": "Fact",
+            "factId": "0191f6d4-4ea0-7000-8000-000000000007"
+          }
+        ]
+      },
+      "conclusions": [
+        {
+          "id": "0191f6d4-4ea0-7000-8000-000000000009",
+          "name": "Eligible",
+          "slug": "eligible"
+        }
+      ]
+    },
+    {
+      "kind": "Behaviour",
+      "id": "0191f6d4-4ea0-7000-8000-00000000000a",
+      "name": "Submit ACCS determination application",
+      "slug": "submit-accs-determination-application",
+      "entity": "0191f6d4-4ea0-7000-8000-000000000002",
+      "outcomes": [
+        {
+          "id": "0191f6d4-4ea0-7000-8000-00000000000b",
+          "name": "Application submitted",
+          "slug": "application-submitted"
+        },
+        {
+          "id": "0191f6d4-4ea0-7000-8000-00000000000c",
+          "name": "Application rejected",
+          "slug": "application-rejected"
+        }
+      ],
+      "ruleBindings": [
+        {
+          "rule": "0191f6d4-4ea0-7000-8000-000000000008",
+          "purpose": "Requirement",
+          "factBindings": {
+            "0191f6d4-4ea0-7000-8000-000000000006": "0191f6d4-4ea0-7000-8000-000000000006",
+            "0191f6d4-4ea0-7000-8000-000000000007": "0191f6d4-4ea0-7000-8000-000000000007"
+          }
+        }
+      ],
+      "transitions": [
+        {
+          "id": "0191f6d4-4ea0-7000-8000-00000000000d",
+          "name": "Submit application",
+          "slug": "submit-application",
+          "lifecycle": "0191f6d4-4ea0-7000-8000-000000000003",
+          "sourceStage": "0191f6d4-4ea0-7000-8000-000000000004",
+          "targetStage": "0191f6d4-4ea0-7000-8000-000000000005",
+          "outcome": "0191f6d4-4ea0-7000-8000-00000000000b"
+        }
+      ]
+    }
+  ]
+}

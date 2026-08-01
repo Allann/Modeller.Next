@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "diagnostics": [
+    { "code": "adapter.capability.mismatch", "stage": "Discovery", "severity": "Error" },
+    { "code": "adapter.contract-version.mismatch", "stage": "Discovery", "severity": "Error" },
+    { "code": "adapter.failed", "stage": "Execution", "severity": "Error" },
+    { "code": "evidence.contract.duplicate", "stage": "Evidence", "severity": "Error" },
+    { "code": "evidence.coverage.fixture-required", "stage": "Evidence", "severity": "Error" },
+    { "code": "evidence.coverage.status-unsupported", "stage": "Evidence", "severity": "Error" },
+    { "code": "evidence.diagnostic.duplicate", "stage": "Evidence", "severity": "Error" },
+    { "code": "evidence.required-property", "stage": "Evidence", "severity": "Error" },
+    { "code": "fixture.invalid-property", "stage": "Decode", "severity": "Error" },
+    { "code": "fixture.input-digest.mismatch", "stage": "Decode", "severity": "Error" },
+    { "code": "fixture.malformed-json", "stage": "Decode", "severity": "Error" },
+    { "code": "fixture.duplicate-property", "stage": "Decode", "severity": "Error" },
+    { "code": "fixture.required-property", "stage": "Decode", "severity": "Error" },
+    { "code": "fixture.scenario-id.duplicate", "stage": "Discovery", "severity": "Error" },
+    { "code": "fixture.semantic-variance-forbidden", "stage": "Decode", "severity": "Error" },
+    { "code": "fixture.schema.unsupported", "stage": "Decode", "severity": "Error" },
+    { "code": "fixture.unknown-property", "stage": "Decode", "severity": "Error" },
+    { "code": "observation.kind-mismatch", "stage": "Comparison", "severity": "Error" },
+    { "code": "observation.limit.exceeded", "stage": "Execution", "severity": "Error" },
+    { "code": "observation.missing", "stage": "Comparison", "severity": "Error" },
+    { "code": "observation.unexpected", "stage": "Comparison", "severity": "Error" },
+    { "code": "observation.value-mismatch", "stage": "Comparison", "severity": "Error" },
+    { "code": "release.conformance.not-passed", "stage": "Release", "severity": "Error" },
+    { "code": "release.conformance.missing", "stage": "Release", "severity": "Error" },
+    { "code": "release.evidence-catalogue.incomplete", "stage": "Release", "severity": "Error" },
+    { "code": "release.generated-failure.unresolved", "stage": "Release", "severity": "Error" },
+    { "code": "release.mutation.not-killed", "stage": "Release", "severity": "Error" },
+    { "code": "release.mutation.missing", "stage": "Release", "severity": "Error" }
+  ]
+}

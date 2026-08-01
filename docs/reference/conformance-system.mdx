@@ -1,0 +1,92 @@
+---
+title: Conformance and compatibility system
+description: Versioned executable evidence shared by every Modeller implementation and adapter.
+---
+
+The `Modeller.Conformance` module turns accepted contracts into executable
+evidence. It accepts a versioned
+[conformance fixture](/docs/concepts/ubiquitous-language#conformance-fixture)
+and an adapter for one public Modeller interface, then returns a normalized
+report without inspecting implementation structure.
+
+## Runner interface
+
+```csharp
+ValueTask<ConformanceReport> ConformanceRunner.RunAsync(
+    ConformanceFixture fixture,
+    IConformanceAdapter adapter,
+    CancellationToken cancellationToken = default)
+```
+
+An adapter declares its capability and contract version and receives only the
+fixture input, deterministic work and observation limits, and cancellation.
+The report is `Passed`, `Mismatch`, `Invalid`, `Cancelled`, or `Failed` and
+contains stable, path-specific mismatch diagnostics.
+
+JSON object property order is normalized while array order remains observable.
+Permitted variance is restricted to operational data and rendered presentation
+text. Conclusions, findings, missing facts, explanations, canonical traces,
+semantic digests, ownership, and other semantic observations cannot be waived.
+Adapter exceptions are isolated and reported without exposing their messages.
+
+## Versioned evidence
+
+The [`conformance`](https://github.com/Allann/Modeller.Next/tree/main/conformance)
+directory contains:
+
+- strict JSON schemas for fixtures and generated failure records;
+- a stable diagnostic catalogue;
+- a coverage manifest mapping accepted decisions to executable, adapter-pending,
+  or planned fixtures;
+- the compatibility support matrix;
+- the explanation review rubric;
+- the security threat inventory; and
+- immutable curated and promoted regression fixtures.
+
+Removing a supported schema or contract version is an explicit breaking
+decision. Historical fixtures are never regenerated from a current
+implementation.
+
+## Child Care fixtures
+
+The initial corpus contains three independently authored observations:
+
+- the canonical-model ownership graph for the ACCS determination application;
+- **Determine ACCS eligibility** with sufficient facts and an **Eligible**
+  conclusion; and
+- the same decision without supporting evidence, producing **Information
+  required**, an explicit missing fact, a safe next action, and a canonical
+  trace.
+
+Both evaluation fixtures retain the same canonical JSON Child Care context
+package as a versioned input artifact and assert its normalized semantic digest.
+Each fixture also carries the SHA-256 digest of its own normalized input; loading
+a fixture whose input has changed without an explicit versioned update fails
+before an adapter runs.
+
+The canonical-model fixture already passes through a real adapter over the
+public model interface. The two evaluation fixtures are marked adapter-pending
+until the reusable rules runtime is delivered by issue #27; their expected
+domain meaning is already fixed and will not be regenerated from that runtime.
+
+## Generated and mutated scenarios
+
+`GeneratedConformanceRunner` records generator version, seed, and a minimized
+reproduction whenever a deterministic generated scenario fails.
+`SemanticMutationCheck` requires an accepted baseline to pass and then proves
+that a deliberately changed implementation is detected. Agreement between
+implementations is supplementary evidence, never the expected-result oracle.
+
+## Release evidence
+
+`ConformanceEvidenceCatalog` validates the diagnostic, coverage, compatibility,
+explanation, and security artifacts and exposes whether the implementation
+threshold is met. Individual capability releases must additionally turn their
+planned coverage entries executable and pass every applicable concurrency,
+cancellation, isolation, disclosure, compatibility, explanation, and trace
+gate.
+
+The compatibility corpus begins with an immutable unknown-future fixture-schema
+artifact and its expected safe rejection. New persistence, runtime, projection,
+and adapter versions add historical artifacts to the same corpus rather than
+regenerating old evidence.

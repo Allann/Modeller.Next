@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "1.0",
+  "scenarioId": "child-care.accs.information-required.v1",
+  "sourceDecision": "https://github.com/Allann/Modeller.Next/issues/17",
+  "capability": "rule-evaluation",
+  "contractVersion": "1.0",
+  "inputDigest": "sha256:410389356e8e9a4bcb0a00b6974e70d9dfd5030d73715cbc1ea05fe31876e6cf",
+  "input": {
+    "contextPackage": {
+      "artifact": "../../inputs/child-care-accs.context-package.v1.json",
+      "contract": "canonical-context-package/1.0"
+    },
+    "facts": {
+      "active-enrolment-exists": true
+    },
+    "traceLevel": "Full"
+  },
+  "expected": {
+    "semanticDigest": "sha256:584a7d68d3f635c33fb4f1e37ff860ffccadfd8323b8315789512cb2fec74b7c",
+    "status": "InformationRequired",
+    "conclusion": null,
+    "findings": [
+      {
+        "code": "accs.supporting-evidence-required",
+        "prevents": "eligible"
+      }
+    ],
+    "diagnostics": [],
+    "missingFacts": [
+      "supporting-evidence-is-held"
+    ],
+    "explanation": {
+      "conclusion": "Information required",
+      "findingCodes": [
+        "accs.supporting-evidence-required"
+      ],
+      "nextAction": "Provide supporting evidence"
+    },
+    "canonicalTrace": {
+      "level": "Full",
+      "nodes": [
+        "determine-accs-eligibility",
+        "active-enrolment-exists",
+        "supporting-evidence-is-held",
+        "information-required"
+      ]
+    }
+  },
+  "permittedVariance": []
+}

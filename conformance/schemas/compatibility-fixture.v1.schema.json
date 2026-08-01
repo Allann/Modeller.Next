@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modeller.dev/schemas/compatibility-fixture.v1.schema.json",
+  "title": "Modeller compatibility fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "scenarioId",
+    "sourceDecision",
+    "artifactKind",
+    "artifact",
+    "expected"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "scenarioId": { "type": "string", "minLength": 1 },
+    "sourceDecision": { "type": "string", "format": "uri" },
+    "artifactKind": { "type": "string", "minLength": 1 },
+    "artifact": true,
+    "expected": true
+  }
+}

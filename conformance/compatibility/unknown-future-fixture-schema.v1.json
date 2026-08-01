@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "scenarioId": "compatibility.fixture-schema.unknown-future.v1",
+  "sourceDecision": "https://github.com/Allann/Modeller.Next/issues/22",
+  "artifactKind": "conformance-fixture",
+  "artifact": {
+    "schemaVersion": "99.0",
+    "scenarioId": "future.fixture.v99",
+    "sourceDecision": "https://github.com/Allann/Modeller.Next/issues/22",
+    "capability": "canonical-model",
+    "contractVersion": "1.0",
+    "inputDigest": "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "input": {},
+    "expected": {}
+  },
+  "expected": {
+    "status": "Invalid",
+    "diagnosticCode": "fixture.schema.unsupported"
+  }
+}
