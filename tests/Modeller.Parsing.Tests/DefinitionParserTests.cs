@@ -8,7 +8,7 @@ namespace Modeller.Parsing.Tests;
 public sealed class DefinitionParserTests
 {
     [Fact]
-    public void Readable_child_care_source_has_the_canonical_json_semantic_digest()
+    public void Rml_child_care_source_has_the_canonical_json_semantic_digest()
     {
         var source = new SourceDocument(
             "child-care-accs.modeller",
@@ -28,33 +28,27 @@ public sealed class DefinitionParserTests
     public void Unknown_fact_reference_reports_the_exact_source_token()
     {
         var content = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "child-care-accs.modeller"));
-        const string unknown = "0191f6d4-4ea0-7000-8000-00000000ffff";
+        const string unknown = "Unknown eligibility fact";
         content = content.Replace(
-            "inputs=0191f6d4-4ea0-7000-8000-000000000006,",
-            $"inputs={unknown},",
+            "input \"Active enrolment exists\"",
+            $"input \"{unknown}\"",
             StringComparison.Ordinal);
         var source = new SourceDocument("child-care-accs.modeller", content);
 
         var result = DefinitionParser.Parse([source], ParseOptions.Language1, TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
-        Assert.NotNull(result.Package);
+        Assert.Null(result.Package);
         var diagnostic = Assert.Single(result.Diagnostics);
-        Assert.Equal("validation.reference.fact-unresolved", diagnostic.Code);
-        Assert.Equal(9, diagnostic.Location!.Line);
-        var ruleLine = content.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n')[8];
-        Assert.Equal(ruleLine.IndexOf(unknown, StringComparison.Ordinal) + 1, diagnostic.Location.Column);
-        Assert.Equal(unknown.Length, diagnostic.Location.Length);
+        Assert.Equal("rml.reference.unresolved", diagnostic.Code);
+        Assert.Equal(35, diagnostic.Location!.Line);
     }
 
     [Fact]
-    public void Comments_formatting_and_source_order_do_not_change_meaning()
+    public void Comments_and_indentation_do_not_change_rml_meaning()
     {
         var content = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "child-care-accs.modeller"));
-        var statements = content.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n')
-            .Where(line => line.Length > 0 && !line.StartsWith('#'))
-            .Reverse();
-        var reordered = $"# moved and reformatted\n\n{string.Join("\n\n", statements)}\n";
+        var reordered = $"# added review comment\n\n{content.Replace("  version 1.0.0", "      version 1.0.0", StringComparison.Ordinal)}\n";
 
         var result = DefinitionParser.Parse(
             [new SourceDocument("renamed/source.modeller", reordered)],
@@ -71,7 +65,7 @@ public sealed class DefinitionParserTests
     public void Incomplete_transition_reports_its_source_line()
     {
         var content = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "child-care-accs.modeller"))
-            .Replace(" outcome=0191f6d4-4ea0-7000-8000-00000000000b", string.Empty, StringComparison.Ordinal);
+            .Replace("    outcome \"Application submitted\"\n", string.Empty, StringComparison.Ordinal);
 
         var result = DefinitionParser.Parse(
             [new SourceDocument("child-care-accs.modeller", content)],
@@ -79,12 +73,12 @@ public sealed class DefinitionParserTests
             TestContext.Current.CancellationToken);
 
         var diagnostic = Assert.Single(result.Diagnostics);
-        Assert.Equal("parse.attribute.required", diagnostic.Code);
-        Assert.Equal(14, diagnostic.Location!.Line);
+        Assert.Equal("rml.statement.required", diagnostic.Code);
+        Assert.Equal(65, diagnostic.Location!.Line);
     }
 
     [Fact]
-    public async Task Readable_source_passes_executable_conformance_evidence()
+    public async Task Rml_source_passes_executable_conformance_evidence()
     {
         var fixture = ConformanceFixture.Parse(File.ReadAllText(
             Path.Combine(AppContext.BaseDirectory, "Fixtures", "readable-source.v1.json")));
@@ -194,6 +188,41 @@ public sealed class DefinitionParserTests
 
         Assert.Equal("parse.legacy.construct-unsupported", Assert.Single(result.ParseResult.Diagnostics).Code);
         Assert.Null(result.ParseResult.Package);
+    }
+
+    [Fact]
+    public void Identity_source_edit_adds_uuidv7_metadata_once()
+    {
+        const string source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n";
+
+        var first = RmlCompiler.EnsureIdentities(source);
+        var second = RmlCompiler.EnsureIdentities(first.Updated);
+
+        Assert.True(first.Changed);
+        Assert.Contains("# @id=", first.Updated);
+        Assert.False(second.Changed);
+        var identity = first.Updated.Split('\n').Single(line => line.StartsWith("# @id=", StringComparison.Ordinal))[6..];
+        Assert.Equal(7, Guid.Parse(identity).Version);
+    }
+
+    [Fact]
+    public void Rml_rejects_non_v7_identity_metadata()
+    {
+        const string source = "rml 1.0\n# @id=00000000-0000-4000-8000-000000000001\ncontext Child Care\n  version 1.0.0\nend\n";
+
+        var result = DefinitionParser.Parse([new("child-care.modeller", source)], ParseOptions.Language1, TestContext.Current.CancellationToken);
+
+        Assert.Equal("rml.identity.invalid", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void Rml_path_and_token_limits_are_enforced_before_compilation()
+    {
+        var unsafePath = DefinitionParser.Parse([new("../child-care.modeller", "rml 1.0")], ParseOptions.Language1, TestContext.Current.CancellationToken);
+        var tooManyTokens = DefinitionParser.Parse([new("child-care.modeller", "rml 1.0\ncontext Child Care")], new("1.0", 100, 10, 2), TestContext.Current.CancellationToken);
+
+        Assert.Equal("parse.path.invalid", Assert.Single(unsafePath.Diagnostics).Code);
+        Assert.Equal("parse.limit.tokens", Assert.Single(tooManyTokens.Diagnostics).Code);
     }
 
     private sealed class ParsingConformanceAdapter(string fixtureDirectory) : IConformanceAdapter

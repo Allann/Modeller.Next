@@ -1,0 +1,88 @@
+---
+title: Readable Modelling Language
+description: Business-facing syntax for authoring canonical Modeller meaning.
+---
+
+Readable Modelling Language (RML) 1.0 is the portable, version-controlled
+authoring language for Modeller. It uses nested blocks, readable names, quoted
+references, and ordinary comments while compiling to the same canonical model
+used by validation, rules, projections, and generation.
+
+## Child Care example
+
+```text
+rml 1.0
+
+context Child Care
+  version 1.0.0
+end
+
+fact Active enrolment exists
+  type truth
+  export
+end
+
+rule Determine ACCS eligibility
+  input "Active enrolment exists"
+  when all
+    fact "Active enrolment exists"
+  end
+  conclusion Eligible
+  end
+  finding "Active enrolment exists" missing accs.active-enrolment-required
+  export
+end
+```
+
+Tooling maintains a `# @id=<uuidv7>` comment immediately before each
+first-class declaration. Editors may fold this metadata. Authors use readable
+names in normal references; renames update declarations and references while
+preserving the metadata identity.
+
+When a new declaration has no identity, the language server reports
+`rml.identity.required` and offers **Add missing Modeller identities**. The
+idempotent source action inserts UUIDv7 metadata once; authors do not create the
+values themselves.
+
+## RML 1.0 blocks
+
+| Declaration | Nested statements |
+| --- | --- |
+| `context` | `version` |
+| `entity` | one `lifecycle` |
+| `lifecycle` | `stage` declarations |
+| `fact` | `type`, optional `export` |
+| `rule` | `input`, `when all`, `conclusion`, `finding`, optional `export` |
+| `behaviour` | `for`, `requires`, `outcome`, `transition` |
+| `transition` | `lifecycle`, `from`, `to`, `outcome` |
+
+RML 1.0 deliberately covers the accepted Child Care ACCS slice. Structural
+generation concepts will be added only after their canonical semantics are
+accepted; legacy syntax is design evidence rather than a compatibility promise.
+
+## Compilation and diagnostics
+
+The RML anti-corruption layer resolves readable references, checks tooling-owned
+identity metadata, retains source spans, and compiles into the authored canonical
+model. SAF may be used internally as a temporary lowering step, but it is not an
+authoring requirement or semantic authority.
+
+Unclosed blocks, missing identity metadata, unknown references, unsupported
+expressions, and canonical validation failures return stable diagnostics mapped
+to RML source. Parsing retains the existing character, statement, token,
+cancellation, and package-relative path limits.
+
+## Editor support
+
+The repository extension under `editors/vscode-modeller` provides:
+
+- RML TextMate highlighting, comments, brackets, indentation, and folding;
+- source-mapped diagnostics;
+- keyword and semantic concept completion;
+- hover, definition, references, and identity-preserving rename;
+- document symbols and semantic tokens.
+- a quick fix that adds missing identity metadata.
+
+SAF uses a distinct engineering-only language mode. See the
+[editor-integration reference](/docs/reference/editor-integration) and
+[authoring decision](/docs/architecture/decisions/authoring-language-and-editing).

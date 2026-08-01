@@ -1,0 +1,48 @@
+{
+  "name": "modeller-rml",
+  "displayName": "Modeller RML",
+  "description": "Readable Modelling Language support for Modeller",
+  "version": "0.1.0",
+  "publisher": "Allann",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/Allann/Modeller.Next.git" },
+  "engines": { "vscode": "^1.95.0" },
+  "main": "./out/extension.js",
+  "activationEvents": ["onLanguage:modeller-rml", "onLanguage:modeller-saf"],
+  "categories": ["Programming Languages"],
+  "contributes": {
+    "configuration": {
+      "title": "Modeller",
+      "properties": {
+        "modeller.languageServer.path": {
+          "type": "string",
+          "default": "",
+          "description": "Optional path to Modeller.LanguageServer.dll. Repository workspaces are detected automatically."
+        }
+      }
+    },
+    "languages": [
+      { "id": "modeller-rml", "aliases": ["Modeller RML", "rml"], "extensions": [".modeller"], "configuration": "./language-configuration.json" },
+      { "id": "modeller-saf", "aliases": ["Modeller SAF", "saf"], "extensions": [".saf"], "configuration": "./language-configuration.json" }
+    ],
+    "grammars": [
+      { "language": "modeller-rml", "scopeName": "source.modeller.rml", "path": "./syntaxes/rml.tmLanguage.json" },
+      { "language": "modeller-saf", "scopeName": "source.modeller.saf", "path": "./syntaxes/saf.tmLanguage.json" }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "bundle": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
+    "vscode:prepublish": "npm run bundle",
+    "test": "dotnet build ../../src/Modeller.LanguageServer/Modeller.LanguageServer.csproj -c Release && node --test test/*.test.mjs",
+    "package": "dotnet publish ../../src/Modeller.LanguageServer/Modeller.LanguageServer.csproj -c Release -o server && vsce package --no-dependencies"
+  },
+  "dependencies": { "vscode-languageclient": "^9.0.1" },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.0"
+  }
+}

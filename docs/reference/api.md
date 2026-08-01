@@ -12,7 +12,8 @@ API. Callers compose the smallest interfaces needed for their workflow.
 | --- | --- | --- |
 | `Modeller.Model` | `CanonicalModel.Apply` | Typed changes to canonical definitions |
 | `Modeller.Contexts` | `ContextPackageSystem` | Canonical package persistence, migration, and federation |
-| `Modeller.Parsing` | `DefinitionParser.Parse` | SAF to canonical model with provenance |
+| `Modeller.Parsing` | `DefinitionParser.Parse`, `RmlCompiler` | RML or SAF to canonical model with provenance |
+| `Modeller.LanguageServer` | stdio LSP adapter | RML diagnostics, completion, navigation, references, rename, symbols, and semantic tokens |
 | `Modeller.Validation` | `SemanticValidation.Validate` | Staged semantic validation |
 | `Modeller.Rules` | `RulesRuntime` | Bind and evaluate rules and decision tables |
 | `Modeller.Projections` | `DiagramProjector`, `ProjectionEditor` | Project views and translate edits |

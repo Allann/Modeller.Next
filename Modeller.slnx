@@ -7,6 +7,7 @@
     <Project Path="src/Modeller.Editor/Modeller.Editor.csproj" />
     <Project Path="src/Modeller.Generation/Modeller.Generation.csproj" />
     <Project Path="src/Modeller.GenerationWorkflow/Modeller.GenerationWorkflow.csproj" />
+    <Project Path="src/Modeller.LanguageServer/Modeller.LanguageServer.csproj" />
     <Project Path="src/Modeller.Model/Modeller.Model.csproj" />
     <Project Path="src/Modeller.Output/Modeller.Output.csproj" />
     <Project Path="src/Modeller.Parsing/Modeller.Parsing.csproj" />

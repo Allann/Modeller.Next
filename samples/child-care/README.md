@@ -1,7 +1,7 @@
 # Child Care sample
 
-This is Modeller's canonical executable sample. It currently uses the
-low-level Semantic Assembly Format and grows one accepted Child Care capability at a
+This is Modeller's canonical executable sample. It uses the business-facing
+Readable Modelling Language and grows one accepted Child Care capability at a
 time. The legacy sample is domain evidence only; it is not an import source or
 compatibility target.
 
@@ -24,7 +24,7 @@ dotnet run --project src/Modeller.Cli -- validate samples/child-care/model/accs-
 ## Structure
 
 - `.modeller/config.json` is the current minimal workspace configuration.
-- `model/` contains the current SAF source and will move to the Readable Modelling Language.
+- `model/` contains the current RML source.
 - `templates/csharp/` will contain the first validated C# template pack.
 - `expected/` describes and later stores deterministic acceptance output.
 - `generated/` is reserved for CLI output and is not yet checked in.

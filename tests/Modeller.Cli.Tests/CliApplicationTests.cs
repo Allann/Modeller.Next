@@ -32,8 +32,8 @@ public sealed class CliApplicationTests
     public async Task Validate_reports_located_semantic_diagnostics_and_a_validation_exit_code()
     {
         var source = await ChildCareSource();
-        const string unknown = "0191f6d4-4ea0-7000-8000-00000000ffff";
-        source = source.Replace("inputs=0191f6d4-4ea0-7000-8000-000000000006,", $"inputs={unknown},", StringComparison.Ordinal);
+        const string unknown = "Unknown eligibility fact";
+        source = source.Replace("fact \"Active enrolment exists\"", $"fact \"{unknown}\"", StringComparison.Ordinal);
         var host = new RecordingCliHost(new Dictionary<string, string> { ["child-care.modeller"] = source });
 
         var exitCode = await CliApplication.RunAsync(["validate", "child-care.modeller", "--format", "json"], host, TestContext.Current.CancellationToken);
@@ -41,8 +41,8 @@ public sealed class CliApplicationTests
         Assert.Equal(CliExitCode.ValidationFailed, exitCode);
         using var json = JsonDocument.Parse(host.StandardOutput);
         var diagnostic = Assert.Single(json.RootElement.GetProperty("diagnostics").EnumerateArray());
-        Assert.Equal("validation.reference.fact-unresolved", diagnostic.GetProperty("code").GetString());
-        Assert.Equal(9, diagnostic.GetProperty("line").GetInt32());
+        Assert.Equal("rml.reference.unresolved", diagnostic.GetProperty("code").GetString());
+        Assert.Equal(38, diagnostic.GetProperty("line").GetInt32());
         Assert.Equal("child-care.modeller", diagnostic.GetProperty("document").GetString());
     }
 

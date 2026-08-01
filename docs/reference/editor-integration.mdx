@@ -29,7 +29,7 @@ A stale request returns `editor.document.stale`; a stale semantic edit returns
 `editor.semantic-revision.stale` and requires reprojection. Cancellation returns
 no partial diagnostics, navigation result, projection, or edit.
 
-Only absolute `file:` document URIs enter the readable-source parser. The
+Only absolute `file:` document URIs enter the RML or SAF parser. The
 adapter passes only the final package-relative filename downstream, preventing
 workspace paths or traversal from becoming package source names.
 

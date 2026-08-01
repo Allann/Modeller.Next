@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Modeller RML",
+  "scopeName": "source.modeller.rml",
+  "patterns": [
+    { "name": "comment.line.number-sign.modeller", "match": "#.*$" },
+    { "name": "string.quoted.double.modeller", "begin": "\"", "end": "\"" },
+    { "name": "keyword.declaration.modeller", "match": "\\b(rml|context|entity|lifecycle|stage|fact|rule|conclusion|behaviour|outcome|transition)\\b" },
+    { "name": "keyword.control.modeller", "match": "\\b(end|version|type|export|input|when|requires|for|finding|from|to)\\b" },
+    { "name": "constant.language.modeller", "match": "\\b(all|truth|text|number|date|true|false|missing)\\b" },
+    { "name": "constant.numeric.modeller", "match": "\\b[0-9]+(?:\\.[0-9]+)*\\b" }
+  ]
+}

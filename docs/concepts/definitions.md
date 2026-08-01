@@ -32,8 +32,8 @@ so a rename does not silently change meaning.
 
 ## Authoring and changing definitions
 
-The current executable input is [SAF](/docs/reference/readable-source-language);
-authors will normally use the [Readable Modelling Language](/docs/concepts/ubiquitous-language#readable-modelling-language).
+Authors normally use the [Readable Modelling Language](/docs/reference/readable-modelling-language);
+SAF remains available for engineering and conformance inputs.
 The parser compiles it into an `AuthoredContextRevision` and retains provenance
 for diagnostics and navigation. Programmatic callers use `CanonicalModel.Apply`
 with typed operations such as `AddDefinition`, `RenameConcept`, and

@@ -37,7 +37,7 @@ only when you intend to replace an existing file.
 
 ## Validate the Child Care model
 
-The SAF fixture is the smallest executable slice of the
+The RML file is the smallest executable slice of the
 [Child Care reference project](/docs/reference/reference-project):
 
 ```powershell
@@ -47,10 +47,15 @@ dotnet run --project src/Modeller.Cli -- validate samples/child-care/model/accs-
 A successful model reports `Valid: no diagnostics.` For stable machine-readable
 diagnostics, add `--format json`.
 
-The source uses the low-level format documented in the
-[Semantic Assembly Format reference](/docs/reference/readable-source-language). Parsing
+The source uses the business-facing language documented in the
+[RML reference](/docs/reference/readable-modelling-language). Parsing
 produces the canonical model; semantic validation and downstream workflows do
 not maintain a second interpretation of the domain.
+
+Open the repository in VS Code and run the extension from
+`editors/vscode-modeller` to receive syntax highlighting, diagnostics, semantic
+completion, hover, definition, references, and safe rename. The extension starts
+the repository language-server project automatically.
 
 ## Plan and generate output
 

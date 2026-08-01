@@ -17,6 +17,7 @@ public static partial class DefinitionParser
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(options);
         var sources = documents.OrderBy(document => document.Name, StringComparer.Ordinal).ToArray();
+        if (RmlCompiler.IsRml(sources)) return RmlCompiler.Compile(sources, options, cancellationToken);
         if (cancellationToken.IsCancellationRequested)
         {
             return new ParseResult(null, [], [], true);

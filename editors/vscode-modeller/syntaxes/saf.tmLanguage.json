@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Modeller SAF",
+  "scopeName": "source.modeller.saf",
+  "patterns": [
+    { "name": "comment.line.number-sign.modeller", "match": "#.*$" },
+    { "name": "string.quoted.double.modeller", "begin": "\"", "end": "\"" },
+    { "name": "keyword.declaration.modeller", "match": "^\\s*(language|context|entity|stage|fact|rule|decision|decision-row|decision-conclusion|behaviour|outcome|binding|transition)\\b" },
+    { "name": "variable.other.modeller", "match": "\\b[a-z][a-z-]*(?==)" },
+    { "name": "constant.numeric.modeller", "match": "\\b[0-9a-f]{8}-[0-9a-f-]{27}\\b" }
+  ]
+}

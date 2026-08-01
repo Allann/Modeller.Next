@@ -1,14 +1,71 @@
-# Modeller Semantic Assembly Format 1.0 — Child Care ACCS acceptance slice
-language 1.0
-context id=0191f6d4-4ea0-7000-8000-000000000001 name="Child Care" slug=child-care version=1.0.0
-entity id=0191f6d4-4ea0-7000-8000-000000000002 name="ACCS determination application" slug=accs-determination-application lifecycle-id=0191f6d4-4ea0-7000-8000-000000000003 lifecycle-name="ACCS determination application lifecycle" lifecycle-slug=accs-determination-application-lifecycle
-stage owner=0191f6d4-4ea0-7000-8000-000000000002 id=0191f6d4-4ea0-7000-8000-000000000004 name="Draft" slug=draft
-stage owner=0191f6d4-4ea0-7000-8000-000000000002 id=0191f6d4-4ea0-7000-8000-000000000005 name="Submitted" slug=submitted
-fact id=0191f6d4-4ea0-7000-8000-000000000006 name="Active enrolment exists" slug=active-enrolment-exists type=Truth export=true
-fact id=0191f6d4-4ea0-7000-8000-000000000007 name="Supporting evidence is held" slug=supporting-evidence-is-held type=Truth export=true
-rule id=0191f6d4-4ea0-7000-8000-000000000008 name="Determine ACCS eligibility" slug=determine-accs-eligibility inputs=0191f6d4-4ea0-7000-8000-000000000006,0191f6d4-4ea0-7000-8000-000000000007 expression=and(0191f6d4-4ea0-7000-8000-000000000006,0191f6d4-4ea0-7000-8000-000000000007) true-findings=0191f6d4-4ea0-7000-8000-000000000006:accs.active-enrolment-confirmed,0191f6d4-4ea0-7000-8000-000000000007:accs.supporting-evidence-confirmed missing-findings=0191f6d4-4ea0-7000-8000-000000000006:accs.active-enrolment-required,0191f6d4-4ea0-7000-8000-000000000007:accs.supporting-evidence-required conclusion-id=0191f6d4-4ea0-7000-8000-000000000009 conclusion-name="Eligible" conclusion-slug=eligible export=true
-behaviour id=0191f6d4-4ea0-7000-8000-00000000000a name="Submit ACCS determination application" slug=submit-accs-determination-application entity=0191f6d4-4ea0-7000-8000-000000000002
-outcome owner=0191f6d4-4ea0-7000-8000-00000000000a id=0191f6d4-4ea0-7000-8000-00000000000b name="Application submitted" slug=application-submitted
-outcome owner=0191f6d4-4ea0-7000-8000-00000000000a id=0191f6d4-4ea0-7000-8000-00000000000c name="Application rejected" slug=application-rejected
-binding owner=0191f6d4-4ea0-7000-8000-00000000000a rule=0191f6d4-4ea0-7000-8000-000000000008 purpose=Requirement facts=0191f6d4-4ea0-7000-8000-000000000006:0191f6d4-4ea0-7000-8000-000000000006,0191f6d4-4ea0-7000-8000-000000000007:0191f6d4-4ea0-7000-8000-000000000007
-transition owner=0191f6d4-4ea0-7000-8000-00000000000a id=0191f6d4-4ea0-7000-8000-00000000000d name="Submit application" slug=submit-application lifecycle=0191f6d4-4ea0-7000-8000-000000000003 source=0191f6d4-4ea0-7000-8000-000000000004 target=0191f6d4-4ea0-7000-8000-000000000005 outcome=0191f6d4-4ea0-7000-8000-00000000000b
+# Child Care ACCS acceptance slice — Readable Modelling Language 1.0
+rml 1.0
+
+# Identity metadata is maintained by Modeller tooling and normally folded by editors.
+# @id=0191f6d4-4ea0-7000-8000-000000000001
+context Child Care
+  version 1.0.0
+end
+
+# @id=0191f6d4-4ea0-7000-8000-000000000002
+entity ACCS determination application
+  # @id=0191f6d4-4ea0-7000-8000-000000000003
+  lifecycle ACCS determination application lifecycle
+    # @id=0191f6d4-4ea0-7000-8000-000000000004
+    stage Draft
+    # @id=0191f6d4-4ea0-7000-8000-000000000005
+    stage Submitted
+  end
+end
+
+# @id=0191f6d4-4ea0-7000-8000-000000000006
+fact Active enrolment exists
+  type truth
+  export
+end
+
+# @id=0191f6d4-4ea0-7000-8000-000000000007
+fact Supporting evidence is held
+  type truth
+  export
+end
+
+# @id=0191f6d4-4ea0-7000-8000-000000000008
+rule Determine ACCS eligibility
+  input "Active enrolment exists"
+  input "Supporting evidence is held"
+  when all
+    fact "Active enrolment exists"
+    fact "Supporting evidence is held"
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000009
+  conclusion Eligible
+  end
+  finding "Active enrolment exists" true accs.active-enrolment-confirmed
+  finding "Supporting evidence is held" true accs.supporting-evidence-confirmed
+  finding "Active enrolment exists" missing accs.active-enrolment-required
+  finding "Supporting evidence is held" missing accs.supporting-evidence-required
+  export
+end
+
+# @id=0191f6d4-4ea0-7000-8000-00000000000a
+behaviour Submit ACCS determination application
+  for "ACCS determination application"
+  requires "Determine ACCS eligibility"
+
+  # @id=0191f6d4-4ea0-7000-8000-00000000000b
+  outcome Application submitted
+  end
+
+  # @id=0191f6d4-4ea0-7000-8000-00000000000c
+  outcome Application rejected
+  end
+
+  # @id=0191f6d4-4ea0-7000-8000-00000000000d
+  transition Submit application
+    lifecycle "ACCS determination application lifecycle"
+    from "Draft"
+    to "Submitted"
+    outcome "Application submitted"
+  end
+end

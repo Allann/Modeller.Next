@@ -1,0 +1,16 @@
+{
+  "comments": { "lineComment": "#" },
+  "brackets": [["[", "]"], ["(", ")"]],
+  "autoClosingPairs": [
+    { "open": "[", "close": "]" },
+    { "open": "(", "close": ")" },
+    { "open": "\"", "close": "\"", "notIn": ["string"] }
+  ],
+  "surroundingPairs": [["[", "]"], ["(", ")"], ["\"", "\""]],
+  "folding": { "markers": { "start": "^\\s*(context|entity|lifecycle|fact|rule|when|conclusion|behaviour|outcome|transition)\\b", "end": "^\\s*end\\b" } },
+  "indentationRules": {
+    "increaseIndentPattern": "^\\s*(context|entity|lifecycle|fact|rule|when|conclusion|behaviour|outcome|transition)\\b.*$",
+    "decreaseIndentPattern": "^\\s*end\\b"
+  },
+  "wordPattern": "[^\\s\\\"']+"
+}

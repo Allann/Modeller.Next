@@ -6,9 +6,9 @@
   <img alt="Modeller — Describe the system. Generate the structure." src="public/brand/modeller-hero-light.png">
 </picture>
 
-This is the successor workspace for Modeller. During reconstruction the local
-directory and repository use the temporary `Modeller.Next` label; the public
-product remains **Modeller**.
+This repository contains **Modeller**. The local directory and repository retain
+the temporary `Modeller.Next` label, but the product and its documentation use
+the Modeller name.
 
 Canonical project documentation lives in `docs/` and is rendered by the
 Next.js/Fumadocs application in this repository.
@@ -20,8 +20,8 @@ npm install
 npm run dev
 ```
 
-The successor implementation is a .NET 10 solution. Run its model contract
-tests independently of the documentation site:
+The implementation is a .NET 10 solution. Run its model contract tests
+independently of the documentation site:
 
 ```bash
 dotnet test Modeller.slnx
@@ -41,9 +41,11 @@ contract is documented in the
 resolved snapshots through one deterministic staged interface documented in the
 [semantic-validation reference](docs/reference/semantic-validation.mdx).
 
-`Modeller.Parsing` compiles versioned
-[readable source](docs/reference/readable-source-language.mdx) into that same
-canonical model while retaining safe source provenance and diagnostics.
+`Modeller.Parsing` compiles the business-readable
+[Readable Modelling Language](docs/reference/readable-modelling-language.mdx),
+or the lower-level [Semantic Authoring Format](docs/reference/readable-source-language.mdx),
+into that same canonical model while retaining safe source provenance and
+diagnostics.
 
 `Modeller.Rules` binds validated federation snapshots into immutable runtime
 plans and evaluates typed facts with deterministic results, findings, evidence,
@@ -54,10 +56,11 @@ VS Code. Run the `setup`, `docs: dev`, or `verify` tasks from the task picker.
 Press F5 and choose **Modeller Docs** to start the development server and open
 the site with browser debugging attached.
 
-The existing `CSharp-Catalyst/Modeller` repository remains the legacy source of
-implemented behaviour until the replacement gates in `MIGRATION.md` are met.
+The existing `CSharp-Catalyst/Modeller` repository is retained as historical
+design evidence. It is not a compatibility target or an alternative product
+implementation.
 
-The temporary successor repository is hosted under `Allann/Modeller.Next`
+The repository is hosted under `Allann/Modeller.Next`
 because GitHub currently reports that the legacy `CSharp-Catalyst` organisation
 is being deleted and will not accept new repositories.
 

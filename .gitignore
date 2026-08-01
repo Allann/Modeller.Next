@@ -1,5 +1,9 @@
 # deps
 /node_modules
+**/node_modules/
+editors/vscode-modeller/out/
+editors/vscode-modeller/*.vsix
+editors/vscode-modeller/server/
 
 # generated content
 .source

@@ -11,17 +11,16 @@ public sealed class EditorIntegrationTests
     public async Task Opening_invalid_accs_source_reports_the_same_located_diagnostic_as_the_parser()
     {
         var content = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "child-care-accs.modeller"), TestContext.Current.CancellationToken);
-        const string unknown = "0191f6d4-4ea0-7000-8000-00000000ffff";
-        content = content.Replace("inputs=0191f6d4-4ea0-7000-8000-000000000006,", $"inputs={unknown},", StringComparison.Ordinal);
+        const string unknown = "Unknown eligibility fact";
+        content = content.Replace("fact \"Active enrolment exists\"", $"fact \"{unknown}\"", StringComparison.Ordinal);
         var document = new EditorDocument(new("file:///workspace/child-care-accs.modeller"), 7, content);
 
         var result = await EditorIntegration.ExecuteAsync(new EditorRequest(document, 7, new PublishDiagnostics()), TestContext.Current.CancellationToken);
 
         var diagnostic = Assert.Single(Assert.IsType<DiagnosticsResponse>(result).Diagnostics);
-        Assert.Equal("validation.reference.fact-unresolved", diagnostic.Code);
+        Assert.Equal("rml.reference.unresolved", diagnostic.Code);
         Assert.Equal(EditorDiagnosticSeverity.Error, diagnostic.Severity);
-        Assert.Equal(8, diagnostic.Range.Start.Line);
-        Assert.Equal(content.Split('\n')[8].IndexOf(unknown, StringComparison.Ordinal), diagnostic.Range.Start.Character);
+        Assert.Equal(37, diagnostic.Range.Start.Line);
     }
 
     [Fact]
@@ -46,7 +45,7 @@ public sealed class EditorIntegrationTests
             new NavigateToConcept(Id("0191f6d4-4ea0-7000-8000-000000000006"))), TestContext.Current.CancellationToken);
 
         var navigation = Assert.IsType<NavigationResponse>(result);
-        Assert.Equal(6, navigation.Target.Range.Start.Line);
+        Assert.Equal(21, navigation.Target.Range.Start.Line);
         Assert.Equal(document.Uri, navigation.Target.Uri);
     }
 
