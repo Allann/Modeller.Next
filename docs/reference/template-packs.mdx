@@ -1,0 +1,21 @@
+---
+title: Template packs
+description: Independently versioned, validated template adapters for deterministic generation.
+---
+
+A [template pack](/docs/concepts/ubiquitous-language#template-pack) declares its
+identity, version, generation contract, renderer requirement, artifacts,
+confined logical paths, semantic inputs, and pinned templates.
+
+`TemplatePackLoader.Load` validates a supplied manifest and template set without
+planning, rendering, discovery side effects, or filesystem writes. Reordering
+manifest properties or artifact declarations produces the same normalized
+descriptor digest. Missing templates, path traversal, duplicate output paths,
+and incompatible generation or renderer contracts fail before planning.
+
+The Child Care C# pack declares separate artifacts for **Determine ACCS
+eligibility** and **Submit application**. The pack consumes their stable semantic
+inputs but cannot add or reinterpret domain meaning.
+
+Validated descriptors feed [generation planning](/docs/reference/generation-plans),
+and pinned template bytes feed [template rendering](/docs/reference/template-rendering).

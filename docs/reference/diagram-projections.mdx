@@ -45,3 +45,7 @@ generic visual deletion cannot silently delete semantic meaning.
 
 See the accepted [diagram projection and editing decision](/docs/architecture/decisions/diagram-projections-editing-semantics)
 for the view-specific semantic contracts.
+
+Editor protocols reach both operations through the
+[editor-integration reference](/docs/reference/editor-integration), which adds
+document-version conflicts and cancellation without changing projection meaning.

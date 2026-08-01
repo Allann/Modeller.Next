@@ -10,13 +10,13 @@ description: Initial Wayfinder map for reconstructing the Modeller implementatio
 | Context-package persistence and federation | Legacy project definitions and parser loading | Implemented in #26 — canonical JSON, stable digests, exact import/export locks, and explicit schema migration |
 | Conformance and compatibility system | Legacy tests and accepted architecture decisions | Implemented in #25 — shared runner, evidence artifacts, mutation and generated-failure support |
 | Validation and diagnostics | Parser, CLI, and language-server validation paths | Implemented in #3 — explicit staged semantic validation, ordered diagnostics, extension isolation, cancellation, and work limits |
-| Generation planning | `Modeller.Generator` | Proposed |
-| Scriban rendering | Generator template engine | Proposed |
-| Safe output ownership | `.g.*` generation convention | Proposed |
-| Profiles and configuration | `.modeller/config.yaml` | Proposed |
-| Command-line workflows | `Modeller.Cli` | Proposed |
-| Template packs | `templates/csharp/*` | Proposed |
-| Editor assistance | VS Code extension | Proposed |
+| Generation planning | `Modeller.Generator` | Implemented in #4 — deterministic immutable plans, affected-artifact detection, compatibility, path safety, cancellation, and budgets |
+| Scriban rendering | Generator template engine | Implemented in #5 — pinned side-effect-free adapter, immutable output, provenance, bounded diagnostics, and resource limits |
+| Safe output ownership | `.g.*` generation convention | Implemented in #6 — manifest-proven ownership, preview/apply reports, handwritten conflicts, explicit stale policy, recovery, and confined atomic adapter batches |
+| Profiles and configuration | `.modeller/config.yaml` | Implemented in #7 — deterministic layered resolution, profiles, overrides, substitutions, provenance, redaction, and version checks |
+| Command-line workflows | `Modeller.Cli` | Implemented in #8 — System.CommandLine-based init, validate, plan, and generate preview/apply adapters with stable exit codes and JSON output |
+| Template packs | `templates/csharp/*` | Implemented in #9 — normalized manifests, pinned identities/contracts/renderers/templates, confined paths, and deterministic descriptors |
+| Editor assistance | VS Code extension | In progress in #11 — stable diagnostic, navigation, lifecycle/rule-decision projection, typed-edit, stale-document, cancellation, and hostile-URI workflows implemented |
 | AI-assisted modelling | Legacy experiments and future design | Discovery |
 
 This table is the seed for Wayfinder issues. An item becomes accepted only when

@@ -297,6 +297,9 @@ flowchart LR
 The [diagram editing decision](/docs/architecture/decisions/diagram-projections-editing-semantics)
 requires explicit typed operations. Moving shapes never changes ownership or
 relationships, and **Remove from view** is distinct from **Delete from model**.
+The [editor-integration reference](/docs/reference/editor-integration) exposes
+these same parser, navigation, projection, and edit interfaces to editor
+protocols while keeping document and session state outside semantic authority.
 
 **Pressure introduced:** generating files repeatedly is dangerous unless output
 ownership and overwrite rules are explicit.

@@ -1,0 +1,55 @@
+---
+title: Template rendering
+description: Render generation plans into immutable proposed output without writing files.
+---
+
+`Modeller.Rendering` consumes an immutable
+[generation plan](/docs/concepts/ubiquitous-language#generation-plan) and a
+versioned renderer adapter. It returns complete proposed output artifacts or
+structured diagnostics; it never changes canonical meaning, the plan,
+configuration, templates, or the filesystem.
+
+## Rendering interface
+
+`TemplateRenderer.RenderAsync(request, adapter, cancellationToken)` is the
+public seam. The adapter contract version must match the plan schema before any
+template executes. Successful output remains ordered exactly as planned and
+records:
+
+- logical output path and UTF-8 content;
+- deterministic content digest;
+- plan, pack, template, and input digests; and
+- renderer identity and contract version.
+
+The same pinned plan, templates, renderer version, and limits produce identical
+bytes and provenance. Output remains a projection: templates and generated C#
+cannot become semantic authority.
+
+## Documented template context
+
+The reference Scriban adapter exposes only `artifact_id`, `logical_path`,
+`owner`, `pack_id`, `pack_version`, `template_id`, `plan_digest`,
+`input_digest`, and ordered `semantic_inputs`. Each semantic input contains its
+`id`, `context_id`, and `semantic_digest`. No filesystem, environment, clock,
+network, secret store, or mutable model object is exposed.
+
+Template lookup is by the pinned template identity and digest in the plan.
+Missing or changed templates fail before producing output for the batch.
+
+## Failure and resource limits
+
+Rendering is all-or-nothing. A parse failure, runtime failure, adapter failure,
+digest mismatch, cancellation, or configured template/output/work limit returns
+no artifacts. Diagnostics use stable codes and bounded disclosure-safe messages;
+adapter exception text is never copied into them.
+
+The Child Care reference slice renders deterministic C# artifacts for **Determine
+ACCS eligibility** and **Submit application** from the accepted ACCS generation
+plan.
+
+The next filesystem step consumes these artifacts through the separate safe
+application contract; rendering itself performs no writes.
+
+The [generation-plan reference](/docs/reference/generation-plans) documents the
+only accepted renderer input. CLI generation preview will compose these two
+interfaces; safe application remains owned by issue #6.

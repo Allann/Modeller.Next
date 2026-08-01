@@ -113,3 +113,8 @@ Legacy `services` lists mix deployment and ownership ideas and are rejected as
 ambiguous. Entities, endpoints, templates, and other legacy constructs remain
 unsupported until a reviewed mapping and fixture proves equivalent meaning;
 the adapter never guesses or silently accepts them.
+
+Editor protocols consume this parser through the
+[editor-integration reference](/docs/reference/editor-integration), preserving
+the same diagnostic identities and source spans rather than defining a second
+language or validation path.

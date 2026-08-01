@@ -1,0 +1,24 @@
+---
+title: Configuration resolution
+description: Deterministic layered configuration, profiles, overrides, provenance, and secret handling.
+---
+
+`Modeller.Configuration` resolves ordered versioned sources into one immutable
+[runtime configuration](/docs/concepts/ubiquitous-language#runtime-configuration).
+Sources have explicit Base, Profile, or Override precedence. Sources at the same
+level retain their supplied order; process environment and current directory
+never become implicit inputs.
+
+Each resolved field records its source identity, version, and precedence.
+Selected profile values override base values and explicit command values win
+last. `${field}` substitution is deterministic and unresolved values fail with
+`configuration.variable.unresolved`.
+
+Secret values remain available to their explicit consumer but provenance shows
+only `[secret]`; diagnostics never include secret content. Unsupported source
+versions, missing required fields, cancellation, and unresolved substitutions
+return structured results without partial configuration.
+
+`modeller init` currently creates the minimal versioned JSON packaging at
+`.modeller/config.json`. Physical YAML packaging remains an explicit legacy
+adapter rather than changing this public configuration contract.

@@ -425,6 +425,22 @@ while **enrolment is not active for the requested period** may prevent it.
 
 Avoid using *diagnostic*, *exception*, or *outcome* as synonyms for finding.
 
+### Generation plan
+
+An immutable, deterministically ordered proposal for artifacts derived from a
+resolved [federation snapshot](#federation-snapshot), validated configuration,
+and validated template pack. It records logical paths, ownership, and input
+digests without rendering content or writing files.
+
+For Child Care, the plan may propose separate ACCS eligibility and application
+behaviour artifacts. Changing the ACCS rule input changes only the artifact
+that declares that input.
+
+Avoid using *generated output*, *write manifest*, or *semantic model* as
+synonyms for a generation plan.
+
+See the [generation-plan reference](/docs/reference/generation-plans).
+
 ### Guard
 
 A [rule](#rule) evaluated against current [facts](#fact) to determine whether a
@@ -526,6 +542,21 @@ change** outcomes. Each is meaningful to the actor even when no state transition
 occurs.
 
 Avoid using *conclusion*, *effect*, or *response* as synonyms for outcome.
+
+### Ownership manifest
+
+A versioned record proving which generated artifacts own which logical output
+paths and the exact content last applied there. It permits safe comparison but
+never grants ownership based on a filename convention alone.
+
+For Child Care output, the manifest can prove that the ACCS eligibility artifact
+owns its last generated C# content. A locally modified or unknown file remains
+protected and is reported as a conflict.
+
+Avoid using *file extension convention*, *output directory*, or *generation
+plan* as synonyms for ownership manifest.
+
+See [Generated output application](/docs/reference/output-application).
 
 ### Package digest
 
@@ -640,6 +671,17 @@ lifecycle stage, and government-processing state to the rule's facts.
 Avoid using *embedded expression*, *callback*, or *rule copy* as synonyms for a
 rule binding.
 
+### Runtime configuration
+
+The immutable, validated result of resolving explicit configuration layers, one
+selected profile, substitutions, and command overrides with field-level
+provenance. It configures adapters without defining domain meaning.
+
+Avoid using *process environment*, *mutable settings*, or *semantic model* as
+synonyms for runtime configuration.
+
+See [Configuration resolution](/docs/reference/configuration).
+
 ### Runtime plan
 
 An immutable, disposable executable projection derived from a resolved semantic
@@ -750,6 +792,21 @@ government response are state. **Draft**, **submitted**, **approved**, or
 
 Avoid using *status*, *lifecycle stage*, or *persisted data* as synonyms for
 state.
+
+### Template pack
+
+An independently versioned adapter declaring generated artifacts, their
+semantic inputs, confined logical paths, renderer requirements, and pinned
+templates. It projects canonical meaning but cannot add or reinterpret it.
+
+A Child Care C# pack may generate separate ACCS eligibility and submission
+artifacts while consuming the same canonical stable identities used by other
+projections.
+
+Avoid using *semantic model*, *generator implementation*, or *output directory*
+as synonyms for template pack.
+
+See [Template packs](/docs/reference/template-packs).
 
 ### Trace level
 

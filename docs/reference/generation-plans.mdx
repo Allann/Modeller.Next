@@ -1,0 +1,74 @@
+---
+title: Generation plans
+description: Deterministic, side-effect-free artifact planning from resolved semantic inputs.
+---
+
+The `Modeller.Generation` module creates an immutable
+[generation plan](/docs/concepts/ubiquitous-language#generation-plan). Planning
+does not render templates, inspect the filesystem, or write files. Generated
+artifacts remain projections of canonical meaning and never become semantic
+authority.
+
+## Interface
+
+```csharp
+GenerationPlanResult GenerationPlanner.Plan(
+    GenerationPlanningRequest request,
+    CancellationToken cancellationToken = default)
+```
+
+The request contains a resolved generation snapshot, validated configuration,
+and validated template-pack descriptor. The snapshot combines the exact
+[federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot)
+lock with a stable-ID-to-semantic-digest index. Each artifact descriptor names
+the semantic inputs it consumes; a template cannot discover or reinterpret
+additional domain meaning.
+
+## Plan schema and ordering
+
+A successful plan records:
+
+- schema version and logical output root;
+- proposed artifacts ordered by ordinal path and artifact ID;
+- explicit owner, pack ID and version, and template ID;
+- the stable IDs and semantic digests consumed by each artifact;
+- template and artifact-input digests; and
+- one deterministic digest for the complete plan.
+
+Ordering uses ordinal string comparison and does not depend on source order,
+host locale, filesystem enumeration, or parallel scheduling. The same inputs
+therefore produce the same plan and digest.
+
+## Safety and failure
+
+Logical roots and artifact paths must be relative and cannot contain traversal
+segments. No two artifacts may claim the same path, including case-only path
+differences. Missing semantic inputs, incompatible configuration and pack
+contract versions, unresolved owning contexts, duplicate semantic inputs,
+excessive artifact counts, and cancellation return structured diagnostics and
+no partial plan.
+
+These checks occur before rendering. Rendering consumes only a successful plan;
+safe application separately decides whether a rendered artifact may be written.
+
+## Child Care example
+
+The executable Child Care scenario proposes an application artifact for
+**Submit application** and a domain artifact for **Determine ACCS eligibility**.
+Changing only the eligibility semantic digest changes only the latter
+artifact's input digest while preserving the submit-application proposal.
+
+## Legacy disposition
+
+The legacy generator combined iteration, path substitution, rendering, and
+writing. The successor rewrites that orchestration: validated pack descriptors
+make iteration and inputs explicit, the generation plan calculates paths and
+ownership without side effects, and later modules render and apply it. Accepted
+legacy path examples remain compatibility evidence; legacy templates and
+generated code do not define canonical semantics.
+
+See [Architecture 101](/docs/architecture/architecture-101#stage-5-plan-before-writing)
+for the planning, rendering, and application flow.
+
+Plans are rendered through the [template-rendering reference](/docs/reference/template-rendering)
+and exposed without writes by the `modeller plan` workflow.

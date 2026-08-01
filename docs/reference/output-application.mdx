@@ -1,0 +1,24 @@
+---
+title: Generated output application
+description: Preview and safely apply generated artifacts with explicit ownership and recovery.
+---
+
+`Modeller.Output` previews or applies immutable rendered artifacts through one
+filesystem adapter. It reports creates, changes, unchanged files, handwritten
+conflicts, stale generated artifacts, operations, diagnostics, an updated
+[ownership manifest](/docs/concepts/ubiquitous-language#ownership-manifest), and
+recovery data.
+
+Ownership is proven only by the manifest and the digest of the currently
+observed content. A `.g.*` suffix alone grants no overwrite or deletion rights.
+Unknown files, modified owned files, symlinks, path traversal, and mismatched
+rendered-content digests fail safely.
+
+Preview performs no writes. Apply delegates the complete operation batch and a
+recovery token to the scoped filesystem adapter. Reapplying identical Child Care
+output is idempotent. Stale files are reported by default and removed only under
+an explicit removal policy.
+
+The CLI’s `generate --dry-run` composes configuration, pack validation,
+planning, rendering, and this preview. Applied generation retains the same
+collision and ownership checks.

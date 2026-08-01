@@ -6,6 +6,29 @@ title: "Modeller CLI Reference"
 
 Complete reference for the Modeller command-line interface.
 
+> **Successor implementation status:** the executable successor provides
+> `init`, `validate`, `plan`, and `generate`. The command tree,
+> required arguments, options, validation, help, and invocation are implemented
+> with System.CommandLine 2.0.10; command handlers remain thin adapters over the
+> stable Modeller interfaces. Some remaining sections below retain legacy or
+> intended workflow details and are not syntax authority.
+
+Commands that produce reports accept `--format human|json`. Machine output uses the
+versioned deterministic JSON contract and never contains ANSI presentation.
+
+Current executable syntax:
+
+```bash
+modeller init [--path .modeller/config.json] [--force]
+modeller validate <source> [--format human|json]
+modeller plan <request> [--format human|json]
+modeller generate <request> [--dry-run] [--format human|json]
+```
+
+`generate` consumes a versioned workflow request containing the resolved
+snapshot, generation configuration, validated pack descriptor, pinned template
+content, and optional ownership manifest. `--dry-run` performs no writes.
+
 ## Global Usage
 
 ```bash
@@ -315,4 +338,3 @@ The CLI operates in the current working directory. It looks for `.modeller/` fol
 - [Quick Start Guide](quick-start.md)
 - [Deep Dive](deep-dive-instruction.md)
 - [Definitions DSL](definitions.md)
-

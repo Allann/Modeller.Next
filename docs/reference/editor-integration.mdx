@@ -1,0 +1,57 @@
+---
+title: Editor integration
+description: Stable document, diagnostic, navigation, projection, and typed-edit workflows for editor adapters.
+---
+
+`Modeller.Editor` is the reference adapter between editor protocols and
+Modeller's stable modules. An editor supplies an immutable document snapshot,
+its expected version, one workflow request, and cancellation. The module returns
+a typed response and never makes editor state a semantic authority.
+
+## Interface
+
+```csharp
+ValueTask<EditorResponse> EditorIntegration.ExecuteAsync(
+    EditorRequest request,
+    CancellationToken cancellationToken = default)
+```
+
+The initial workflows publish diagnostics, navigate to a semantic concept,
+produce a [diagram projection](/docs/concepts/ubiquitous-language#diagram-projection),
+translate a diagram [edit operation](/docs/concepts/ubiquitous-language#edit-operation),
+and preview or apply the shared generation workflow.
+Protocol-specific language-server messages remain outside this interface.
+
+## Document safety and consistency
+
+Every workflow compares the expected document version before reading its text.
+A stale request returns `editor.document.stale`; a stale semantic edit returns
+`editor.semantic-revision.stale` and requires reprojection. Cancellation returns
+no partial diagnostics, navigation result, projection, or edit.
+
+Only absolute `file:` document URIs enter the readable-source parser. The
+adapter passes only the final package-relative filename downstream, preventing
+workspace paths or traversal from becoming package source names.
+
+## Child Care walkthrough
+
+Opening the readable ACCS source produces the same stable diagnostic code and
+source span as the parser and CLI-facing interfaces. Navigation can follow the
+active-enrolment Fact to its declaration. The **ACCS determination application**
+lifecycle view shows **Draft**, **Submitted**, and **Submit application**.
+Moving either stage returns a layout operation; it cannot mutate lifecycle
+meaning.
+
+The editor is expected to reproject after an accepted semantic operation.
+**Remove from view** and **Delete from model** remain distinct typed requests as
+defined by the [projection reference](/docs/reference/diagram-projections).
+
+## Legacy disposition
+
+Legacy VS Code workflows may be adapted when they call this interface. Direct
+coupling to legacy domain objects, generator internals, raw canonical JSON, or
+mutable projection graphs is not retained.
+
+Generation calls use the same plan, renderer, ownership-manifest, and output
+application seam as the CLI. Editor previews therefore cannot acquire separate
+filesystem or generated-code semantics.

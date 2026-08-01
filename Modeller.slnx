@@ -1,19 +1,34 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Modeller.Conformance/Modeller.Conformance.csproj" />
+    <Project Path="src/Modeller.Cli/Modeller.Cli.csproj" />
+    <Project Path="src/Modeller.Configuration/Modeller.Configuration.csproj" />
     <Project Path="src/Modeller.Contexts/Modeller.Contexts.csproj" />
+    <Project Path="src/Modeller.Editor/Modeller.Editor.csproj" />
+    <Project Path="src/Modeller.Generation/Modeller.Generation.csproj" />
+    <Project Path="src/Modeller.GenerationWorkflow/Modeller.GenerationWorkflow.csproj" />
     <Project Path="src/Modeller.Model/Modeller.Model.csproj" />
+    <Project Path="src/Modeller.Output/Modeller.Output.csproj" />
     <Project Path="src/Modeller.Parsing/Modeller.Parsing.csproj" />
     <Project Path="src/Modeller.Projections/Modeller.Projections.csproj" />
+    <Project Path="src/Modeller.Rendering/Modeller.Rendering.csproj" />
+    <Project Path="src/Modeller.Templates/Modeller.Templates.csproj" />
     <Project Path="src/Modeller.Rules/Modeller.Rules.csproj" />
     <Project Path="src/Modeller.Validation/Modeller.Validation.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Modeller.Conformance.Tests/Modeller.Conformance.Tests.csproj" />
+    <Project Path="tests/Modeller.Cli.Tests/Modeller.Cli.Tests.csproj" />
+    <Project Path="tests/Modeller.Configuration.Tests/Modeller.Configuration.Tests.csproj" />
     <Project Path="tests/Modeller.Contexts.Tests/Modeller.Contexts.Tests.csproj" />
+    <Project Path="tests/Modeller.Editor.Tests/Modeller.Editor.Tests.csproj" />
+    <Project Path="tests/Modeller.Generation.Tests/Modeller.Generation.Tests.csproj" />
     <Project Path="tests/Modeller.Model.Tests/Modeller.Model.Tests.csproj" />
+    <Project Path="tests/Modeller.Output.Tests/Modeller.Output.Tests.csproj" />
     <Project Path="tests/Modeller.Parsing.Tests/Modeller.Parsing.Tests.csproj" />
     <Project Path="tests/Modeller.Projections.Tests/Modeller.Projections.Tests.csproj" />
+    <Project Path="tests/Modeller.Rendering.Tests/Modeller.Rendering.Tests.csproj" />
+    <Project Path="tests/Modeller.Templates.Tests/Modeller.Templates.Tests.csproj" />
     <Project Path="tests/Modeller.Rules.Tests/Modeller.Rules.Tests.csproj" />
     <Project Path="tests/Modeller.Validation.Tests/Modeller.Validation.Tests.csproj" />
   </Folder>

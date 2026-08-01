@@ -176,6 +176,13 @@ supports, qualifies, or prevents a conclusion. A finding is not necessarily an
 error.
 _Avoid_: Diagnostic, exception, outcome
 
+**Generation plan**:
+An immutable, deterministically ordered proposal for artifacts derived from a
+resolved federation snapshot, validated configuration, and validated template
+pack. It records logical paths, ownership, and input digests without rendering
+content or writing files.
+_Avoid_: Generated output, write manifest, semantic model
+
 **Guard**:
 A rule evaluated against current facts to determine whether a particular
 behaviour or lifecycle transition is allowed now. It produces an explained
@@ -217,6 +224,12 @@ The explicit domain result of a completed behaviour, including success,
 rejection, or another defined result. It is distinct from the conclusions used
 to reach it and the effects it authorises.
 _Avoid_: Conclusion, effect, response
+
+**Ownership manifest**:
+A versioned record proving which generated artifacts own which logical output
+paths and the exact content last applied there. It permits safe comparison but
+never grants ownership based on a filename convention alone.
+_Avoid_: File extension convention, output directory, generation plan
 
 **Package digest**:
 A deterministic digest of the exact persisted bytes of one context package. It
@@ -271,6 +284,12 @@ snapshot and its relevant runtime versions. It is safe for concurrent reuse but
 is never an authoritative model or persisted source definition.
 _Avoid_: Runtime model, compiled source, authoritative executable
 
+**Runtime configuration**:
+The immutable, validated result of resolving explicit configuration layers,
+one selected profile, substitutions, and command overrides with field-level
+provenance. It configures adapters without defining domain meaning.
+_Avoid_: Process environment, mutable settings, semantic model
+
 **Schema version**:
 The version of a persisted representation's structural contract. It determines
 which loader or migration is required but says nothing about domain meaning or
@@ -305,6 +324,12 @@ _Avoid_: Ownership, identity, semantic relationship
 The complete set of domain facts currently associated with an entity. A
 lifecycle stage is one part of state, not a synonym for the whole of it.
 _Avoid_: Status, lifecycle stage, persisted data
+
+**Template pack**:
+An independently versioned adapter declaring generated artifacts, their semantic
+inputs, confined logical paths, renderer requirements, and pinned templates.
+It projects canonical meaning but cannot add or reinterpret it.
+_Avoid_: Semantic model, generator implementation, output directory
 
 **Trace level**:
 The requested amount of canonical evaluation detail: none, summary, or full.

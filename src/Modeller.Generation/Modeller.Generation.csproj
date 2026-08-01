@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><RootNamespace>Modeller.Generation</RootNamespace></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Modeller.Contexts\Modeller.Contexts.csproj" />
+  </ItemGroup>
+</Project>
