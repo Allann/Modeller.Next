@@ -426,6 +426,11 @@ packs, generation planning, rendering, safe application, and optional boundary
 adapters such as AI. The CLI grows incrementally as each capability becomes
 usable.
 
+[Readable source](/docs/concepts/ubiquitous-language#readable-source) compiles
+through the [versioned parsing interface](/docs/reference/readable-source-language)
+into that same narrow waist; syntax and source layout never become a parallel
+semantic authority.
+
 The first vertical slice is deliberately semantic. One canonical JSON Child
 Care package models the ACCS determination application, its lifecycle, the
 **Submit determination application** behaviour and outcomes, its transition and

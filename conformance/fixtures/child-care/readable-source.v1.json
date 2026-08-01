@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "scenarioId": "child-care.parsing.readable-source.v1",
+  "sourceDecision": "https://github.com/Allann/Modeller.Next/issues/2",
+  "capability": "readable-source-parsing",
+  "contractVersion": "1.0",
+  "inputDigest": "sha256:24d7ff5597a24a32f12cf917bfe063234a182706364bb35e2c68b26bf59832e0",
+  "input": { "artifact": "child-care-accs.modeller", "languageVersion": "1.0" },
+  "expected": {
+    "semanticDigest": "sha256:26b35b94c741cae8ffb8aafac1ad7cefb7bb5bf106cddc5db27544f5ccdfcd16",
+    "context": "child-care",
+    "definitionCount": 5,
+    "diagnosticCount": 0
+  },
+  "permittedVariance": []
+}

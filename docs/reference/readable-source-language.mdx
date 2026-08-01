@@ -1,0 +1,98 @@
+---
+title: Readable source language
+description: Versioned grammar that compiles author-facing Child Care definitions into canonical semantics.
+---
+
+Readable language `1.0` is an author-facing syntax for proposing Modeller
+meaning. `Modeller.Parsing` compiles source documents to the canonical
+[context package](/docs/concepts/ubiquitous-language#context-package), authored
+model, [source provenance](/docs/concepts/ubiquitous-language#source-provenance),
+and ordered diagnostics through one interface:
+
+```csharp
+ParseResult DefinitionParser.Parse(
+    IEnumerable<SourceDocument> documents,
+    ParseOptions options,
+    CancellationToken cancellationToken = default)
+```
+
+The syntax is not a second semantic model. Package loading and
+[semantic validation](/docs/concepts/ubiquitous-language#semantic-validation)
+remain authoritative after compilation. The parser does not persist, resolve
+dependencies, execute expressions, generate output, or supply implicit domain
+defaults.
+
+## Common syntax
+
+- UTF text is interpreted as lines.
+- Blank lines and lines beginning with `#` are non-semantic.
+- Each statement begins with a lowercase keyword.
+- Attributes use `name=value`; values containing spaces use double quotes.
+- Stable identities and semantic relationships use UUIDv7 values.
+- Statement order, document order, filenames, comments, and formatting are
+  non-semantic.
+- One `language 1.0` and one `context` statement are required across the source
+  set.
+
+## Language 1.0 statements
+
+| Statement | Required attributes |
+| --- | --- |
+| `context` | `id`, `name`, `slug`, `version` |
+| `entity` | `id`, `name`, `slug`, `lifecycle-id`, `lifecycle-name`, `lifecycle-slug` |
+| `stage` | `owner` entity ID, `id`, `name`, `slug` |
+| `fact` | `id`, `name`, `slug`, `type`; optional `export=true` |
+| `rule` | `id`, `name`, `slug`, `inputs`, `expression`, conclusion identity/name/slug; optional `export=true` |
+| `behaviour` | `id`, `name`, `slug`, `entity` |
+| `outcome` | `owner` behaviour ID, `id`, `name`, `slug` |
+| `binding` | `owner`, `rule`, `purpose`, `facts` mappings |
+| `transition` | `owner`, `id`, `name`, `slug`, `lifecycle`, `source`, `target`, `outcome` |
+
+Language 1.0 deliberately supports only the explicit `and(fact-id,...)` rule
+expression needed by the first ACCS slice. Unsupported expression forms return
+`parse.expression.unsupported`; they are never evaluated or coerced.
+
+## Child Care example
+
+```text
+language 1.0
+context id=0191...0001 name="Child Care" slug=child-care version=1.0.0
+fact id=0191...0006 name="Active enrolment exists" slug=active-enrolment-exists type=Truth export=true
+rule id=0191...0008 name="Determine ACCS eligibility" slug=determine-accs-eligibility inputs=0191...0006 expression=and(0191...0006) conclusion-id=0191...0009 conclusion-name="Eligible" conclusion-slug=eligible export=true
+```
+
+The complete fixture compiles to semantic digest
+`sha256:26b35b94c741cae8ffb8aafac1ad7cefb7bb5bf106cddc5db27544f5ccdfcd16`,
+the same digest as canonical JSON.
+
+## Provenance and diagnostics
+
+Every named statement retains a package-relative document, one-based line and
+column, and span length. Reference paths retain their exact token spans.
+Validation diagnostics are mapped back through those paths; an unknown input
+Fact therefore points to the Fact UUID in **Determine ACCS eligibility**, not
+merely to the file or Rule.
+
+Malformed or incomplete syntax, unsupported language versions, invalid models,
+document/statement/token limits, unsafe document names, and cancellation return structured results. Parser
+or validation exception text is never exposed as a diagnostic.
+
+## Limits and security
+
+`ParseOptions.Language1` limits a source set to 1,048,576 characters, 10,000
+semantic statements, and 100,000 attribute tokens. Source document names must
+be package-relative and cannot traverse above the package. The grammar is flat, so authored nesting cannot create
+recursive parser work. Source is tokenized and compiled as data; substitutions,
+scripts, and expressions are never executed.
+
+## Legacy import
+
+`LegacyDefinitionAdapter` exposes the versioned `legacy-domain-root/1.0` path.
+It supports only a legacy `domain` plus `version` and requires an explicit
+successor context UUID, display name, and slug. The adapter records the legacy
+identifier-to-stable-ID mapping and retains the original source span.
+
+Legacy `services` lists mix deployment and ownership ideas and are rejected as
+ambiguous. Entities, endpoints, templates, and other legacy constructs remain
+unsupported until a reviewed mapping and fixture proves equivalent meaning;
+the adapter never guesses or silently accepts them.

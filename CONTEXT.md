@@ -200,6 +200,12 @@ state or producing domain effects. It returns an answer rather than evidence
 that something occurred.
 _Avoid_: Command, lookup, report
 
+**Readable source**:
+A versioned, author-facing representation that proposes canonical semantic
+meaning and retains source provenance. It compiles into the authored model and
+never becomes a parallel semantic authority.
+_Avoid_: Canonical model, context package, executable script
+
 **Requirement**:
 A domain prerequisite that must be satisfied before a behaviour may proceed.
 Missing information is distinct from an unsatisfied requirement.

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><RootNamespace>Modeller.Parsing</RootNamespace></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Modeller.Contexts/Modeller.Contexts.csproj" />
+    <ProjectReference Include="../Modeller.Validation/Modeller.Validation.csproj" />
+  </ItemGroup>
+</Project>

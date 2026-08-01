@@ -491,6 +491,22 @@ state-changing behaviour.
 
 Avoid using *command*, *lookup*, or *report* as synonyms for query.
 
+### Readable source
+
+A versioned, author-facing representation that proposes canonical semantic
+meaning and retains [source provenance](#source-provenance). It compiles into
+the authored model and never becomes a parallel semantic authority.
+
+The Child Care ACCS slice can be written as readable source and compile to the
+same [semantic digest](#semantic-digest) as canonical JSON. Comments,
+formatting, filenames, and source order do not change that meaning.
+
+Avoid using *canonical model*, *context package*, or *executable script* as
+synonyms for readable source.
+
+See the [readable-source language reference](/docs/reference/readable-source-language)
+for grammar, versioning, diagnostics, and legacy import constraints.
+
 ### Requirement
 
 A domain prerequisite that must be satisfied before a

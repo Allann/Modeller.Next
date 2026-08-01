@@ -7,6 +7,7 @@
       "fixtures": ["child-care.model.ownership.v1"],
       "status": "Executable"
     },
+    { "contractId": "parsing.readable-source", "sourceDecision": 16, "fixtures": ["child-care.parsing.readable-source.v1"], "status": "Executable" },
     {
       "contractId": "rule-evaluation.determined",
       "sourceDecision": 17,

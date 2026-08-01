@@ -243,6 +243,7 @@ public sealed class ConformanceRunnerTests
                 "child-care.accs.information-required.v1",
                 "child-care.context-package.resolve.v1",
                 "child-care.model.ownership.v1",
+                "child-care.parsing.readable-source.v1",
                 "child-care.validation.unknown-eligibility-fact.v1"
             ],
             catalog.Fixtures.Select(fixture => fixture.ScenarioId));

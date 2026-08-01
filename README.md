@@ -41,6 +41,10 @@ contract is documented in the
 resolved snapshots through one deterministic staged interface documented in the
 [semantic-validation reference](docs/reference/semantic-validation.mdx).
 
+`Modeller.Parsing` compiles versioned
+[readable source](docs/reference/readable-source-language.mdx) into that same
+canonical model while retaining safe source provenance and diagnostics.
+
 For the complete development experience, open `Modeller.Next.code-workspace` in
 VS Code. Run the `setup`, `docs: dev`, or `verify` tasks from the task picker.
 Press F5 and choose **Modeller Docs** to start the development server and open

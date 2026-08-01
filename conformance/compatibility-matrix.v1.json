@@ -7,7 +7,7 @@
     "contextVersions": ["child-care@1.0.0"],
     "runtimeContracts": [],
     "projectionVersions": [],
-    "adapterVersions": []
+    "adapterVersions": ["readable-source/1.0", "legacy-domain-root/1.0"]
   },
   "removalPolicy": "Removing a supported entry requires an explicit breaking release decision."
 }
