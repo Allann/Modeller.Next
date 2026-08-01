@@ -7,7 +7,8 @@
     "dev": "next dev",
     "start": "next start",
     "types:check": "next typegen && tsc --noEmit",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prototype:diagram-edits": "node prototypes/issue-21-diagram-edit-semantics/tui.mjs"
   },
   "dependencies": {
     "cnfast": "^0.1.0",
