@@ -1,0 +1,47 @@
+---
+title: Diagram projections and edit operations
+description: Project semantic revisions into six deterministic views and translate editor gestures into typed operations.
+---
+
+`Modeller.Projections` is the reference implementation of the
+[diagram projection](/docs/concepts/ubiquitous-language#diagram-projection)
+contract. It projects one immutable authored revision through a versioned
+[view definition](/docs/concepts/ubiquitous-language#view-definition) and
+returns an immutable graph plus structured diagnostics.
+
+## Projection interface
+
+`DiagramProjector.Project(revision, view, layout)` is the single public
+projection seam. Version 1 registers the behaviour map, lifecycle, causality
+and event-flow, context map, structural, and rule decision view kinds. The same
+semantic revision and view definition always produce the same topology and
+[projection-element](/docs/concepts/ubiquitous-language#projection-element)
+identities. Optional [layout state](/docs/concepts/ubiquitous-language#layout-state)
+never changes nodes or edges.
+
+The first executable Child Care slices project the **ACCS determination
+application** lifecycle from **Draft** to **Submitted** through **Submit
+application**, and explain **Determine ACCS eligibility** through its typed
+Facts and **Eligible** conclusion.
+
+## Edit interface
+
+`ProjectionEditor.Translate(revision, request)` classifies each explicit
+[edit operation](/docs/concepts/ubiquitous-language#edit-operation) into exactly
+one result variant:
+
+| Result | Authority affected | Child Care example |
+| --- | --- | --- |
+| Semantic | Authored revision | Explicitly delete an ACCS concept |
+| View | View definition | Remove the application from this view |
+| Layout | Layout state | Move the Draft stage |
+| Session | None | Highlight an eligibility evaluation |
+| Invalid | None | Infer a relationship from spatial proximity |
+
+Every semantic edit carries the revision from which it was projected. A stale
+request returns `projection.edit.stale-revision` and requires reprojection.
+**Remove from view** and **Delete from model** are different request types; a
+generic visual deletion cannot silently delete semantic meaning.
+
+See the accepted [diagram projection and editing decision](/docs/architecture/decisions/diagram-projections-editing-semantics)
+for the view-specific semantic contracts.

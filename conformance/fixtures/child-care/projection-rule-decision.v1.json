@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1.0",
+  "scenarioId": "child-care.projection.rule-decision.v1",
+  "sourceDecision": "https://github.com/Allann/Modeller.Next/issues/21",
+  "capability": "diagram-projection",
+  "contractVersion": "1.0",
+  "inputDigest": "sha256:17b60f17e6de062a1264c671d4929d9e2ae412fcd10333856d08a1ce17cd6f8b",
+  "input": { "root": "determine-accs-eligibility", "viewKind": "RuleDecision", "viewVersion": 1 },
+  "expected": { "facts": ["Active enrolment exists", "Supporting evidence is held"], "conclusions": ["Eligible"] },
+  "permittedVariance": []
+}

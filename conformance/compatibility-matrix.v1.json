@@ -6,7 +6,7 @@
     "persistenceSchemas": ["1.0"],
     "contextVersions": ["child-care@1.0.0", "child-care@1.1.0"],
     "runtimeContracts": ["reference/1.0"],
-    "projectionVersions": [],
+    "projectionVersions": ["reference/1.0"],
     "adapterVersions": ["readable-source/1.0", "legacy-domain-root/1.0"]
   },
   "removalPolicy": "Removing a supported entry requires an explicit breaking release decision."

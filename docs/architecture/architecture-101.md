@@ -278,6 +278,9 @@ semantic inputs required by a template pack. All remain views over one authority
 The initial diagram set is a behaviour map, lifecycle view, causality and
 event-flow view, context map, structural view, and rule decision view. Together
 they expose complementary questions without becoming separate models.
+The [diagram-projection reference](/docs/reference/diagram-projections) shows
+the executable Child Care lifecycle and rule-decision slices and their stable
+projection elements.
 
 ```mermaid
 flowchart LR

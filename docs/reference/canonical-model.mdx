@@ -95,3 +95,8 @@ Decision definitions own typed inputs, conclusions, a declared
 Rows use explicit Truth conditions or wildcards and select conclusions by stable
 ID. They execute through the same rules-runtime interface rather than a second
 engine.
+
+The model is also the semantic authority behind disposable
+[diagram projections](/docs/reference/diagram-projections). Editors translate
+gestures into typed operations and apply semantic edits through this model
+interface before reprojecting; projection graphs and layout never mutate it.

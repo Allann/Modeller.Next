@@ -11,6 +11,8 @@ public sealed record RenameConcept(
     SemanticName Name,
     SemanticSlug Slug) : ModelOperation;
 
+public sealed record DeleteConcept(SemanticId ConceptId) : ModelOperation;
+
 public sealed record ModelDiagnostic(
     string Code,
     string Message,
@@ -56,9 +58,34 @@ public static class CanonicalModel
         {
             AddDefinition add => Add(contextId, definitions, add.Definition),
             RenameConcept rename => Rename(contextId, contextSlug, definitions, rename),
+            DeleteConcept delete => Delete(definitions, delete),
             null => Failure(definitions, "model.operation.required", "A model operation is required."),
             _ => Failure(definitions, "model.operation.unsupported", $"Unsupported model operation '{operation.GetType().Name}'.")
         };
+
+    private static ApplyResult Delete(ImmutableArray<SemanticDefinition> definitions, DeleteConcept operation)
+    {
+        var definition = definitions.FirstOrDefault(item => item.Id == operation.ConceptId);
+        if (definition is null)
+            return Failure(definitions, "model.concept.not-found", $"Top-level semantic concept '{operation.ConceptId}' does not exist.", operation.ConceptId);
+
+        if (definitions.Where(item => item.Id != operation.ConceptId).Any(item => References(item, operation.ConceptId)))
+            return Failure(definitions, "model.delete.referenced", $"Semantic concept '{operation.ConceptId}' is still referenced.", operation.ConceptId);
+
+        return new ApplyResult(definitions.Remove(definition), null);
+    }
+
+    private static bool References(SemanticDefinition definition, SemanticId id) => definition switch
+    {
+        RuleDefinition rule => rule.InputFacts.Any(reference => reference.TargetId == id),
+        DecisionDefinition decision => decision.InputFacts.Any(reference => reference.TargetId == id) ||
+            decision.Table.Rows.Any(row => row.Conclusion.TargetId == id || row.Conditions.Any(condition => condition.Fact.TargetId == id)),
+        BehaviourDefinition behaviour => behaviour.Entity.TargetId == id ||
+            behaviour.Transitions.Any(transition => transition.Lifecycle.TargetId == id || transition.SourceStage.TargetId == id ||
+                transition.TargetStage.TargetId == id || transition.Outcome.TargetId == id || transition.GuardRule?.TargetId == id) ||
+            behaviour.RuleBindings.Any(binding => binding.Rule.TargetId == id || binding.FactBindings.Any(pair => pair.Key.TargetId == id || pair.Value.TargetId == id)),
+        _ => false
+    };
 
     private static ApplyResult Add(
         SemanticId contextId,

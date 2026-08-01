@@ -296,6 +296,21 @@ consequences owned by the behaviour, but remain explicit semantic concepts.
 
 Avoid using *conclusion*, *outcome*, or *side effect* as synonyms for effect.
 
+### Edit operation
+
+An explicit request produced by an editor interaction and classified as exactly
+one semantic, view, layout, [session](#session-state), or invalid operation
+before anything is changed. Spatial gestures alone never imply semantic intent.
+
+**Remove from view** changes only the [view definition](#view-definition), while
+**Delete from model** is an explicit semantic operation checked against the
+authored revision. Moving a lifecycle stage changes only [layout state](#layout-state).
+
+Avoid using *graph mutation*, *gesture side effect*, or *generic delete* as
+synonyms for edit operation.
+
+See the [diagram-projection reference](/docs/reference/diagram-projections).
+
 ### Entity
 
 A domain concept with stable identity and continuity through changes in
@@ -543,6 +558,17 @@ valid. A policy expresses the domain choice those specialised uses may draw on.
 
 Avoid using *guard*, *procedure*, or *configuration* as synonyms for policy.
 
+### Projection element
+
+A node or edge occurrence in one [diagram projection](#diagram-projection),
+with a stable identity within that view and references to zero or more semantic
+concepts. Repeated occurrences never create additional semantic identities.
+
+Avoid using *semantic concept*, *model element*, or *canonical identity* as
+synonyms for projection element.
+
+See the [diagram-projection reference](/docs/reference/diagram-projections).
+
 ### Query
 
 A request from an [actor](#actor) to perform a [behaviour](#behaviour) that
@@ -680,6 +706,21 @@ synonyms for semantic validation.
 
 See the [semantic-validation reference](/docs/reference/semantic-validation)
 for the staged interface and extension contract.
+
+### Session state
+
+Transient editor presentation such as selection, hover, viewport, open panels,
+or an evaluation highlight. It changes neither semantic meaning, the
+[view definition](#view-definition), nor shared [layout state](#layout-state)
+unless explicitly saved as layout.
+
+An ACCS evaluation path and its missing Facts may temporarily highlight a rule
+decision view without storing the application's Facts in the diagram.
+
+Avoid using *layout state*, *view definition*, or *model annotation* as synonyms
+for session state.
+
+See the [diagram-projection reference](/docs/reference/diagram-projections).
 
 ### Source provenance
 

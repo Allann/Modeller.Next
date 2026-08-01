@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1.0",
+  "scenarioId": "child-care.projection.lifecycle.v1",
+  "sourceDecision": "https://github.com/Allann/Modeller.Next/issues/21",
+  "capability": "diagram-projection",
+  "contractVersion": "1.0",
+  "inputDigest": "sha256:cc4228df193c405766d3f4c110954245cea9ef9db4ad3c0466d99c8112102709",
+  "input": { "root": "accs-determination-application", "viewKind": "Lifecycle", "viewVersion": 1 },
+  "expected": { "nodes": ["Draft", "Submitted"], "edges": [{ "label": "Submit application", "source": "Draft", "target": "Submitted" }] },
+  "permittedVariance": []
+}

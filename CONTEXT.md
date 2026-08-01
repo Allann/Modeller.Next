@@ -123,6 +123,12 @@ A declared domain consequence owned by a behaviour. An effect may change state
 or request an interaction, but is never produced directly by a rule or decision.
 _Avoid_: Conclusion, outcome, side effect
 
+**Edit operation**:
+An explicit request produced by an editor interaction and classified as exactly
+one semantic, view, layout, session, or invalid operation before anything is
+changed. Spatial gestures alone never imply semantic intent.
+_Avoid_: Graph mutation, gesture side effect, generic delete
+
 **Entity**:
 A domain concept with stable identity and continuity through changes in state.
 Its meaning and lifecycle are independent of how or whether it is persisted.
@@ -224,6 +230,12 @@ required, or entitled. Behaviours enforce policies; policies do not cause
 effects themselves.
 _Avoid_: Guard, procedure, configuration
 
+**Projection element**:
+A node or edge occurrence in one diagram projection, with a stable identity
+within that view and references to zero or more semantic concepts. Repeated
+occurrences never create additional semantic identities.
+_Avoid_: Semantic concept, model element, canonical identity
+
 **Query**:
 A request from an actor to observe domain information without changing domain
 state or producing domain effects. It returns an answer rather than evidence
@@ -276,6 +288,12 @@ An explicit, staged analysis of authored or resolved semantic meaning that
 returns deterministic diagnostics without executing behaviours, repairing the
 model, or deciding whether a domain action is currently allowed.
 _Avoid_: Guard, invariant, rule evaluation, parser error
+
+**Session state**:
+Transient editor presentation such as selection, hover, viewport, open panels,
+or an evaluation highlight. It changes neither semantic meaning, the view
+definition, nor shared layout unless explicitly saved as layout.
+_Avoid_: Layout state, view definition, model annotation
 
 **Source provenance**:
 Non-semantic information relating a stable semantic concept to one or more

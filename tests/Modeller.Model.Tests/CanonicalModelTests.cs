@@ -251,6 +251,36 @@ public sealed class CanonicalModelTests
     }
 
     [Fact]
+    public void Explicit_delete_rejects_a_referenced_concept_and_preserves_the_revision()
+    {
+        var revision = CanonicalModel.Apply(
+            ChildCareFixture.EmptyContext(),
+            new AddDefinition(ChildCareFixture.ApplicationEntity()),
+            new AddDefinition(ChildCareFixture.SubmitBehaviour())).Revision;
+
+        var result = CanonicalModel.Apply(revision, new DeleteConcept(ChildCareFixture.ApplicationId));
+
+        Assert.False(result.Succeeded);
+        Assert.Same(revision, result.Revision);
+        Assert.Equal("model.delete.referenced", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void Explicit_delete_creates_a_new_revision_without_mutating_the_previous_one()
+    {
+        var revision = CanonicalModel.Apply(
+            ChildCareFixture.EmptyContext(),
+            new AddDefinition(ChildCareFixture.ActiveEnrolmentFact())).Revision;
+
+        var result = CanonicalModel.Apply(revision, new DeleteConcept(ChildCareFixture.ActiveEnrolmentFactId));
+
+        Assert.True(result.Succeeded);
+        Assert.Single(revision.Definitions);
+        Assert.Empty(result.Revision.Definitions);
+        Assert.Equal(revision.Revision + 1, result.Revision.Revision);
+    }
+
+    [Fact]
     public void Child_care_conformance_observation_matches_the_public_model()
     {
         var fixturePath = Path.Combine(

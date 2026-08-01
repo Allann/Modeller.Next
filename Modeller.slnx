@@ -4,6 +4,7 @@
     <Project Path="src/Modeller.Contexts/Modeller.Contexts.csproj" />
     <Project Path="src/Modeller.Model/Modeller.Model.csproj" />
     <Project Path="src/Modeller.Parsing/Modeller.Parsing.csproj" />
+    <Project Path="src/Modeller.Projections/Modeller.Projections.csproj" />
     <Project Path="src/Modeller.Rules/Modeller.Rules.csproj" />
     <Project Path="src/Modeller.Validation/Modeller.Validation.csproj" />
   </Folder>
@@ -12,6 +13,7 @@
     <Project Path="tests/Modeller.Contexts.Tests/Modeller.Contexts.Tests.csproj" />
     <Project Path="tests/Modeller.Model.Tests/Modeller.Model.Tests.csproj" />
     <Project Path="tests/Modeller.Parsing.Tests/Modeller.Parsing.Tests.csproj" />
+    <Project Path="tests/Modeller.Projections.Tests/Modeller.Projections.Tests.csproj" />
     <Project Path="tests/Modeller.Rules.Tests/Modeller.Rules.Tests.csproj" />
     <Project Path="tests/Modeller.Validation.Tests/Modeller.Validation.Tests.csproj" />
   </Folder>
