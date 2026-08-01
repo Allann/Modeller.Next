@@ -37,7 +37,7 @@ logical output root `generated`, and profile `default`.
 
 ### `validate`
 
-Compile and validate one readable-source document.
+Compile and validate one SAF document.
 
 ```text
 modeller validate <source> [--format human|json]
@@ -48,8 +48,8 @@ Human output is concise. JSON output has `outputVersion`, `valid`, and ordered
 diagnostics with code, message, document, line, column, and length.
 
 ```powershell
-modeller validate tests/Modeller.Parsing.Tests/Fixtures/child-care-accs.modeller
-modeller validate tests/Modeller.Parsing.Tests/Fixtures/child-care-accs.modeller --format json
+modeller validate samples/child-care/model/accs-eligibility.modeller
+modeller validate samples/child-care/model/accs-eligibility.modeller --format json
 ```
 
 ### `plan`
@@ -97,7 +97,7 @@ Diagnostics use stable codes; exception text and secrets are not exposed.
 | Code | Name | Meaning |
 | --- | --- | --- |
 | `0` | Success | The requested workflow completed |
-| `2` | Validation failed | Readable source contains diagnostics |
+| `2` | Validation failed | SAF source contains diagnostics |
 | `64` | Usage | Arguments, options, or paths are invalid |
 | `66` | Input unavailable | A requested input does not exist or cannot be read |
 | `78` | Configuration | Configuration, planning, rendering, or output application failed |
@@ -105,7 +105,7 @@ Diagnostics use stable codes; exception text and secrets are not exposed.
 
 ## Related contracts
 
-- [Readable source](/docs/reference/readable-source-language)
+- [Semantic Assembly Format](/docs/reference/readable-source-language)
 - [Configuration](/docs/reference/configuration)
 - [Generation plans](/docs/reference/generation-plans)
 - [Template rendering](/docs/reference/template-rendering)

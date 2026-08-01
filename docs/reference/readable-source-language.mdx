@@ -1,9 +1,9 @@
 ---
-title: Readable source language
-description: Versioned grammar that compiles author-facing Child Care definitions into canonical semantics.
+title: Semantic Assembly Format
+description: Low-level explicit-ID grammar used to prove canonical compilation and conformance.
 ---
 
-Readable language `1.0` is an author-facing syntax for proposing Modeller
+Semantic Assembly Format (SAF) `1.0` is an engineering syntax for proposing Modeller
 meaning. `Modeller.Parsing` compiles source documents to the canonical
 [context package](/docs/concepts/ubiquitous-language#context-package), authored
 model, [source provenance](/docs/concepts/ubiquitous-language#source-provenance),
@@ -15,6 +15,12 @@ ParseResult DefinitionParser.Parse(
     ParseOptions options,
     CancellationToken cancellationToken = default)
 ```
+
+SAF is the currently executable parser input, but it is not the target
+business-facing [Readable Modelling Language](/docs/concepts/ubiquitous-language#readable-modelling-language).
+Its explicit identities and flat statements support conformance, diagnostics,
+and parser bootstrapping while RML and its authoring anti-corruption layer are
+developed.
 
 The syntax is not a second semantic model. Package loading and
 [semantic validation](/docs/concepts/ubiquitous-language#semantic-validation)

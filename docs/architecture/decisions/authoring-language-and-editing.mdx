@@ -1,0 +1,156 @@
+---
+title: Readable authoring language and deterministic editing
+description: Keep a business-readable DSL as the portable source while text, structured, and diagram editors share one semantic model.
+---
+
+Status: **Accepted**
+
+## Canonical terms
+
+[Edit operation](/docs/concepts/ubiquitous-language#edit-operation) ·
+[Readable Modelling Language](/docs/concepts/ubiquitous-language#readable-modelling-language) ·
+[Semantic Assembly Format](/docs/concepts/ubiquitous-language#semantic-assembly-format) ·
+[Source provenance](/docs/concepts/ubiquitous-language#source-provenance)
+
+## Context
+
+Modeller must be usable by business analysts, architects, developers, and
+AI-assisted tools. The first executable parser used a flat statement format
+with explicit UUIDv7 identities. That format proved deterministic parsing,
+canonical compilation, provenance, validation, and conformance, but exposed
+canonical implementation concerns directly to authors.
+
+The legacy Modeller DSL was incomplete semantically, yet its file-per-concept
+layout, nested blocks, comments, descriptions, and named references were easier
+for people to read, write, review, and discuss. A structured UI could hide the
+flat format, but making one UI the only practical authoring surface would weaken
+Git review, merge workflows, bulk editing, automation, and tool independence.
+
+## Decision
+
+The **Readable Modelling Language (RML)** is Modeller's primary portable,
+version-controlled authoring representation. It is a grammar-defined DSL, not
+unconstrained natural language. It supports prose documentation while expressing
+domain structure and behaviour with readable names, nesting, and files organised
+around recognisable concepts.
+
+RML compiles into the authored canonical model through an authoring
+anti-corruption layer. The layer owns parsing, name and alias resolution, stable
+identity allocation and lookup, provenance, diagnostics, and translation from
+authoring conveniences into typed semantic definitions. Source layout and
+syntax never become a second semantic authority.
+
+The current flat, explicit-ID language is named the **Semantic Assembly Format
+(SAF)**. SAF is a versioned, deterministic engineering format for conformance
+fixtures, diagnostics, parser bootstrapping, and low-level tests. It is not the
+business-facing DSL, canonical persistence, or a format normal users or UI forms
+are expected to edit.
+
+An initial RML implementation may lower source to SAF internally to reuse the
+existing parser, but that translation is an implementation bridge rather than a
+public architectural dependency. The durable boundary is RML to the authored
+canonical model. Both parsers must ultimately share semantic construction and
+validation rather than accumulating different meanings.
+
+## Editing surfaces
+
+Text, structured, and diagram editing are complementary views over one authored
+model:
+
+- Text editing changes RML and recompiles it with source provenance.
+- Structured editing issues typed model operations and renders deterministic RML
+  source edits.
+- Diagram editing translates supported gestures into the same typed operations;
+  layout-only changes remain outside semantic source.
+
+The RML syntax tree must retain comments, documentation, intentional file
+organisation, and enough trivia for stable minimal edits. Editor operations use
+expected document and semantic revisions, so stale edits conflict instead of
+silently overwriting newer author changes.
+
+## Stable identity
+
+Canonical UUIDv7 identities remain required, but authors do not routinely type
+or reference them. RML uses readable local names and explicit author-controlled
+keys or aliases where rename continuity is required. Tooling maintains the
+mapping to canonical IDs in deterministic source metadata or a workspace
+identity map. The selected mechanism must satisfy these invariants:
+
+- renaming or moving a concept preserves identity;
+- deleting and recreating a concept does not accidentally reclaim identity;
+- merges expose identity conflicts rather than silently selecting a winner;
+- references resolve deterministically within declared context/import scope;
+- generated or hidden metadata remains inspectable and version controlled.
+
+The exact identity-map representation requires a focused prototype before RML
+1.0 is fixed.
+
+## Legacy DSL reuse
+
+The legacy DSL is design evidence, not a compatibility contract. Reuse is
+decided at three levels.
+
+### Reuse the authoring shape
+
+RML should retain or closely adapt these proven human-facing conventions where
+they still express the accepted model:
+
+- `#` comments, quoted descriptions, nested blocks, and `end` delimiters;
+- files and folders organised by recognisable concept kind;
+- named definitions and readable named references;
+- concise typed fields and modifiers;
+- entity, value, enum, command, query, and event vocabulary where canonical
+  meanings agree.
+
+### Translate semantics explicitly
+
+Legacy constructs require reviewed mappings into canonical terms. Service
+membership mixed bounded-context ownership and deployment; commands mixed
+domain behaviour with HTTP/gRPC transport; keys and indexes mixed identity with
+storage design; projections described generated data shapes rather than diagram
+projections; and copied `shared` definitions obscured ownership. These constructs
+may inspire RML syntax only after their intended meaning has one canonical
+representation.
+
+### Reuse parser code selectively
+
+The Pidgin parsers demonstrate viable lexical and block grammar, but their AST,
+error model, whole-file entry points, and unconstrained parsing contract predate
+current requirements for stable diagnostics, complete provenance, cancellation,
+resource limits, multi-file resolution, and typed semantic construction. Token
+and grammar ideas can be adapted; the legacy parser assembly is not adopted as
+the new semantic boundary.
+
+There is no promise that every legacy file parses unchanged. Because there are
+no external legacy users, RML optimises for clear current meaning rather than
+syntax compatibility.
+
+## Reverse translation
+
+Modeller does not require a general SAF-to-RML converter. Such a converter could
+invent file boundaries, names, descriptions, comments, aliases, and ordering
+that SAF deliberately does not preserve, creating misleading round-trip claims.
+
+Modeller does require a deterministic **source synchronizer** for structured and
+diagram edits. It operates on an existing RML syntax tree plus typed edit
+operations, preserving unaffected author text and producing minimal source
+changes. A separate explicit scaffold/export tool may create conventional RML
+from a canonical model when no authored source exists, but its output is a new
+authoring proposal, not lossless reconstruction.
+
+Canonical persistence remains responsible for canonical model serialization;
+it is not replaced by either RML or SAF.
+
+## Consequences
+
+- The current `language 1.0` SAF sample remains useful for executable contracts
+  but is not the target Child Care authoring experience.
+- The local Child Care sample becomes the readability and deterministic-editing
+  acceptance reference as it moves to RML.
+- VS Code support is the first delivery surface because it combines text,
+  validation, navigation, structured actions, and projections without making an
+  editor proprietary.
+- A later web or desktop editor reuses the same parser, typed operations, source
+  synchronizer, and projections.
+- RML grammar, identity mapping, and source-edit stability must be accepted
+  before expanding structural generation syntax broadly.

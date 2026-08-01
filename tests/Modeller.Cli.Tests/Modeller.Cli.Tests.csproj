@@ -4,5 +4,5 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" /><PackageReference Include="xunit.v3" /><PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
   <ItemGroup><ProjectReference Include="../../src/Modeller.Cli/Modeller.Cli.csproj" /></ItemGroup>
-  <ItemGroup><None Include="../Modeller.Parsing.Tests/Fixtures/child-care-accs.modeller" Link="Fixtures/child-care-accs.modeller" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../samples/child-care/model/accs-eligibility.modeller" Link="Fixtures/child-care-accs.modeller" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
 </Project>

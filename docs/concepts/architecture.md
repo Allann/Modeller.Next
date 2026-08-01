@@ -15,7 +15,7 @@ is the authority shared by every workflow.
 | --- | --- | --- |
 | Model | Stable identities, definitions, references, and typed operations | [Canonical model](/docs/reference/canonical-model) |
 | Contexts | Canonical persistence, package identity, imports, and federation | [Context packages](/docs/reference/context-packages) |
-| Parsing | Compile readable text and preserve source provenance | [Readable source](/docs/reference/readable-source-language) |
+| Parsing | Compile source and preserve source provenance | [Semantic Assembly Format](/docs/reference/readable-source-language) |
 | Validation | Ordered structural, reference, type, lifecycle, and policy checks | [Semantic validation](/docs/reference/semantic-validation) |
 | Rules | Bind and evaluate rules and decision tables with explanations | [Rules runtime](/docs/reference/rules-runtime) |
 | Projections | Derive behavioural, lifecycle, causality, context, structural, and rule views | [Diagram projections](/docs/reference/diagram-projections) |

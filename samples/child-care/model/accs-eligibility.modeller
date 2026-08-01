@@ -1,4 +1,4 @@
-# Modeller readable language 1.0 — Child Care ACCS acceptance slice
+# Modeller Semantic Assembly Format 1.0 — Child Care ACCS acceptance slice
 language 1.0
 context id=0191f6d4-4ea0-7000-8000-000000000001 name="Child Care" slug=child-care version=1.0.0
 entity id=0191f6d4-4ea0-7000-8000-000000000002 name="ACCS determination application" slug=accs-determination-application lifecycle-id=0191f6d4-4ea0-7000-8000-000000000003 lifecycle-name="ACCS determination application lifecycle" lifecycle-slug=accs-determination-application-lifecycle

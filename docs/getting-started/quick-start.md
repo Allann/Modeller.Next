@@ -37,18 +37,18 @@ only when you intend to replace an existing file.
 
 ## Validate the Child Care model
 
-The readable-source fixture is the smallest executable slice of the
+The SAF fixture is the smallest executable slice of the
 [Child Care reference project](/docs/reference/reference-project):
 
 ```powershell
-dotnet run --project src/Modeller.Cli -- validate tests/Modeller.Parsing.Tests/Fixtures/child-care-accs.modeller
+dotnet run --project src/Modeller.Cli -- validate samples/child-care/model/accs-eligibility.modeller
 ```
 
 A successful model reports `Valid: no diagnostics.` For stable machine-readable
 diagnostics, add `--format json`.
 
-The source uses the same language documented in the
-[readable-source reference](/docs/reference/readable-source-language). Parsing
+The source uses the low-level format documented in the
+[Semantic Assembly Format reference](/docs/reference/readable-source-language). Parsing
 produces the canonical model; semantic validation and downstream workflows do
 not maintain a second interpretation of the domain.
 

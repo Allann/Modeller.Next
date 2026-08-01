@@ -12,7 +12,7 @@ API. Callers compose the smallest interfaces needed for their workflow.
 | --- | --- | --- |
 | `Modeller.Model` | `CanonicalModel.Apply` | Typed changes to canonical definitions |
 | `Modeller.Contexts` | `ContextPackageSystem` | Canonical package persistence, migration, and federation |
-| `Modeller.Parsing` | `DefinitionParser.Parse` | Readable source to canonical model with provenance |
+| `Modeller.Parsing` | `DefinitionParser.Parse` | SAF to canonical model with provenance |
 | `Modeller.Validation` | `SemanticValidation.Validate` | Staged semantic validation |
 | `Modeller.Rules` | `RulesRuntime` | Bind and evaluate rules and decision tables |
 | `Modeller.Projections` | `DiagramProjector`, `ProjectionEditor` | Project views and translate edits |

@@ -255,11 +255,11 @@ state or producing domain effects. It returns an answer rather than evidence
 that something occurred.
 _Avoid_: Command, lookup, report
 
-**Readable source**:
-A versioned, author-facing representation that proposes canonical semantic
-meaning and retains source provenance. It compiles into the authored model and
-never becomes a parallel semantic authority.
-_Avoid_: Canonical model, context package, executable script
+**Readable Modelling Language**:
+The versioned, business-facing DSL that proposes canonical semantic meaning and
+retains source provenance. It compiles into the authored model and never becomes
+a parallel semantic authority.
+_Avoid_: Semantic Assembly Format, canonical model, free text
 
 **Requirement**:
 A domain prerequisite that must be satisfied before a behaviour may proceed.
@@ -295,6 +295,11 @@ The version of a persisted representation's structural contract. It determines
 which loader or migration is required but says nothing about domain meaning or
 compatibility of a bounded context's exports.
 _Avoid_: Context version, model version, product version
+
+**Semantic Assembly Format**:
+A versioned, flat engineering format with explicit stable identities used for
+conformance, diagnostics, bootstrapping, and low-level parser tests.
+_Avoid_: Readable Modelling Language, canonical persistence, authoring language
 
 **Semantic digest**:
 A deterministic digest of normalized semantic meaning. It excludes source

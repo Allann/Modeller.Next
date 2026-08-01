@@ -33,5 +33,5 @@ Fact types. Invalid combinations produce stable diagnostics rather than implicit
 conversions.
 
 Decision-table conditions use typed truth values (`true`, `false`, or `any`) in
-language 1.0. See [readable source](/docs/reference/readable-source-language) for
+SAF 1.0. See [Semantic Assembly Format](/docs/reference/readable-source-language) for
 syntax and [rules runtime](/docs/reference/rules-runtime) for evaluation results.

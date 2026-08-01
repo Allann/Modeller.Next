@@ -614,21 +614,20 @@ state-changing behaviour.
 
 Avoid using *command*, *lookup*, or *report* as synonyms for query.
 
-### Readable source
+### Readable Modelling Language
 
-A versioned, author-facing representation that proposes canonical semantic
-meaning and retains [source provenance](#source-provenance). It compiles into
-the authored model and never becomes a parallel semantic authority.
+The versioned, business-facing DSL that proposes canonical semantic meaning and
+retains [source provenance](#source-provenance). It compiles into the authored
+model and never becomes a parallel semantic authority.
 
-The Child Care ACCS slice can be written as readable source and compile to the
-same [semantic digest](#semantic-digest) as canonical JSON. Comments,
-formatting, filenames, and source order do not change that meaning.
+The Child Care RML can organise ACCS Facts, Rules, Behaviours, and Lifecycles in
+nested, named definitions while tooling maintains canonical identity outside the
+normal reading path.
 
-Avoid using *canonical model*, *context package*, or *executable script* as
-synonyms for readable source.
+Avoid using *Semantic Assembly Format*, *canonical model*, or *free text* as
+synonyms for Readable Modelling Language.
 
-See the [readable-source language reference](/docs/reference/readable-source-language)
-for grammar, versioning, diagnostics, and legacy import constraints.
+See the [authoring-language decision](/docs/architecture/decisions/authoring-language-and-editing).
 
 ### Requirement
 
@@ -714,6 +713,22 @@ for schema version.
 
 See the [context-package reference](/docs/reference/context-packages) for
 supported-schema and explicit-migration behaviour.
+
+### Semantic Assembly Format
+
+A versioned, flat engineering format with explicit stable identities used for
+conformance fixtures, diagnostics, parser bootstrapping, and low-level tests.
+It compiles to the authored model but is neither canonical persistence nor the
+business-facing authoring language.
+
+The current Child Care `language 1.0` fixture is SAF: its UUID-heavy statements
+make semantic mappings explicit for conformance, but business authors are not
+expected to maintain it.
+
+Avoid using *Readable Modelling Language*, *context package*, or *canonical
+model* as synonyms for Semantic Assembly Format.
+
+See the [authoring-language decision](/docs/architecture/decisions/authoring-language-and-editing).
 
 ### Semantic digest
 
