@@ -10,9 +10,12 @@ Source: [Wayfinder issue #17](https://github.com/Allann/Modeller.Next/issues/17)
 ## Canonical terms
 
 [Classification](/docs/concepts/ubiquitous-language#classification) ·
+[Canonical trace](/docs/concepts/ubiquitous-language#canonical-trace) ·
 [Conclusion](/docs/concepts/ubiquitous-language#conclusion) ·
 [Decision](/docs/concepts/ubiquitous-language#decision) ·
+[Diagnostic](/docs/concepts/ubiquitous-language#diagnostic) ·
 [Evidence](/docs/concepts/ubiquitous-language#evidence) ·
+[Explanation](/docs/concepts/ubiquitous-language#explanation) ·
 [Fact](/docs/concepts/ubiquitous-language#fact) ·
 [Federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot) ·
 [Finding](/docs/concepts/ubiquitous-language#finding) ·
@@ -77,7 +80,9 @@ Each finding occurrence contains:
 - references to supporting evidence where available; and
 - a deterministic local identity and order within the evaluation.
 
-Human-readable wording is a projection rendered from that structure. Diagnostic
+Human-readable wording is an
+[explanation](/docs/concepts/ubiquitous-language#explanation) projected from that
+structure. Diagnostic
 severity does not belong on findings: a finding may explain an ordinary
 successful conclusion and is not inherently an error.
 
@@ -119,7 +124,8 @@ module interface.
 
 ### Diagnostic contract
 
-Diagnostics report problems with the evaluation contract or runtime; findings
+[Diagnostics](/docs/concepts/ubiquitous-language#diagnostic) report problems with
+the evaluation contract or runtime; findings
 explain domain reasoning. The two are separate.
 
 Each diagnostic contains a stable machine-readable code, a severity of
@@ -135,7 +141,9 @@ rendered projections.
 
 ### Trace contract
 
-Findings are always available; traces are optional diagnostic detail with levels
+Findings are always available;
+[canonical traces](/docs/concepts/ubiquitous-language#canonical-trace) are optional
+diagnostic detail with levels
 of **None**, **Summary**, and **Full**. A trace is an immutable, ordered graph of
 evaluation steps.
 

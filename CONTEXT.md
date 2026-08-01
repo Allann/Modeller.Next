@@ -5,6 +5,11 @@ frameworks, storage engines, interfaces, and generators used to realise it.
 
 ## Language
 
+**Acceptance scenario**:
+A named, reviewed domain example whose inputs and expected observable meaning
+demonstrate that an architectural contract is satisfied.
+_Avoid_: Implementation test, sample data, demo
+
 **Actor**:
 A person, organisation, or external system that participates in a behaviour
 through a named domain role. The role is independent of technical identity and
@@ -28,6 +33,12 @@ surface. It owns its concepts and controls their exports and imports without
 implying a separate package, process, or deployment.
 _Avoid_: Service, module, deployment unit
 
+**Canonical trace**:
+An immutable, deterministically ordered graph explaining the semantic evaluation
+steps taken for one request. It excludes timestamps, durations, host data, and
+other operational telemetry.
+_Avoid_: Log, OpenTelemetry trace, stack trace
+
 **Capability**:
 An enduring ability or responsibility of a system, realised through one or more
 behaviours. A capability groups behaviours by business purpose but is not itself
@@ -45,10 +56,20 @@ produce effects. It expresses intent, can be accepted or rejected, and is not
 evidence that the requested behaviour occurred.
 _Avoid_: Behaviour, event, instruction
 
+**Compatibility fixture**:
+An immutable historical artifact and its expected load, migration, or rejection
+result, retained to prove a declared compatibility promise over time.
+_Avoid_: Regenerated sample, current snapshot, backup
+
 **Conclusion**:
 The typed, explained result of evaluating a rule. A conclusion may be a truth,
 classification, or value, but does not itself change domain state.
 _Avoid_: Outcome, effect, return value
+
+**Conformance fixture**:
+A versioned, machine-readable input and independently authored expected semantic
+observation used to compare implementations against the same contract.
+_Avoid_: Golden implementation output, unit test, runtime snapshot
 
 **Context package**:
 The independently versioned persisted unit owned by one bounded context. It
@@ -67,6 +88,11 @@ A named composition of rules that resolves a domain question by selecting among
 defined conclusions. It explains how the supplied facts led to its conclusion
 and causes no effects.
 _Avoid_: Behaviour, policy, decision record
+
+**Diagnostic**:
+A structured report of an invalid definition, request, contract, or expected
+technical failure. It is distinct from a finding that explains domain reasoning.
+_Avoid_: Finding, conclusion, exception text
 
 **Diagram projection**:
 A derived visual graph that reveals selected semantic concepts and relationships
@@ -95,6 +121,12 @@ Immutable provenance supplied with facts and referenced by findings. Evidence
 supports an explanation but does not by itself establish that a source is
 trustworthy.
 _Avoid_: Fact, attachment, document
+
+**Explanation**:
+An audience-appropriate account projected from structured conclusions, findings,
+evidence references, diagnostics, and optional canonical traces. It communicates
+meaning without becoming a second evaluation result.
+_Avoid_: Raw trace, free-text result, diagnostic dump
 
 **Fact**:
 A typed piece of domain information supplied to rule or decision evaluation as

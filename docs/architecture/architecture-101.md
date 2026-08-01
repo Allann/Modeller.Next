@@ -375,6 +375,40 @@ paths may enter or leave the system, but all of them pass through Modeller-owned
 semantics. That narrow waist is what lets the edges evolve without fragmenting
 the meaning of a model.
 
+## The implementation threshold
+
+Architecture is not implementation-ready merely because its interfaces have
+names. The [validation and conformance decision](/docs/architecture/decisions/validation-conformance-explainability)
+requires executable evidence for every accepted contract before implementation
+begins, and stronger release evidence before any runtime or adapter ships.
+
+```mermaid
+flowchart LR
+    Decisions[Accepted decisions] --> Scenarios[Reviewed acceptance scenarios]
+    Scenarios --> Fixtures[Versioned conformance fixtures]
+    History[Historical compatibility fixtures] --> Fixtures
+    Fixtures --> Reference[Reference implementation]
+    Fixtures --> Alternate[Alternate and generated runtimes]
+    Fixtures --> Adapters[Applicable adapters]
+    Reference --> Evidence[Release evidence]
+    Alternate --> Evidence
+    Adapters --> Evidence
+```
+
+[Acceptance scenarios](/docs/concepts/ubiquitous-language#acceptance-scenario)
+state reviewed Child Care meaning. [Conformance fixtures](/docs/concepts/ubiquitous-language#conformance-fixture)
+make those expectations machine-readable, while
+[compatibility fixtures](/docs/concepts/ubiquitous-language#compatibility-fixture)
+retain immutable historical artifacts. Expected observations are authored
+independently: two runtimes agreeing with one another does not prove that either
+matches the domain contract.
+
+Validation, evaluation, behaviour governance, projections, persistence, and
+migration are tested through their public module interfaces. Security,
+concurrency, cancellation, [explanation](/docs/concepts/ubiquitous-language#explanation)
+quality, and [canonical trace](/docs/concepts/ubiquitous-language#canonical-trace)
+stability are release gates rather than optional refinements.
+
 ## What is settled, and what is not
 
 This page applies the accepted [successor semantic baseline](/docs/architecture/decisions/successor-semantic-baseline)

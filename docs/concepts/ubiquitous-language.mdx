@@ -11,6 +11,21 @@ Status: **Accepted**
 
 ## Language
 
+### Acceptance scenario
+
+A named, reviewed domain example whose inputs and expected observable meaning
+demonstrate that an architectural contract is satisfied.
+
+For example, an ACCS acceptance scenario may supply an active enrolment,
+eligible risk reason, determination period, and supporting-evidence fact, then
+state the expected conclusion, findings, and safe provider explanation.
+
+Avoid using *implementation test*, *sample data*, or *demo* as synonyms for an
+acceptance scenario.
+
+See the [validation and conformance decision](/docs/architecture/decisions/validation-conformance-explainability)
+for review and coverage requirements.
+
 ### Actor
 
 A person, organisation, or external system that participates in a
@@ -64,6 +79,22 @@ named shared-kernel context and are imported like any other dependency.
 Avoid using *service*, *module*, or *deployment unit* as synonyms for bounded
 context.
 
+### Canonical trace
+
+An immutable, deterministically ordered graph explaining the semantic evaluation
+steps taken for one request. It excludes timestamps, durations, host data, and
+other operational telemetry.
+
+For example, an ACCS canonical trace may show which eligibility facts were read,
+which decision-table row matched, and which missing fact prevented a conclusion.
+An OpenTelemetry trace may correlate with it but remains operational.
+
+Avoid using *log*, *OpenTelemetry trace*, or *stack trace* as synonyms for a
+canonical trace.
+
+See the [rule evaluation decision](/docs/architecture/decisions/rule-evaluation-interface)
+for trace levels, structure, ordering, and disclosure.
+
 ### Capability
 
 An enduring ability or responsibility of a system, realised through one or more
@@ -102,6 +133,18 @@ state and publish a **session report submitted** [event](#event).
 
 Avoid using *behaviour*, *event*, or *instruction* as synonyms for command.
 
+### Compatibility fixture
+
+An immutable historical artifact and its expected load, migration, or rejection
+result, retained to prove a declared compatibility promise over time.
+
+For example, a released Child Care context package remains unchanged in the
+fixture corpus so a later loader must either load it or return its declared
+migration-required diagnostic.
+
+Avoid using *regenerated sample*, *current snapshot*, or *backup* as synonyms
+for a compatibility fixture.
+
 ### Conclusion
 
 The typed, explained result of evaluating a [rule](#rule). A conclusion may be a
@@ -113,6 +156,18 @@ the evaluation arrived there. An [outcome](#outcome) is instead the domain resul
 of a completed behaviour.
 
 Avoid using *outcome*, *effect*, or *return value* as synonyms for conclusion.
+
+### Conformance fixture
+
+A versioned, machine-readable input and independently authored expected semantic
+observation used to compare implementations against the same contract.
+
+For example, one ACCS conformance fixture may require the reference interpreter
+and generated .NET runtime to return the same typed conclusion, findings, and
+canonical trace for the same federation snapshot and facts.
+
+Avoid using *golden implementation output*, *unit test*, or *runtime snapshot*
+as synonyms for a conformance fixture.
 
 ### Context package
 
@@ -153,6 +208,18 @@ For example, **determine session-report disposition** may conclude **approve**,
 government-response facts led there.
 
 Avoid using *behaviour*, *policy*, or *decision record* as synonyms for decision.
+
+### Diagnostic
+
+A structured report of an invalid definition, request, contract, or expected
+technical failure. It is distinct from a [finding](#finding) that explains
+domain reasoning.
+
+For example, an ACCS rule referring to an unknown fact produces a diagnostic;
+an inactive enrolment that prevents eligibility produces a finding.
+
+Avoid using *finding*, *conclusion*, or *exception text* as synonyms for a
+diagnostic.
 
 ### Diagram projection
 
@@ -221,6 +288,24 @@ fact **supporting evidence is held**. Rule evaluation preserves that relationshi
 without opening or interpreting the underlying child-protection document.
 
 Avoid using *fact*, *attachment*, or *document* as synonyms for evidence.
+
+### Explanation
+
+An audience-appropriate account projected from structured
+[conclusions](#conclusion), [findings](#finding), [evidence](#evidence)
+references, [diagnostics](#diagnostic), and optional
+[canonical traces](#canonical-trace). It communicates meaning without becoming
+a second evaluation result.
+
+For example, the provider explanation of an ACCS information-required result may
+identify a missing supporting-evidence fact, while a protected audit explanation
+contains additional findings allowed by its disclosure policy.
+
+Avoid using *raw trace*, *free-text result*, or *diagnostic dump* as synonyms for
+an explanation.
+
+See the [validation and conformance decision](/docs/architecture/decisions/validation-conformance-explainability)
+for the explanation-quality rubric.
 
 ### Fact
 

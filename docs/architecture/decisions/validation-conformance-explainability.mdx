@@ -1,0 +1,328 @@
+---
+title: Validation, conformance, and explainability acceptance criteria
+description: Define the executable evidence required before implementation and runtime releases are safe.
+---
+
+Status: **Accepted**
+
+Source: [Wayfinder issue #22](https://github.com/Allann/Modeller.Next/issues/22)
+
+## Canonical terms
+
+[Acceptance scenario](/docs/concepts/ubiquitous-language#acceptance-scenario) ·
+[Authorization policy](/docs/concepts/ubiquitous-language#authorization-policy) ·
+[Behaviour](/docs/concepts/ubiquitous-language#behaviour) ·
+[Canonical trace](/docs/concepts/ubiquitous-language#canonical-trace) ·
+[Compatibility fixture](/docs/concepts/ubiquitous-language#compatibility-fixture) ·
+[Conclusion](/docs/concepts/ubiquitous-language#conclusion) ·
+[Conformance fixture](/docs/concepts/ubiquitous-language#conformance-fixture) ·
+[Context package](/docs/concepts/ubiquitous-language#context-package) ·
+[Diagnostic](/docs/concepts/ubiquitous-language#diagnostic) ·
+[Evidence](/docs/concepts/ubiquitous-language#evidence) ·
+[Explanation](/docs/concepts/ubiquitous-language#explanation) ·
+[Fact](/docs/concepts/ubiquitous-language#fact) ·
+[Federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot) ·
+[Finding](/docs/concepts/ubiquitous-language#finding) ·
+[Invariant](/docs/concepts/ubiquitous-language#invariant) ·
+[Migration](/docs/concepts/ubiquitous-language#migration) ·
+[Outcome](/docs/concepts/ubiquitous-language#outcome) ·
+[Rule](/docs/concepts/ubiquitous-language#rule) ·
+[Runtime plan](/docs/concepts/ubiquitous-language#runtime-plan) ·
+[Semantic digest](/docs/concepts/ubiquitous-language#semantic-digest) ·
+[Transition](/docs/concepts/ubiquitous-language#transition) ·
+[View definition](/docs/concepts/ubiquitous-language#view-definition) ·
+[Workflow](/docs/concepts/ubiquitous-language#workflow)
+
+## Decision
+
+### Acceptance evidence
+
+An implementation is safe to begin when every accepted architectural contract
+has an executable acceptance category, fixture shape, and observable pass
+condition. An implementation or adapter is safe to release only when it produces
+the required evidence through its public module interfaces.
+
+The acceptance system has six versioned artifacts:
+
+1. a diagnostic catalogue with stable codes, stages, parameters, and severity;
+2. independently reviewed
+   [acceptance scenarios](/docs/concepts/ubiquitous-language#acceptance-scenario);
+3. machine-readable
+   [conformance fixtures](/docs/concepts/ubiquitous-language#conformance-fixture);
+4. a coverage manifest mapping every canonical concept, operator, status, and
+   contract branch to evidence;
+5. historical
+   [compatibility fixtures](/docs/concepts/ubiquitous-language#compatibility-fixture)
+   and an explicit support matrix; and
+6. review records for domain explanation quality, security disclosure, and any
+   permitted implementation-specific variance.
+
+Fixtures are versioned assets, not incidental test data. Each records its schema
+version, source decision, stable scenario ID, input digests, expected semantic
+observations, and permitted non-semantic variance.
+
+### Compile-time validation
+
+Validation is staged so authors receive complete deterministic diagnostics
+without allowing unsafe later stages to run:
+
+1. Decode package and schema structure, limits, and required fields.
+2. Validate stable IDs, single ownership, tombstones, and duplicate definitions.
+3. Resolve bounded-context imports, exports, versions, and typed references.
+4. Validate declared types, facts, conclusions, expressions, and function calls.
+5. Validate rule and decision composition, recursion, decision-table hit policy,
+   row order, and exhaustive classifications.
+6. Validate behaviours, outcomes, rule bindings, authorization, requirements,
+   effects, event publication, and workflow progression.
+7. Validate entities, lifecycles, states, transitions, guards, and invariants.
+8. Validate view definitions and semantic edit mappings without requiring layout.
+
+Each stage returns structured
+[diagnostics](/docs/concepts/ubiquitous-language#diagnostic) in stable semantic
+order with source provenance where available. Core errors cannot be suppressed,
+downgraded, or replaced by extensions. Any error prevents creation of a resolved
+[federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot) or
+[runtime plan](/docs/concepts/ubiquitous-language#runtime-plan). Warnings never
+silently repair or reinterpret the model.
+
+Fixtures must cover each diagnostic code, multiple independent errors, cascaded
+error suppression, missing or stale provenance, maliciously deep or large input,
+and deterministic diagnostic ordering. A Child Care package that references a
+deleted ACCS eligibility rule and also omits a transition outcome must report
+both actionable root problems without inventing downstream noise.
+
+### Conformance harness
+
+The conformance harness treats each implementation as an adapter behind the
+accepted bind, evaluate, project, persist, and migrate interfaces. It supplies
+canonical inputs and compares normalized observable outputs; it does not inspect
+private classes, call internal stages, or require identical implementation
+structure.
+
+Each fixture may assert:
+
+- binding success or exact normalized diagnostics;
+- evaluation status, typed conclusion, findings, evidence references, and
+  canonical trace;
+- projection topology, semantic references, edit capabilities, and diagnostics;
+- normalized semantic digests and resolved dependency locks;
+- migration output, ID preservation, diagnostics, and before-and-after digests;
+  and
+- cancellation or expected failure control flow where no semantic result exists.
+
+Expected semantic observations are independently authored and domain-reviewed.
+The reference interpreter and every alternate or generated runtime must match
+them exactly. Differential comparison between runtimes is additional evidence,
+not an oracle: agreement between two implementations does not excuse both being
+wrong.
+
+Permitted variance is explicit and narrow. Operational timestamps, durations,
+host identifiers, cache activity, and OpenTelemetry transport are excluded from
+semantic equality. Human-language rendering may vary by approved locale and
+template version; its structured explanation source may not.
+
+### Canonical rule and decision coverage
+
+The fixture corpus covers every canonical expression operator and declared
+function contract over valid, invalid, missing, null, boundary, and type-mismatch
+inputs. Boolean and missing-information propagation has exhaustive truth tables.
+Numeric, textual, collection, and temporal operations include minimum, maximum,
+empty, precision, ordering, and timezone boundaries defined by their Modeller
+types.
+
+Rule composition covers references, short-circuiting, indeterminate evaluation,
+recursion rejection, structured failures, and cancellation. Decision tables
+cover every hit policy, zero, one, and multiple matches, canonical row ordering,
+overlap, gaps, exhaustive result mappings, and invalid cells.
+
+The suite includes semantic mutation checks: deliberate changes to an operator,
+missing-information rule, short-circuit rule, ordering rule, or disclosure rule
+must break at least one named fixture. Line or branch coverage alone cannot prove
+semantic conformance.
+
+### Behaviour and lifecycle coverage
+
+Every behaviour fixture matrix exercises authorization, current-state
+invariants, requirements, classifications, the selected transition guard,
+effect and event planning, candidate-state invariants, atomic commit, and
+post-commit intents in their accepted governance order.
+
+For each behaviour, fixtures reach every declared
+[outcome](/docs/concepts/ubiquitous-language#outcome), every selected
+[transition](/docs/concepts/ubiquitous-language#transition), each mapped rule
+conclusion, information-required handling, protected rejection, and each invalid
+or failed technical path. They prove that rules cause no effects, failed
+authorization reveals no protected later findings, invariant failure publishes
+nothing, and external adapter failure does not reinterpret a committed outcome.
+
+Workflow fixtures cover every next step, wait state, child outcome, consumed
+event, workflow outcome, rejection, retry, and resume path. They prove that
+durable retries do not repeat committed child behaviours and that workflow
+coordination does not imply a distributed transaction.
+
+Curated Child Care scenarios include recording parent and staff attendance,
+submitting and withdrawing session reports, ACCS eligibility with sufficient and
+missing information, authorization denial without enrolment disclosure,
+government-processing events, and workflow resumption after a durable wait.
+
+### Generated scenarios
+
+Deterministic generators supplement, but never replace, curated acceptance
+scenarios. They derive values from declared Modeller types and model structure to
+exercise valid combinations, missing facts, nullability, type boundaries,
+decision-table overlaps and gaps, lifecycle reachability, outcome mappings,
+import graphs, and size or depth limits.
+
+Every generated failure records its generator version and seed and shrinks to a
+minimal reproducible fixture. Promoted regressions receive a stable scenario ID
+and remain in the permanent corpus. Generators may not infer expected domain
+conclusions by calling the implementation under test; expected invariants come
+from independently defined properties or cross-checked curated models.
+
+For ACCS, generated dates may probe eligibility-period boundaries and missing
+supporting evidence, while reviewed scenarios still establish what **Eligible**,
+**Ineligible**, and **Information required** mean.
+
+### Concurrency, cancellation, and isolation
+
+Concurrency fixtures reuse one immutable runtime plan across many evaluations
+with different facts, evidence, disclosure policies, trace levels, and
+cancellation signals. Randomized scheduling and repeated runs must produce the
+same per-request semantic results and ordering as isolated sequential runs.
+
+The suite proves that:
+
+- facts, findings, traces, diagnostics, and cancellation never leak between
+  requests;
+- cancelling one evaluation does not cancel, delay, or partially publish another;
+- concurrent binding and host cache coalescing return equivalent immutable plans;
+- declared-function adapters observe cancellation and have no shared mutable
+  evaluation state;
+- deterministic work limits fail at the same semantic step across runtimes; and
+- isolated worker termination produces no partial semantic result.
+
+Stress and soak tests check deadlocks, races, unbounded memory growth, leaked
+workers, and cancellation latency. Machine-dependent throughput and duration are
+reported against an explicit environment baseline but never enter canonical
+semantic fixtures.
+
+### Security and disclosure
+
+Security fixtures treat authored packages, imported formats, declared-function
+adapters, rendered explanations, and telemetry sinks as untrusted edges. They
+cover malformed and oversized input, parser and renderer injection, path
+traversal, identifier collision, import cycles, migration bombs, recursive or
+expensive expressions, adapter failure, and unsafe exception content.
+
+Authorization and invariant paths fail closed for indeterminate, invalid, and
+failed evaluation. Public results, diagnostics, traces, projections, logs, and
+OpenTelemetry must not disclose protected subject existence, fact values,
+evidence excerpts, source content, secrets, or arbitrary exception details.
+Protected audit projections require an explicit disclosure policy and test
+identity; redaction is asserted structurally rather than by searching a few
+rendered strings.
+
+Security fuzzing is deterministic and retains every minimized failure as a
+compatibility or conformance fixture. Host sandbox escape and transport security
+are adapter-specific release gates in addition to the shared semantic suite.
+
+### Explanation quality
+
+An [explanation](/docs/concepts/ubiquitous-language#explanation) must let its
+intended reader answer:
+
+- what conclusion or missing-information result was reached;
+- which relevant facts and evidence were considered;
+- which findings supported, qualified, or prevented the conclusion;
+- which rule or decision relationships connect those observations; and
+- what information is missing or what safe next action is available.
+
+Every determined or indeterminate domain evaluation has structured findings.
+Invalid and failed results have diagnostics instead and cannot masquerade as
+domain explanations. Human-readable text is rendered from stable structured
+records and is never the only asserted output.
+
+Curated scenarios are reviewed against a rubric for correctness, relevance,
+completeness, audience vocabulary, actionable missing information, and absence
+of protected disclosure. Reviews include a Child Care domain reader, a modeller
+author, and the relevant security perspective. Snapshot approval of prose alone
+is insufficient; reviewers approve the structured causal account and each
+audience projection.
+
+### Trace stability and telemetry
+
+A [canonical trace](/docs/concepts/ubiquitous-language#canonical-trace) is compared
+as normalized structured data. Fixtures cover None, Summary, and Full levels;
+short-circuited and skipped nodes; missing facts; decision-table rows;
+declared-function calls; failures; redaction; and deterministic child ordering.
+
+Equivalent evaluation inputs against the same semantic and runtime versions
+must produce structurally identical traces across repetitions and conforming
+runtimes. Summary is a deterministic projection of Full, and requesting None
+does not change the conclusion or findings. Refactoring an implementation cannot
+change semantic paths or trace IDs.
+
+A deliberate canonical trace-shape change requires a versioned compatibility
+decision and updated fixtures. OpenTelemetry tests instead verify safe
+correlation to evaluation identity and canonical trace paths, span completion,
+redaction, and non-interference. OTEL timestamps, duration, sampling, and export
+success are operational and are never compared to canonical traces.
+
+### Compatibility and migration
+
+The compatibility matrix names every supported persistence schema, context
+version range, runtime contract version, projection version, import/export
+adapter version, and migration path. CI runs the complete fixture set relevant
+to every supported entry. Removing an entry is an explicit breaking release
+decision, not silent test deletion.
+
+Historical fixtures are immutable real artifacts or minimized representatives,
+never regenerated using current serializers. They prove that supported packages
+still load or produce the declared migration-required diagnostic, schema
+migrations preserve semantic digests and stable IDs, model migrations report
+meaning changes, unknown future schemas fail safely, and exported projections
+retain traceable ID mappings.
+
+Compatibility fixtures also classify representative semantic changes as major,
+minor, or patch context-version changes. A changed loader, serializer, migration,
+or adapter cannot merge merely because newly generated fixtures agree with it;
+the historical corpus remains the independent evidence.
+
+### Release gates
+
+The implementation threshold is met only when the diagnostic catalogue, fixture
+schemas, coverage manifest, compatibility matrix, explanation rubric, and
+security threat inventory exist and every accepted decision maps to at least one
+planned fixture.
+
+A reference implementation release additionally requires:
+
+- zero unexpected conformance mismatches across the supported matrix;
+- no skipped canonical operator, evaluation status, governance phase, initial
+  diagram view, or migration category;
+- deterministic reproduction of every generated failure seed;
+- passing semantic mutation checks;
+- passing concurrency, cancellation, isolation, and security suites with no
+  quarantined flakes; and
+- recorded domain and security approval of curated explanations.
+
+Every alternate runtime, generated runtime, import/export adapter, and isolated
+host must pass the applicable shared suite plus its declared adapter-specific
+gates. An implementation-specific exception is versioned, justified, scoped to
+non-semantic behaviour, and visible in the compatibility matrix; semantic
+waivers are not permitted.
+
+## Consequences
+
+- Accepted architecture becomes executable evidence rather than prose-only
+  intent.
+- Public module interfaces are the acceptance surface, preserving implementation
+  freedom while enforcing observable semantics.
+- Independently authored fixtures prevent differential testing from blessing a
+  shared defect.
+- Generated and mutated scenarios broaden coverage without replacing reviewed
+  Child Care examples.
+- Explanation, disclosure, canonical traces, compatibility, and migration are
+  release contracts rather than optional diagnostics.
+- The initial implementation cost is higher, but every later runtime, generator,
+  adapter, and migration reuses the same evidence.
