@@ -308,9 +308,12 @@ public static partial class RmlCompiler
     private static bool IsPackageRelative(string name)
     {
         var normalized = name.Replace('\\', '/');
-        return !string.IsNullOrWhiteSpace(name) && !Path.IsPathRooted(name) &&
+        return !string.IsNullOrWhiteSpace(name) && !IsRooted(name) &&
             !normalized.Split('/', StringSplitOptions.RemoveEmptyEntries).Contains("..", StringComparer.Ordinal);
     }
+    private static bool IsRooted(string value) =>
+        Path.IsPathRooted(value) || value.StartsWith('/') || value.StartsWith('\\') ||
+        (value.Length >= 2 && value[1] == ':' && char.IsAsciiLetter(value[0]));
     private static SourceSpan Span(Node node) => new(node.Document, node.Line, node.Column, node.TextLength);
     private static bool OpensBlock(string keyword, string? parent) =>
         parent is null && keyword is "context" or "entity" or "enumeration" or "fact" or "rule" or "behaviour" ||

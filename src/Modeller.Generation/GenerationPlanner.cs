@@ -162,7 +162,7 @@ public static class GenerationPlanner
 
     private static bool IsSafeRelativePath(string path)
     {
-        if (string.IsNullOrWhiteSpace(path) || Path.IsPathRooted(path))
+        if (string.IsNullOrWhiteSpace(path) || IsRooted(path))
         {
             return false;
         }
@@ -173,6 +173,10 @@ public static class GenerationPlanner
             !normalized.StartsWith("/", StringComparison.Ordinal) &&
             !normalized.Contains('\0');
     }
+
+    private static bool IsRooted(string value) =>
+        Path.IsPathRooted(value) || value.StartsWith('/') || value.StartsWith('\\') ||
+        (value.Length >= 2 && value[1] == ':' && char.IsAsciiLetter(value[0]));
 
     private static string Digest(string value) =>
         $"sha256:{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(value)))}";

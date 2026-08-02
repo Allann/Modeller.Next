@@ -287,9 +287,13 @@ public static class CliApplication
     private static bool IsWorkspaceRelative(string path)
     {
         var normalized = path.Replace('\\', '/');
-        return !Path.IsPathRooted(path) &&
+        return !IsRooted(path) &&
             !normalized.Split('/', StringSplitOptions.RemoveEmptyEntries).Contains("..", StringComparer.Ordinal);
     }
+
+    private static bool IsRooted(string value) =>
+        Path.IsPathRooted(value) || value.StartsWith('/') || value.StartsWith('\\') ||
+        (value.Length >= 2 && value[1] == ':' && char.IsAsciiLetter(value[0]));
 }
 
 public sealed record GenerationTemplateInput(string Digest, string Content);

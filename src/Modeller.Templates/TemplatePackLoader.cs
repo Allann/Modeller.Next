@@ -51,8 +51,11 @@ public static class TemplatePackLoader
     }
 
     private static bool Blank(string value) => string.IsNullOrWhiteSpace(value);
-    private static bool SafePath(string value) => !string.IsNullOrWhiteSpace(value) && !Path.IsPathRooted(value) &&
+    private static bool SafePath(string value) => !string.IsNullOrWhiteSpace(value) && !IsRooted(value) &&
         !value.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries).Contains("..", StringComparer.Ordinal);
+    private static bool IsRooted(string value) =>
+        Path.IsPathRooted(value) || value.StartsWith('/') || value.StartsWith('\\') ||
+        (value.Length >= 2 && value[1] == ':' && char.IsAsciiLetter(value[0]));
     private static string Digest(string value) => $"sha256:{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(value)))}";
     private static TemplatePackResult Failure(string code, string message) => new(null, [new(code, message)]);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);

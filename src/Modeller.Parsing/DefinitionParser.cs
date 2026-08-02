@@ -395,9 +395,13 @@ public static partial class DefinitionParser
     {
         var normalized = name.Replace('\\', '/');
         return !string.IsNullOrWhiteSpace(name) &&
-            !Path.IsPathRooted(name) &&
+            !IsRooted(name) &&
             !normalized.Split('/', StringSplitOptions.RemoveEmptyEntries).Contains("..", StringComparer.Ordinal);
     }
+
+    private static bool IsRooted(string value) =>
+        Path.IsPathRooted(value) || value.StartsWith('/') || value.StartsWith('\\') ||
+        (value.Length >= 2 && value[1] == ':' && char.IsAsciiLetter(value[0]));
 
     private static Statement Single(IEnumerable<Statement> statements, string kind) =>
         statements.SingleOrDefault(statement => statement.Kind == kind) ?? throw new ParseException("parse.statement.required", $"One '{kind}' statement is required.", statements.First());

@@ -23,7 +23,7 @@ public static class ContextPackageSystem
         foreach (var fragment in fragments)
         {
             var normalizedName = fragment.Name.Replace('\\', '/');
-            if (Path.IsPathRooted(fragment.Name) ||
+            if (IsRooted(fragment.Name) ||
                 normalizedName.Split('/', StringSplitOptions.RemoveEmptyEntries).Contains("..", StringComparer.Ordinal))
             {
                 return new ContextPackageLoadResult(
@@ -221,6 +221,10 @@ public static class ContextPackageSystem
         return $"{value["contextId"]!.GetValue<string>()}|{value["versionRange"]!.GetValue<string>()}";
     }
 
+    private static bool IsRooted(string value) =>
+        Path.IsPathRooted(value) || value.StartsWith('/') || value.StartsWith('\\') ||
+        (value.Length >= 2 && value[1] == ':' && char.IsAsciiLetter(value[0]));
+
     private static string? FindDuplicateProperty(JsonElement element, string path)
     {
         if (element.ValueKind == JsonValueKind.Object)
@@ -268,7 +272,7 @@ public static class ContextPackageSystem
                 {
                     var path = property.Value.GetString()!;
                     var segments = path.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries);
-                    if (Path.IsPathRooted(path) || segments.Contains("..", StringComparer.Ordinal))
+                    if (IsRooted(path) || segments.Contains("..", StringComparer.Ordinal))
                     {
                         return path;
                     }

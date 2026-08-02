@@ -332,7 +332,10 @@ internal static class WorkspaceGeneration
 
     private static string Join(string left, string right) => string.IsNullOrEmpty(left) ? right.Replace('\\', '/') : $"{left.TrimEnd('/', '\\')}/{right.Replace('\\', '/')}";
     private static string? Normalize(string path) => Unsafe(path) ? null : path.Replace('\\', '/').TrimEnd('/');
-    private static bool Unsafe(string path) => string.IsNullOrWhiteSpace(path) || Path.IsPathRooted(path) || path.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries).Contains("..", StringComparer.Ordinal) || path.Contains('\0');
+    private static bool Unsafe(string path) => string.IsNullOrWhiteSpace(path) || IsRooted(path) || path.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries).Contains("..", StringComparer.Ordinal) || path.Contains('\0');
+    private static bool IsRooted(string value) =>
+        Path.IsPathRooted(value) || value.StartsWith('/') || value.StartsWith('\\') ||
+        (value.Length >= 2 && value[1] == ':' && char.IsAsciiLetter(value[0]));
     private static bool IsSha256(string value) => value.Length == 71 && value.StartsWith("sha256:", StringComparison.Ordinal) && value[7..].All(Uri.IsHexDigit);
     private static string Digest(string content) => $"sha256:{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(content)))}";
     private static IEnumerable<SemanticDefinition?>? Select(AuthoredContextRevision revision, string scope) => scope switch

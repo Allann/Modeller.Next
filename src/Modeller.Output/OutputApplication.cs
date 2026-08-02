@@ -71,8 +71,11 @@ public static class OutputApplication
             await fileSystem.ApplyAtomicallyAsync(operations.ToImmutable(), recovery!, cancellationToken);
         return new(changes.ToImmutable(), operations.ToImmutable(), manifest, [], recovery);
     }
-    private static bool Safe(string path) => !string.IsNullOrWhiteSpace(path) && !Path.IsPathRooted(path) &&
+    private static bool Safe(string path) => !string.IsNullOrWhiteSpace(path) && !IsRooted(path) &&
         !path.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries).Contains("..", StringComparer.Ordinal);
+    private static bool IsRooted(string value) =>
+        Path.IsPathRooted(value) || value.StartsWith('/') || value.StartsWith('\\') ||
+        (value.Length >= 2 && value[1] == ':' && char.IsAsciiLetter(value[0]));
     private static string Digest(string content) => $"sha256:{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(content)))}";
     private static OutputReport Failure(string code, string message) => new([], [], OwnershipManifest.Empty, [new(code, message)], null);
 }
