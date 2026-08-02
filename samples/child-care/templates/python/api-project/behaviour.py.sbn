@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from enum import IntEnum
 
-from ..rules.{{ definition.rule_function_name }} import {{ definition.facts_type }}, {{ definition.rule_function_name }}
-
+{{ for entry in definition.imports }}from ..rules.{{ entry.module_name }} import {{ entry.symbols }}
+{{ end }}
 
 class {{ definition.stage_type }}(IntEnum):
 {{ for stage in definition.stages }}    {{ stage.name }} = {{ for.index + 1 }}
 {{ end }}
 
 def {{ definition.function_name }}(current: {{ definition.stage_type }}, facts: {{ definition.facts_type }}) -> {{ definition.stage_type }}:
-    if current == {{ definition.stage_type }}.{{ definition.source_stage }} and {{ definition.rule_function_name }}(facts):
-        return {{ definition.stage_type }}.{{ definition.target_stage }}
-    return current
+{{ for t in definition.transitions }}    if current == {{ definition.stage_type }}.{{ t.source_stage }}{{ if t.has_guard }} and {{ t.guard }}{{ end }}:
+        return {{ definition.stage_type }}.{{ t.target_stage }}
+{{ end }}    return current

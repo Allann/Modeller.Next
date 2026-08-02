@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><RootNamespace>Modeller.Cli</RootNamespace></PropertyGroup>
-  <ItemGroup><ProjectReference Include="../Modeller.Parsing/Modeller.Parsing.csproj" /><ProjectReference Include="../Modeller.Generation/Modeller.Generation.csproj" /><ProjectReference Include="../Modeller.Rendering/Modeller.Rendering.csproj" /><ProjectReference Include="../Modeller.Output/Modeller.Output.csproj" /><ProjectReference Include="../Modeller.Configuration/Modeller.Configuration.csproj" /><ProjectReference Include="../Modeller.GenerationWorkflow/Modeller.GenerationWorkflow.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../Modeller.Parsing/Modeller.Parsing.csproj" /><ProjectReference Include="../Modeller.Generation/Modeller.Generation.csproj" /><ProjectReference Include="../Modeller.Rendering/Modeller.Rendering.csproj" /><ProjectReference Include="../Modeller.Output/Modeller.Output.csproj" /><ProjectReference Include="../Modeller.Configuration/Modeller.Configuration.csproj" /><ProjectReference Include="../Modeller.GenerationWorkflow/Modeller.GenerationWorkflow.csproj" /><ProjectReference Include="../Modeller.Templates/Modeller.Templates.csproj" /></ItemGroup>
   <ItemGroup><PackageReference Include="System.CommandLine" /></ItemGroup>
 </Project>

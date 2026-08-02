@@ -28,10 +28,14 @@ root, with importable modules under `{projectName}/src/{projectName}/`. Set
 `parameters.projectName` in the workspace config to a valid Python
 identifier (e.g. `child_care`) — it names both the repository root and the
 importable package, since template-pack output paths only expand
-`{projectName}` and `{definitionName}` tokens. `parameters.namespace` is used
-as the pip distribution name in `pyproject.toml` (free-form, e.g.
-`child-care-api`) and `parameters.targetFramework` is read as the minimum
-Python version (e.g. `3.13`).
+`{projectName}` and `{definitionName}` tokens. Python packs read their own
+language-scoped parameter block, `parameters.python`: `packageName` is the
+pip distribution name in `pyproject.toml` (must match `^[a-z][a-z0-9_]*$`,
+e.g. `child_care_api`) and `pythonVersion` is the minimum Python version
+(must match `^3\.\d+$`, e.g. `3.13`). Both are validated by
+`PythonScribanRendererCapability.TryValidateParameters` with stable
+diagnostic codes before generation runs — Python no longer reinterprets the
+C#-shaped `namespace`/`targetFramework` fields by convention.
 
 Every `{definitionName}` path segment and generated identifier is
 `snake_case`, computed by `PythonTemplateNaming` in
@@ -45,8 +49,18 @@ rule/behaviour's `module_name`/`function_name` are precomputed by
 
 ## Selecting this pack
 
-Set `"language": "python"` in `pack.json` — `Modeller.Cli`'s
-`WorkspaceGeneration` reads it to choose `PythonTemplateGlobalsProvider` over
-`CSharpTemplateGlobalsProvider` and to snake_case `{definitionName}` path
-segments. Packs that omit `language` default to `csharp` for backward
-compatibility.
+Set `"rendererId": "scriban"`, `"rendererVersion": "1.0"`, and
+`"language": "python"` in `pack.json`. `TemplatePackLoader` validates the
+`rendererId`/`rendererVersion` pair against the caller's supported-renderer
+allow-list before planning; `RendererCapabilityRegistry.Resolve` then uses
+`language` to select `PythonScribanRendererCapability` over
+`CSharpScribanRendererCapability` — which supplies
+`PythonTemplateGlobalsProvider` and snake_cased `{definitionName}` path
+segments through one registered strategy, rather than a language switch at
+each call site. An unrecognized `language` under an otherwise-supported
+renderer fails with `workspace.template-pack.renderer-unsupported`.
+
+A conformance suite that generates this pack end-to-end through the same
+public pipeline (loader, capability resolution, planning, rendering,
+output application), compiles the result, and builds its OpenAPI schema
+lives in `tests/Modeller.Conformance.Python.Tests/`.

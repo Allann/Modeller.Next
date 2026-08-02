@@ -21,3 +21,17 @@ No recipe or template names **Booking**, **Determine ACCS eligibility**, or
 
 Validated descriptors feed [generation planning](/docs/reference/generation-plans),
 and pinned template bytes feed [template rendering](/docs/reference/template-rendering).
+
+## Manifest identity
+
+Every manifest declares `id`, `packVersion`, `generationContractVersion`,
+`rendererId`, `rendererVersion`, and `language`. `rendererId`/`rendererVersion`
+are the compatibility seam: `TemplatePackLoader.Load` rejects any pack whose
+pair isn't in the caller's supplied allow-list, before planning. `language` is
+descriptive metadata that selects which registered renderer capability applies
+among renderers sharing the same `rendererId`/`rendererVersion` — it never
+gates compatibility by itself; a supported `rendererId`/`rendererVersion`
+paired with an unrecognized `language` fails with a distinct
+`template-pack.renderer-unsupported` diagnostic one layer up, when the caller
+resolves a capability. See
+[renderer capability resolution](/docs/reference/template-rendering#renderer-capability-resolution).

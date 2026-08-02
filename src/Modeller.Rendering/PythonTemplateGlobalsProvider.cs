@@ -11,8 +11,7 @@ public sealed class PythonTemplateGlobalsProvider(
     string projectName,
     string pythonVersion) : ITemplateGlobalsProvider
 {
-    private readonly IReadOnlyDictionary<SemanticId, SemanticDefinition> definitions =
-        revision.Definitions.ToDictionary(definition => definition.Id);
+    private readonly TemplateSemanticProjection projection = new(revision);
 
     public IReadOnlyDictionary<string, object?> GetGlobals(ArtifactRenderingContext context)
     {
@@ -28,21 +27,21 @@ public sealed class PythonTemplateGlobalsProvider(
         var definition = revision.Definitions.Single(item => item.Slug.Value == input.Id);
         globals["definition"] = definition switch
         {
-            EntityDefinition entity => Entity(entity),
-            EnumerationDefinition enumeration => Enumeration(enumeration),
-            RuleDefinition rule => Rule(rule),
-            BehaviourDefinition behaviour => Behaviour(behaviour),
+            EntityDefinition entity => Entity(projection.Entity(entity)),
+            EnumerationDefinition enumeration => Enumeration(projection.Enumeration(enumeration)),
+            RuleDefinition rule => Rule(projection.Rule(rule)),
+            BehaviourDefinition behaviour => Behaviour(projection.Behaviour(behaviour)),
             _ => throw new InvalidOperationException($"'{input.Id}' cannot be projected into this Python template pack.")
         };
         return globals;
     }
 
-    private object Entity(EntityDefinition entity)
+    private object Entity(ProjectedEntity entity)
     {
         var referenced = new List<(string Package, string ModuleName, string ClassName)>();
         string RenderType(DataType type) => PythonDataTypeRenderer.Render(type, id =>
         {
-            var target = definitions[id];
+            var target = revision.Definitions.Single(definition => definition.Id == id);
             var package = target is EnumerationDefinition ? "enumerations" : "entities";
             var className = ClassName(target.Name.Value);
             referenced.Add((package, Identifier(target.Name.Value), className));
@@ -51,14 +50,14 @@ public sealed class PythonTemplateGlobalsProvider(
 
         var properties = entity.Fields.Select(field => new
             {
-                name = Identifier(field.Name.Value),
+                name = Identifier(field.RawName),
                 type = RenderType(field.Type),
-                nullable = field.IsOptional && field.Type is not StringDataType
+                nullable = field.IsOptional
             }).Concat(entity.Relationships.Select(relationship => new
             {
-                name = Identifier(relationship.Name.Value),
+                name = Identifier(relationship.RawName),
                 type = relationship.Cardinality == RelationshipCardinality.Many ? "list[UUID]" : "UUID",
-                nullable = relationship.Cardinality == RelationshipCardinality.One && relationship.IsOptional
+                nullable = relationship.IsOptional
             })).ToArray();
 
         var imports = referenced.Distinct()
@@ -68,66 +67,99 @@ public sealed class PythonTemplateGlobalsProvider(
         return new
         {
             kind = "entity",
-            name = ClassName(entity.Name.Value),
-            module_name = Identifier(entity.Name.Value),
+            name = ClassName(entity.Source.Name.Value),
+            module_name = Identifier(entity.Source.Name.Value),
             properties,
             imports
         };
     }
 
-    private static object Enumeration(EnumerationDefinition enumeration) => new
+    private static object Enumeration(ProjectedEnumeration enumeration) => new
     {
         kind = "enumeration",
-        name = ClassName(enumeration.Name.Value),
-        module_name = Identifier(enumeration.Name.Value),
-        members = enumeration.Members.OrderBy(member => member.Value)
-            .Select(member => new { name = ScreamingSnakeCase(member.Name.Value), value = member.Value }).ToArray()
+        name = ClassName(enumeration.Source.Name.Value),
+        module_name = Identifier(enumeration.Source.Name.Value),
+        members = enumeration.Members.Select(member => new { name = ScreamingSnakeCase(member.RawName), value = member.Value }).ToArray()
     };
 
-    private object Rule(RuleDefinition rule)
+    private object Rule(ProjectedRule rule)
     {
-        var facts = rule.InputFacts.Select(reference => (FactDefinition)definitions[reference.TargetId])
-            .Select(fact => new { name = Identifier(fact.Name.Value), type = FactTypeName(fact.Type) }).ToArray();
-        var name = ClassName(rule.Name.Value);
+        var facts = rule.Facts.Select(fact => new { name = Identifier(fact.Source.Name.Value), type = FactTypeName(fact.Source.Type) }).ToArray();
+        var name = ClassName(rule.Source.Name.Value);
         var functionName = SnakeCaseFromPascal(name);
         return new
         {
             kind = "rule",
             name,
-            subject_name = name.Replace("Determine", "", StringComparison.Ordinal),
+            subject_name = SubjectName(rule.Source.Name.Value),
             function_name = functionName,
             module_name = functionName,
-            facts
+            facts,
+            expression_terms = ExpressionTerms(rule.Expression),
+            conclusions = rule.Conclusions.Select(conclusion => new { name = ScreamingSnakeCase(conclusion.RawName) }).ToArray()
         };
     }
 
-    private object Behaviour(BehaviourDefinition behaviour)
+    private object Behaviour(ProjectedBehaviour behaviour)
     {
-        var entity = (EntityDefinition)definitions[behaviour.Entity.TargetId];
-        var transition = behaviour.Transitions.Single();
-        var lifecycle = entity.Lifecycle ?? throw new InvalidOperationException("A generated transition requires a lifecycle.");
-        var source = lifecycle.Stages.Single(stage => stage.Id == transition.SourceStage.TargetId);
-        var target = lifecycle.Stages.Single(stage => stage.Id == transition.TargetStage.TargetId);
-        var rule = (RuleDefinition)definitions[behaviour.RuleBindings.Single().Rule.TargetId];
-        var ruleName = ClassName(rule.Name.Value);
-        var ruleFunctionName = SnakeCaseFromPascal(ruleName);
-        var ruleSubjectName = ruleName.Replace("Determine", "", StringComparison.Ordinal);
-        var name = ClassName(behaviour.Name.Value);
+        var name = ClassName(behaviour.Source.Name.Value);
         var functionName = SnakeCaseFromPascal(name);
+        var transitions = behaviour.Transitions.Select(transition => new
+        {
+            source_stage = ScreamingSnakeCase(transition.SourceStage.Name.Value),
+            target_stage = ScreamingSnakeCase(transition.TargetStage.Name.Value),
+            has_guard = transition.GuardRules.Length > 0,
+            guard = string.Join(" and ", transition.GuardRules.Select(rule => $"{SnakeCaseFromPascal(ClassName(rule.Name.Value))}(facts)"))
+        }).ToArray();
+
+        // A behaviour may legally have no rule at all (e.g. a zero-transition behaviour that only publishes an
+        // event) — "object" needs no import and is a valid, if unused, type hint for the Facts parameter.
+        var primaryRule = behaviour.PrimaryRule;
+        var factsType = primaryRule is null ? "object" : $"{SubjectName(primaryRule.Name.Value)}Facts";
+        var factsModuleName = primaryRule is null ? null : SnakeCaseFromPascal(ClassName(primaryRule.Name.Value));
+
+        // Every distinct rule referenced as a transition guard must be imported by its own module — not just the
+        // "primary" rule used for the Facts type — otherwise a multi-binding behaviour calls unresolved functions.
+        var guardRules = behaviour.Transitions.SelectMany(transition => transition.GuardRules).DistinctBy(rule => rule.Id).ToArray();
+        var imports = guardRules.Select(rule =>
+        {
+            var moduleName = SnakeCaseFromPascal(ClassName(rule.Name.Value));
+            var isPrimary = primaryRule is not null && rule.Id == primaryRule.Id;
+            var symbols = isPrimary ? $"{SubjectName(rule.Name.Value)}Facts, {moduleName}" : moduleName;
+            return new { module_name = moduleName, symbols };
+        }).ToList();
+        if (primaryRule is not null && guardRules.All(rule => rule.Id != primaryRule.Id))
+            imports.Add(new { module_name = factsModuleName!, symbols = $"{SubjectName(primaryRule.Name.Value)}Facts" });
+
         return new
         {
             kind = "behaviour",
             name,
             function_name = functionName,
             module_name = functionName,
-            stage_type = $"{ClassName(entity.Name.Value)}Stage",
-            stages = lifecycle.Stages.Select(stage => new { name = ScreamingSnakeCase(stage.Name.Value) }).ToArray(),
-            source_stage = ScreamingSnakeCase(source.Name.Value),
-            target_stage = ScreamingSnakeCase(target.Name.Value),
-            rule_function_name = ruleFunctionName,
-            facts_type = $"{ruleSubjectName}Facts"
+            stage_type = $"{ClassName(behaviour.Entity.Name.Value)}Stage",
+            stages = behaviour.Lifecycle.Stages.Select(stage => new { name = ScreamingSnakeCase(stage.Name.Value) }).ToArray(),
+            transitions,
+            imports = imports.ToArray(),
+            facts_module_name = factsModuleName,
+            facts_type = factsType
         };
     }
+
+    private static string[] ExpressionTerms(ProjectedRuleExpression expression) => expression switch
+    {
+        ProjectedAndExpression and => and.Operands.Select(RenderExpression).ToArray(),
+        _ => [RenderExpression(expression)]
+    };
+
+    private static string RenderExpression(ProjectedRuleExpression expression) => expression switch
+    {
+        ProjectedFactTerm term => $"facts.{Identifier(term.Fact.Source.Name.Value)}",
+        ProjectedAndExpression and => $"({string.Join(" and ", and.Operands.Select(RenderExpression))})",
+        _ => throw new NotSupportedException($"'{expression.GetType().Name}' cannot be rendered as a Python expression.")
+    };
+
+    private static string SubjectName(string ruleName) => ClassName(ruleName).Replace("Determine", "", StringComparison.Ordinal);
 
     private static string FactTypeName(FactType type) => type switch
     {

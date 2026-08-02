@@ -4,6 +4,8 @@
   "packVersion": "1.0.0",
   "generationContractVersion": "1.0",
   "language": "python",
+  "rendererId": "scriban",
+  "rendererVersion": "1.0",
   "templates": [
     { "id": "pyproject", "path": "pyproject.toml.sbn", "digest": "sha256:7188aa3970101ecf7baa248017dc128614ee9caac4640bd6d0eb64d4ac00c1ac" },
     { "id": "main", "path": "main.py.sbn", "digest": "sha256:6e567803bc32c5d34b90e6e3cf98d16763c327e1ee2da0735ce09086707cb632" },
@@ -13,10 +15,10 @@
     { "id": "queries", "path": "queries.py.sbn", "digest": "sha256:6d7fae9344696ec8ef35a7714eedb2cb20326e72c30536ce98583cd2eb1b04f7" },
     { "id": "api", "path": "api.py.sbn", "digest": "sha256:4268a3cce8b4d7b2525f8f777da0c01badcc4b4c8bf6230cf9768a7ebae6ece7" },
     { "id": "enumeration", "path": "enumeration.py.sbn", "digest": "sha256:818253a252d638d867a2455adb2b01858da407639b74426acdd556a4f938db01" },
-    { "id": "rule", "path": "rule.py.sbn", "digest": "sha256:ca5ed2bc40b97cdc06e7c96326ed7efb4e8c51021d074fe49683c4067214bd55" },
+    { "id": "rule", "path": "rule.py.sbn", "digest": "sha256:6e3149fa73754e23488d83fefa7cb41cc7a7cc0c8a78cb81ce080a46e9c6bd22" },
     { "id": "rule-api", "path": "rule_api.py.sbn", "digest": "sha256:f01bfbb68adcdb72e56d0d3a6ee6c1f6ca9db8bb364d01e6c6b0f4e177de7a25" },
-    { "id": "behaviour", "path": "behaviour.py.sbn", "digest": "sha256:a73219ebfe444a969659bb706199bc24cca90712735e412caa9e7a1412524bf3" },
-    { "id": "behaviour-api", "path": "behaviour_api.py.sbn", "digest": "sha256:0ff89f6c5ee3443a7d17d72221077a0c2dc77d72a55723a80f28714b809e8d79" }
+    { "id": "behaviour", "path": "behaviour.py.sbn", "digest": "sha256:97abc0f2e89bbe3bdc5ce6694f54dbfbfb1b99a7865e35db9dd4b7d5926aa95f" },
+    { "id": "behaviour-api", "path": "behaviour_api.py.sbn", "digest": "sha256:a690ff9c2aec5791f9ab83e36c1a72bd88e6f4a607a6d795af2ae572ede6f345" }
   ],
   "outputs": [
     { "id": "pyproject", "scope": "context", "templateId": "pyproject", "logicalPath": "{projectName}/pyproject.toml", "owner": "python-api-project" },

@@ -20,8 +20,10 @@
   "identityRegistry": ".modeller/identities.json",
   "parameters": {
     "projectName": "ChildCare",
-    "namespace": "ChildCare",
-    "targetFramework": "net10.0"
+    "csharp": {
+      "namespace": "ChildCare",
+      "targetFramework": "net10.0"
+    }
   },
   "ownershipManifest": ".modeller/generated-api-manifest.json"
 }

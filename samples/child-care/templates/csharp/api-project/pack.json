@@ -4,6 +4,8 @@
   "packVersion": "1.0.0",
   "generationContractVersion": "1.0",
   "language": "csharp",
+  "rendererId": "scriban",
+  "rendererVersion": "1.0",
   "templates": [
     { "id": "solution", "path": "Solution.slnx.sbn", "digest": "sha256:83de235a04176e248fbc75cf2155b932ee4a4a2841529ec56a6b858370aec10a" },
     { "id": "project", "path": "ApiProject.csproj.sbn", "digest": "sha256:87f5b630033ff8a8ec62db4a28361bc377731df69f4783f56f71cc00d11e4e3f" },
@@ -17,9 +19,9 @@
     { "id": "queries", "path": "Queries.cs.sbn", "digest": "sha256:b3f7d0036e714a33a681d8fa9978d012d489eb78efe5431cfcc09ba600bb0425" },
     { "id": "api", "path": "Api.cs.sbn", "digest": "sha256:e02a2a587005c2fd5651fd0d2a43cf66aaf47b333f40bc6fdb7030124b8a4902" },
     { "id": "enumeration", "path": "Enumeration.cs.sbn", "digest": "sha256:d2881f913fe3796d324dc237658783e2c2034d1c5a7245d0bf21390a8b60a60f" },
-    { "id": "rule", "path": "Rule.cs.sbn", "digest": "sha256:38d60af96f1f8779bc3e025bc9bd004a001c1470db8e87e0badb8ff095400f1e" },
+    { "id": "rule", "path": "Rule.cs.sbn", "digest": "sha256:fbe51bd96f366d3472d1b81f1523f022d56444d95eb8e22a56d3cb28a363b8d8" },
     { "id": "rule-api", "path": "RuleApi.cs.sbn", "digest": "sha256:d2dd5ae5dfe59b4db29bf544edd60907548764d156e5b3b88781becaf42ad073" },
-    { "id": "behaviour", "path": "Behaviour.cs.sbn", "digest": "sha256:7d86bb44bce76753e918697844c2b93e5621fc4a6273cfaa803e377357a996a6" },
+    { "id": "behaviour", "path": "Behaviour.cs.sbn", "digest": "sha256:2dd89b045bebee6b01dafaf3278a5eea793bcb7839ea36cda46f34c197a7e6f5" },
     { "id": "behaviour-api", "path": "BehaviourApi.cs.sbn", "digest": "sha256:2efb99d54388e3ca39c68d0e414ed71a46a3c059f37ce517a635abe951742926" }
   ],
   "outputs": [

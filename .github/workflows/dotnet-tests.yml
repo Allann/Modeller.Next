@@ -1,0 +1,34 @@
+name: .NET tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      # Guarantees the Modeller.Conformance.Python.Tests toolchain tests (Python compile + FastAPI/OpenAPI
+      # schema build) actually run in CI instead of silently skipping for a missing interpreter/dependencies.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Python conformance dependencies
+        run: pip install -r tests/Modeller.Conformance.Python.Tests/requirements-conformance.txt
+
+      - name: Restore
+        run: dotnet restore Modeller.slnx
+
+      - name: Build
+        run: dotnet build Modeller.slnx --no-restore
+
+      - name: Test
+        run: dotnet test Modeller.slnx --no-build

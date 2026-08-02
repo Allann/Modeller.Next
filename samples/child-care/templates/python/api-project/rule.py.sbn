@@ -10,7 +10,10 @@ class {{ definition.subject_name }}Facts(BaseModel):
 {{ for fact in definition.facts }}    {{ fact.name }}: {{ fact.type }}
 {{ end }}
 
+CONCLUSIONS: list[str] = [{{ for conclusion in definition.conclusions }}"{{ conclusion.name }}"{{ if !for.last }}, {{ end }}{{ end }}]
+
+
 def {{ definition.function_name }}(facts: {{ definition.subject_name }}Facts) -> bool:
     return all([
-{{ for fact in definition.facts }}        facts.{{ fact.name }},
+{{ for term in definition.expression_terms }}        {{ term }},
 {{ end }}    ])

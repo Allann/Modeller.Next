@@ -226,6 +226,96 @@ public sealed class CliApplicationTests
     }
 
     [Fact]
+    public async Task Generate_workspace_rejects_a_configuration_missing_the_parameters_block()
+    {
+        var files = await WorkspaceFiles();
+        files["samples/child-care/.modeller/config.json"] = """
+            { "version":"1.0", "generationContractVersion":"1.0", "logicalOutputRoot":"generated",
+              "profile":"test", "sources":["model/accs.modeller"], "templatePack":"templates/pack.json" }
+            """;
+        var host = new RecordingCliHost(files);
+
+        var exit = await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Configuration, exit);
+        Assert.Contains("workspace.configuration.invalid", host.StandardError, StringComparison.Ordinal);
+        Assert.Equal(0, host.WriteCount);
+    }
+
+    [Fact]
+    public async Task Generate_workspace_rejects_a_configuration_missing_the_matching_language_parameters()
+    {
+        var files = await WorkspaceFiles();
+        files["samples/child-care/.modeller/config.json"] = """
+            { "version":"1.0", "generationContractVersion":"1.0", "logicalOutputRoot":"generated",
+              "profile":"test", "sources":["model/accs.modeller"], "templatePack":"templates/pack.json",
+              "parameters":{"projectName":"ChildCare"} }
+            """;
+        var host = new RecordingCliHost(files);
+
+        var exit = await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Configuration, exit);
+        Assert.Contains("workspace.configuration.parameters-invalid", host.StandardError, StringComparison.Ordinal);
+        Assert.Equal(0, host.WriteCount);
+    }
+
+    [Fact]
+    public async Task Generate_workspace_rejects_a_language_parameter_block_with_a_non_string_value()
+    {
+        var files = await WorkspaceFiles();
+        files["samples/child-care/.modeller/config.json"] = """
+            { "version":"1.0", "generationContractVersion":"1.0", "logicalOutputRoot":"generated",
+              "profile":"test", "sources":["model/accs.modeller"], "templatePack":"templates/pack.json",
+              "parameters":{"projectName":"ChildCare","csharp":{"namespace":"ChildCare","targetFramework":10.0}} }
+            """;
+        var host = new RecordingCliHost(files);
+
+        var exit = await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Configuration, exit);
+        Assert.Contains("workspace.configuration.parameters-invalid", host.StandardError, StringComparison.Ordinal);
+        Assert.Equal(0, host.WriteCount);
+    }
+
+    [Fact]
+    public async Task Generate_workspace_rejects_an_unsupported_renderer_version()
+    {
+        var files = await WorkspaceFiles();
+        files["samples/child-care/templates/pack.json"] = files["samples/child-care/templates/pack.json"]
+            .Replace("\"rendererVersion\":\"1.0\"", "\"rendererVersion\":\"9.9\"", StringComparison.Ordinal);
+        var host = new RecordingCliHost(files);
+
+        var exit = await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Configuration, exit);
+        Assert.Contains("template-pack.renderer.incompatible", host.StandardError, StringComparison.Ordinal);
+        Assert.Equal(0, host.WriteCount);
+    }
+
+    [Fact]
+    public async Task Generate_workspace_rejects_an_invalid_ownership_manifest()
+    {
+        var first = new RecordingCliHost(await WorkspaceFiles());
+        Assert.Equal(CliExitCode.Success, await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], first, TestContext.Current.CancellationToken));
+        var manifestFiles = new Dictionary<string, string>(first.Files, StringComparer.Ordinal);
+        var manifestPath = manifestFiles.Keys.Single(path => path.EndsWith("generated-manifest.json", StringComparison.Ordinal));
+        manifestFiles[manifestPath] = "not json";
+        var host = new RecordingCliHost(manifestFiles);
+
+        var exit = await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Configuration, exit);
+        Assert.Contains("workspace.manifest.invalid", host.StandardError, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Generate_workspace_rejects_an_identity_registry_that_is_out_of_sync()
     {
         var files = await WorkspaceFiles();
@@ -264,7 +354,7 @@ public sealed class CliApplicationTests
         files["samples/child-care/.modeller/config.json"] = """
             { "version":"1.0", "generationContractVersion":"1.0", "logicalOutputRoot":"generated",
               "profile":"test", "sources":["../private.modeller"], "templatePack":"templates/pack.json",
-              "parameters":{"projectName":"ChildCare","namespace":"ChildCare","targetFramework":"net10.0"} }
+              "parameters":{"projectName":"ChildCare","csharp":{"namespace":"ChildCare","targetFramework":"net10.0"}} }
             """;
         var host = new RecordingCliHost(files);
 
@@ -302,7 +392,7 @@ public sealed class CliApplicationTests
             ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken);
 
         Assert.Equal(CliExitCode.Configuration, exit);
-        Assert.Contains("workspace.template-pack.invalid", host.StandardError, StringComparison.Ordinal);
+        Assert.Contains("workspace.template-pack.renderer-unsupported", host.StandardError, StringComparison.Ordinal);
         Assert.Equal(0, host.WriteCount);
     }
 
@@ -320,7 +410,7 @@ public sealed class CliApplicationTests
             ["samples/child-care/.modeller/config.json"] = """
                 { "version":"1.0", "generationContractVersion":"1.0", "logicalOutputRoot":"generated",
                   "profile":"test", "sources":["model/accs.modeller"], "templatePack":"templates/pack.json",
-                  "parameters":{"projectName":"ChildCare","namespace":"ChildCare","targetFramework":"net10.0"} }
+                  "parameters":{"projectName":"ChildCare","csharp":{"namespace":"ChildCare","targetFramework":"net10.0"}} }
                 """,
             ["samples/child-care/model/accs.modeller"] = System.Text.RegularExpressions.Regex.Replace(
                 await ChildCareSource(), "(?m)^\\s*# @id=[0-9a-fA-F-]{36}\\r?\\n", string.Empty),
@@ -336,6 +426,7 @@ public sealed class CliApplicationTests
                 """,
             ["samples/child-care/templates/pack.json"] = $$"""
                 { "version":"1.0", "id":"test", "packVersion":"1.0.0", "generationContractVersion":"1.0",
+                  "rendererId":"scriban", "rendererVersion":"1.0", "language":"csharp",
                   "templates":[
                     { "id":"rule", "path":"Rule.cs.sbn", "digest":"{{digest}}" },
                     { "id":"entity", "path":"Entity.cs.sbn", "digest":"{{entityDigest}}" }
@@ -361,7 +452,7 @@ public sealed class CliApplicationTests
             ["samples/child-care/.modeller/config.json"] = """
                 { "version":"1.0", "generationContractVersion":"1.0", "logicalOutputRoot":"generated",
                   "profile":"test", "sources":["model/accs.modeller"], "templatePack":"templates/pack.json",
-                  "parameters":{"projectName":"child_care","namespace":"child-care-api","targetFramework":"3.13"} }
+                  "parameters":{"projectName":"child_care","python":{"packageName":"child_care_api","pythonVersion":"3.13"}} }
                 """,
             ["samples/child-care/model/accs.modeller"] = System.Text.RegularExpressions.Regex.Replace(
                 await ChildCareSource(), "(?m)^\\s*# @id=[0-9a-fA-F-]{36}\\r?\\n", string.Empty),
@@ -376,7 +467,8 @@ public sealed class CliApplicationTests
                   "0191f6d4-4ea0-7000-8000-00000000000d" ] } }
                 """,
             ["samples/child-care/templates/pack.json"] = $$"""
-                { "version":"1.0", "id":"test", "packVersion":"1.0.0", "generationContractVersion":"1.0", "language":"python",
+                { "version":"1.0", "id":"test", "packVersion":"1.0.0", "generationContractVersion":"1.0",
+                  "rendererId":"scriban", "rendererVersion":"1.0", "language":"python",
                   "templates":[
                     { "id":"rule", "path":"rule.py.sbn", "digest":"{{digest}}" },
                     { "id":"entity", "path":"entity.py.sbn", "digest":"{{entityDigest}}" }

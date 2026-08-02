@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><IsPackable>false</IsPackable><IsTestProject>true</IsTestProject></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" /><PackageReference Include="xunit.v3" /><PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Modeller.Templates/Modeller.Templates.csproj" />
+    <ProjectReference Include="../../src/Modeller.Generation/Modeller.Generation.csproj" />
+    <ProjectReference Include="../../src/Modeller.Rendering/Modeller.Rendering.csproj" />
+    <ProjectReference Include="../../src/Modeller.GenerationWorkflow/Modeller.GenerationWorkflow.csproj" />
+    <ProjectReference Include="../../src/Modeller.Parsing/Modeller.Parsing.csproj" />
+    <ProjectReference Include="../../src/Modeller.Model/Modeller.Model.csproj" />
+    <ProjectReference Include="../../src/Modeller.Contexts/Modeller.Contexts.csproj" />
+    <ProjectReference Include="../../src/Modeller.Output/Modeller.Output.csproj" />
+  </ItemGroup>
+</Project>

@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Security.Cryptography;
 using System.Text;
 using Modeller.Contexts;
+using Modeller.Templates;
 
 namespace Modeller.Generation;
 
@@ -99,11 +100,14 @@ public static class GenerationPlanner
                 descriptor.Owner,
                 request.TemplatePack.PackId,
                 request.TemplatePack.PackVersion,
-                descriptor.TemplateId);
+                descriptor.TemplateId,
+                request.TemplatePack.Renderer);
             var inputDigest = Digest(string.Join(
                 '\n',
                 request.Configuration.Digest,
                 request.TemplatePack.Digest,
+                request.TemplatePack.Renderer.Id,
+                request.TemplatePack.Renderer.Version,
                 descriptor.TemplateDigest,
                 descriptor.ArtifactId,
                 descriptor.LogicalPath.Replace('\\', '/'),
@@ -142,6 +146,8 @@ public static class GenerationPlanner
             request.Configuration.LogicalOutputRoot.Replace('\\', '/'),
             request.TemplatePack.PackId,
             request.TemplatePack.PackVersion,
+            request.TemplatePack.Renderer.Id,
+            request.TemplatePack.Renderer.Version,
             string.Join('\n', artifacts.Select(artifact =>
                 $"{artifact.Ordinal}:{artifact.ArtifactId}:{artifact.LogicalPath}:{artifact.Ownership.Owner}:{artifact.InputDigest}"))));
 
@@ -197,7 +203,9 @@ public sealed record ValidatedTemplatePackDescriptor(
     string PackVersion,
     string GenerationContractVersion,
     string Digest,
-    ImmutableArray<TemplateArtifactDescriptor> Artifacts);
+    ImmutableArray<TemplateArtifactDescriptor> Artifacts,
+    RendererIdentity Renderer = default,
+    string Language = "");
 
 public sealed record TemplateArtifactDescriptor(
     string ArtifactId,
@@ -222,7 +230,8 @@ public sealed record ProposedArtifact(
     string TemplateDigest,
     string InputDigest);
 
-public sealed record ArtifactOwnership(string Owner, string PackId, string PackVersion, string TemplateId);
+public sealed record ArtifactOwnership(string Owner, string PackId, string PackVersion, string TemplateId,
+    RendererIdentity Renderer = default);
 
 public sealed record PlannedSemanticInput(string Id, string ContextId, string SemanticDigest);
 

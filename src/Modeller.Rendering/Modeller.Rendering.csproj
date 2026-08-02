@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net10.0</TargetFramework><RootNamespace>Modeller.Rendering</RootNamespace></PropertyGroup>
-  <ItemGroup><ProjectReference Include="..\Modeller.Generation\Modeller.Generation.csproj" /><ProjectReference Include="..\Modeller.Contexts\Modeller.Contexts.csproj" /><ProjectReference Include="..\Modeller.Model\Modeller.Model.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="..\Modeller.Generation\Modeller.Generation.csproj" /><ProjectReference Include="..\Modeller.Contexts\Modeller.Contexts.csproj" /><ProjectReference Include="..\Modeller.Model\Modeller.Model.csproj" /><ProjectReference Include="..\Modeller.Templates\Modeller.Templates.csproj" /></ItemGroup>
   <ItemGroup><PackageReference Include="Scriban" /></ItemGroup>
 </Project>

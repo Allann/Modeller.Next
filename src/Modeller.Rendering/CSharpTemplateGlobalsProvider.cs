@@ -10,8 +10,7 @@ public sealed class CSharpTemplateGlobalsProvider(
     string projectName,
     string targetFramework) : ITemplateGlobalsProvider
 {
-    private readonly IReadOnlyDictionary<SemanticId, SemanticDefinition> definitions =
-        revision.Definitions.ToDictionary(definition => definition.Id);
+    private readonly TemplateSemanticProjection projection = new(revision);
 
     public IReadOnlyDictionary<string, object?> GetGlobals(ArtifactRenderingContext context)
     {
@@ -27,73 +26,91 @@ public sealed class CSharpTemplateGlobalsProvider(
         var definition = revision.Definitions.Single(item => item.Slug.Value == input.Id);
         globals["definition"] = definition switch
         {
-            EntityDefinition entity => Entity(entity),
-            EnumerationDefinition enumeration => Enumeration(enumeration),
-            RuleDefinition rule => Rule(rule),
-            BehaviourDefinition behaviour => Behaviour(behaviour),
+            EntityDefinition entity => Entity(projection.Entity(entity)),
+            EnumerationDefinition enumeration => Enumeration(projection.Enumeration(enumeration)),
+            RuleDefinition rule => Rule(projection.Rule(rule)),
+            BehaviourDefinition behaviour => Behaviour(projection.Behaviour(behaviour)),
             _ => throw new InvalidOperationException($"'{input.Id}' cannot be projected into this C# template pack.")
         };
         return globals;
     }
 
-    private object Entity(EntityDefinition entity)
+    private object Entity(ProjectedEntity entity)
     {
         var properties = entity.Fields.Select(field => new
             {
-                name = Identifier(field.Name.Value),
-                type = CSharpDataTypeRenderer.Render(field.Type, id => Identifier(definitions[id].Name.Value)),
-                nullable = field.IsOptional && field.Type is not StringDataType
+                name = Identifier(field.RawName),
+                type = CSharpDataTypeRenderer.Render(field.Type, id => Identifier(FindName(id))),
+                nullable = field.IsOptional
             }).Concat(entity.Relationships.Select(relationship => new
             {
-                name = Identifier(relationship.Name.Value),
+                name = Identifier(relationship.RawName),
                 type = relationship.Cardinality == RelationshipCardinality.Many ? "IReadOnlyList<Guid>" : "Guid",
-                nullable = relationship.Cardinality == RelationshipCardinality.One && relationship.IsOptional
+                nullable = relationship.IsOptional
             })).ToArray();
-        return new { kind = "entity", name = CSharpTemplateNaming.Identifier(entity.Name.Value), properties };
+        return new { kind = "entity", name = Identifier(entity.Source.Name.Value), properties };
     }
 
-    private static object Enumeration(EnumerationDefinition enumeration) => new
+    private static object Enumeration(ProjectedEnumeration enumeration) => new
     {
         kind = "enumeration",
-        name = CSharpTemplateNaming.Identifier(enumeration.Name.Value),
-        members = enumeration.Members.OrderBy(member => member.Value)
-            .Select(member => new { name = CSharpTemplateNaming.Identifier(member.Name.Value), value = member.Value }).ToArray()
+        name = Identifier(enumeration.Source.Name.Value),
+        members = enumeration.Members.Select(member => new { name = Identifier(member.RawName), value = member.Value }).ToArray()
     };
 
-    private object Rule(RuleDefinition rule)
+    private object Rule(ProjectedRule rule)
     {
-        var facts = rule.InputFacts.Select(reference => (FactDefinition)definitions[reference.TargetId])
-            .Select(fact => new { name = Identifier(fact.Name.Value), type = FactTypeName(fact.Type) }).ToArray();
+        var facts = rule.Facts.Select(fact => new { name = Identifier(fact.Source.Name.Value), type = FactTypeName(fact.Source.Type) }).ToArray();
+        var subjectName = SubjectName(rule.Source.Name.Value);
         return new
         {
             kind = "rule",
-            name = Identifier(rule.Name.Value),
-            subject_name = Identifier(rule.Name.Value).Replace("Determine", "", StringComparison.Ordinal),
-            facts
+            name = Identifier(rule.Source.Name.Value),
+            subject_name = subjectName,
+            facts,
+            expression_terms = ExpressionTerms(rule.Expression),
+            conclusions = rule.Conclusions.Select(conclusion => new { name = Identifier(conclusion.RawName) }).ToArray()
         };
     }
 
-    private object Behaviour(BehaviourDefinition behaviour)
+    private object Behaviour(ProjectedBehaviour behaviour)
     {
-        var entity = (EntityDefinition)definitions[behaviour.Entity.TargetId];
-        var transition = behaviour.Transitions.Single();
-        var lifecycle = entity.Lifecycle ?? throw new InvalidOperationException("A generated transition requires a lifecycle.");
-        var source = lifecycle.Stages.Single(stage => stage.Id == transition.SourceStage.TargetId);
-        var target = lifecycle.Stages.Single(stage => stage.Id == transition.TargetStage.TargetId);
-        var rule = (RuleDefinition)definitions[behaviour.RuleBindings.Single().Rule.TargetId];
-        var ruleName = Identifier(rule.Name.Value).Replace("Determine", "", StringComparison.Ordinal);
+        var transitions = behaviour.Transitions.Select(transition => new
+        {
+            source_stage = Identifier(transition.SourceStage.Name.Value),
+            target_stage = Identifier(transition.TargetStage.Name.Value),
+            guard = string.Join(" && ", transition.GuardRules.Select(rule => $"{SubjectName(rule.Name.Value)}.Determine(facts)"))
+        }).ToArray();
+        // A behaviour may legally have no rule at all (e.g. a zero-transition behaviour that only publishes an
+        // event) — "object" needs no using directive and is a valid, if unused, type for the Facts parameter.
+        var factsType = behaviour.PrimaryRule is null ? "object" : $"{SubjectName(behaviour.PrimaryRule.Name.Value)}Facts";
         return new
         {
             kind = "behaviour",
-            name = Identifier(behaviour.Name.Value),
-            stage_type = $"{Identifier(entity.Name.Value)}Stage",
-            stages = lifecycle.Stages.Select(stage => new { name = Identifier(stage.Name.Value) }).ToArray(),
-            source_stage = Identifier(source.Name.Value),
-            target_stage = Identifier(target.Name.Value),
-            rule_name = ruleName,
-            facts_type = $"{ruleName}Facts"
+            name = Identifier(behaviour.Source.Name.Value),
+            stage_type = $"{Identifier(behaviour.Entity.Name.Value)}Stage",
+            stages = behaviour.Lifecycle.Stages.Select(stage => new { name = Identifier(stage.Name.Value) }).ToArray(),
+            transitions,
+            facts_type = factsType
         };
     }
+
+    private static string[] ExpressionTerms(ProjectedRuleExpression expression) => expression switch
+    {
+        ProjectedAndExpression and => and.Operands.Select(RenderExpression).ToArray(),
+        _ => [RenderExpression(expression)]
+    };
+
+    private static string RenderExpression(ProjectedRuleExpression expression) => expression switch
+    {
+        ProjectedFactTerm term => $"facts.{Identifier(term.Fact.Source.Name.Value)}",
+        ProjectedAndExpression and => $"({string.Join(" && ", and.Operands.Select(RenderExpression))})",
+        _ => throw new NotSupportedException($"'{expression.GetType().Name}' cannot be rendered as a C# expression.")
+    };
+
+    private string FindName(SemanticId id) => revision.Definitions.Single(definition => definition.Id == id).Name.Value;
+
+    private static string SubjectName(string ruleName) => Identifier(ruleName).Replace("Determine", "", StringComparison.Ordinal);
 
     private static string FactTypeName(FactType type) => type switch
     {

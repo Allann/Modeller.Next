@@ -33,15 +33,36 @@ The reference Scriban adapter always exposes `artifact_id`, `logical_path`,
 `id`, `context_id`, and `semantic_digest`.
 
 A renderer-specific `ITemplateGlobalsProvider` may add an immutable projection
-of the semantic input selected while expanding an output recipe. The reference C# provider adds project
-settings and a `definition` view containing the selected Entity fields,
-relationships, Enumerations, Rule Facts, or Behaviour lifecycle data. Templates
-iterate over that view to produce source; the CLI contains no C# file-generation
-logic. No filesystem, environment, clock, network, secret store, or mutable
-model object is exposed.
+of the semantic input selected while expanding an output recipe. The C# and
+Python providers both delegate canonical traversal — Entity/Enumeration/Rule/
+Behaviour projection, nullability, `RuleExpression` tree walking, and
+multi-transition/multi-binding Behaviour handling — to one shared
+`TemplateSemanticProjection`, so that logic is implemented once regardless of
+target language. Each provider then applies only its own naming convention,
+import formatting, data-type spelling, and boolean-expression joining (`&&`
+vs `and`) on top of that shared projection, adding project settings and a
+`definition` view. Templates iterate over that view to produce source; the CLI
+contains no per-language file-generation logic. No filesystem, environment,
+clock, network, secret store, or mutable model object is exposed.
 
 Template lookup is by the pinned template identity and digest in the plan.
 Missing or changed templates fail before producing output for the batch.
+
+## Renderer capability resolution
+
+`Modeller.Rendering.RendererCapabilityRegistry` is the single registered
+strategy that resolves a validated template pack's `(rendererId, rendererVersion,
+language)` to a naming convention, globals provider, and renderer identity —
+callers never switch on a raw language string. `RendererCapabilityRegistry
+.SupportedRenderers` is the renderer allow-list passed into
+`TemplatePackLoader.Load`; `RendererCapabilityRegistry.Resolve` then picks the
+capability for the validated pack's declared language. A pack whose
+`rendererId`/`rendererVersion` is supported but whose `language` has no
+registered capability fails with `template-pack.renderer-unsupported` before
+planning — the CLI's `WorkspaceGeneration` and the Python conformance
+harness both use this same resolution path, so `IRendererAdapter.RendererId`/
+`ContractVersion` on the constructed adapter always originate from a validated
+pack rather than being assembled ad hoc.
 
 ## Failure and resource limits
 

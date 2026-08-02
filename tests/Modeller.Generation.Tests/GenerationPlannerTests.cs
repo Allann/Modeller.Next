@@ -23,7 +23,7 @@ public sealed class GenerationPlannerTests
         Assert.Equal(
             ["application/submit-application.cs", "domain/accs-eligibility.cs"],
             first.Plan.Artifacts.Select(artifact => artifact.LogicalPath));
-        Assert.Equal("sha256:556c2eaacda7bfa01ee332be7f4288db2da5d9054ddf8a098f8bde89990e218d", first.Plan.Digest);
+        Assert.Equal("sha256:5d3d59fb1a84343f1e19551b58294d8673fbc4fc095d0ade045dd9d9dfdbd93d", first.Plan.Digest);
         Assert.All(first.Plan.Artifacts, artifact => Assert.Equal("child-care", artifact.Ownership.Owner));
     }
 

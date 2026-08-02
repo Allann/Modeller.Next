@@ -7,5 +7,5 @@ public sealed record {{ definition.subject_name }}Facts(
 public static class {{ definition.subject_name }}
 {
     public static bool Determine({{ definition.subject_name }}Facts facts) =>
-{{ for fact in definition.facts }}        facts.{{ fact.name }}{{ if !for.last }} &&{{ else }};{{ end }}
+{{ for term in definition.expression_terms }}        {{ term }}{{ if !for.last }} &&{{ else }};{{ end }}
 {{ end }}}

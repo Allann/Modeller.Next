@@ -10,7 +10,8 @@ public static class {{ definition.name }}
     public static {{ definition.stage_type }} Apply(
         {{ definition.stage_type }} current,
         {{ definition.facts_type }} facts) =>
-        current == {{ definition.stage_type }}.{{ definition.source_stage }} && {{ definition.rule_name }}.Determine(facts)
-            ? {{ definition.stage_type }}.{{ definition.target_stage }}
-            : current;
+{{ for t in definition.transitions }}        current == {{ definition.stage_type }}.{{ t.source_stage }} && {{ t.guard }}
+            ? {{ definition.stage_type }}.{{ t.target_stage }}
+            : {{ if for.last }}current;{{ else }}
+{{ end }}{{ end }}
 }

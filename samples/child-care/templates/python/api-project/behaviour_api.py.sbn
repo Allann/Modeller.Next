@@ -4,7 +4,8 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from ..behaviours.{{ definition.module_name }} import {{ definition.function_name }}, {{ definition.stage_type }}
-from ..rules.{{ definition.rule_function_name }} import {{ definition.facts_type }}
+{{ if definition.facts_module_name }}from ..rules.{{ definition.facts_module_name }} import {{ definition.facts_type }}
+{{ end }}
 
 router = APIRouter(prefix="/api/behaviours", tags=["Behaviours"])
 
