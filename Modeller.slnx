@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Modeller.AI/Modeller.AI.csproj" />
     <Project Path="src/Modeller.Conformance/Modeller.Conformance.csproj" />
     <Project Path="src/Modeller.Cli/Modeller.Cli.csproj" />
     <Project Path="src/Modeller.Configuration/Modeller.Configuration.csproj" />
@@ -18,6 +19,7 @@
     <Project Path="src/Modeller.Validation/Modeller.Validation.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Modeller.AI.Tests/Modeller.AI.Tests.csproj" />
     <Project Path="tests/Modeller.Conformance.Tests/Modeller.Conformance.Tests.csproj" />
     <Project Path="tests/Modeller.Conformance.Python.Tests/Modeller.Conformance.Python.Tests.csproj" />
     <Project Path="tests/Modeller.Cli.Tests/Modeller.Cli.Tests.csproj" />
