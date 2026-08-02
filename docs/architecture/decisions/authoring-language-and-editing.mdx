@@ -70,11 +70,11 @@ silently overwriting newer author changes.
 
 ## Stable identity
 
-Canonical UUIDv7 identities remain required, but authors do not routinely type
-or reference them. RML uses readable local names and explicit author-controlled
-keys or aliases where rename continuity is required. Tooling maintains the
-mapping to canonical IDs in deterministic source metadata or a workspace
-identity map. The selected mechanism must satisfy these invariants:
+Canonical UUIDv7 identities remain required, but authors do not type or
+reference them. RML uses readable local names. A tooling-owned,
+version-controlled `.modeller/identities.json` registry stores canonical IDs
+outside business documents; workspace loading materializes them only in memory.
+The registry mechanism must satisfy these invariants:
 
 - renaming or moving a concept preserves identity;
 - deleting and recreating a concept does not accidentally reclaim identity;
@@ -82,8 +82,11 @@ identity map. The selected mechanism must satisfy these invariants:
 - references resolve deterministically within declared context/import scope;
 - generated or hidden metadata remains inspectable and version controlled.
 
-The exact identity-map representation requires a focused prototype before RML
-1.0 is fixed.
+The initial registry records an ordered identity sequence for each declared RML
+document. A mismatch is an explicit error: tooling never repairs continuity by
+inventing replacement identities during validation or generation. Editor
+operations that add, move, or remove declarations must update the source and
+registry as one workspace edit.
 
 ## Legacy DSL reuse
 

@@ -416,7 +416,7 @@ public static partial class DefinitionParser
 public sealed record SourceDocument(string Name, string Content);
 public sealed record ParseOptions
 {
-    public ParseOptions(string languageVersion, int maximumCharacters, int maximumStatements, int maximumTokens)
+    public ParseOptions(string languageVersion, int maximumCharacters, int maximumStatements, int maximumTokens, bool allowTransientRmlIdentities = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(languageVersion);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumCharacters);
@@ -426,13 +426,16 @@ public sealed record ParseOptions
         MaximumCharacters = maximumCharacters;
         MaximumStatements = maximumStatements;
         MaximumTokens = maximumTokens;
+        AllowTransientRmlIdentities = allowTransientRmlIdentities;
     }
 
     public string LanguageVersion { get; }
     public int MaximumCharacters { get; }
     public int MaximumStatements { get; }
     public int MaximumTokens { get; }
+    public bool AllowTransientRmlIdentities { get; }
     public static ParseOptions Language1 { get; } = new("1.0", 1_048_576, 10_000, 100_000);
+    public static ParseOptions EditorLanguage1 { get; } = new("1.0", 1_048_576, 10_000, 100_000, true);
 }
 public sealed record SourceSpan(string Document, int Line, int Column, int Length);
 public sealed record SourceProvenance(string SemanticId, SourceSpan Span, string? SemanticPath = null);

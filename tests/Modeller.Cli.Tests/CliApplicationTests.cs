@@ -226,6 +226,23 @@ public sealed class CliApplicationTests
     }
 
     [Fact]
+    public async Task Generate_workspace_rejects_an_identity_registry_that_is_out_of_sync()
+    {
+        var files = await WorkspaceFiles();
+        files["samples/child-care/.modeller/identities.json"] = System.Text.RegularExpressions.Regex.Replace(
+            files["samples/child-care/.modeller/identities.json"],
+            ",\\s*\"0191f6d4-4ea0-7000-8000-00000000000d\"", string.Empty);
+        var host = new RecordingCliHost(files);
+
+        var exit = await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Configuration, exit);
+        Assert.Contains("workspace.identity-registry.out-of-sync", host.StandardError, StringComparison.Ordinal);
+        Assert.Equal(0, host.WriteCount);
+    }
+
+    [Fact]
     public async Task Generate_workspace_preserves_a_handwritten_output_collision()
     {
         var files = await WorkspaceFiles();
@@ -256,7 +273,7 @@ public sealed class CliApplicationTests
 
         Assert.Equal(CliExitCode.Configuration, exit);
         Assert.Contains("workspace.source.path-invalid", host.StandardError, StringComparison.Ordinal);
-        Assert.Equal(0, host.ReadCount - 1);
+        Assert.Equal(1, host.ReadCount - 1);
     }
 
     private static async Task<string> ChildCareSource() => await File.ReadAllTextAsync(
@@ -275,7 +292,18 @@ public sealed class CliApplicationTests
                   "profile":"test", "sources":["model/accs.modeller"], "templatePack":"templates/pack.json",
                   "parameters":{"projectName":"ChildCare","namespace":"ChildCare","targetFramework":"net10.0"} }
                 """,
-            ["samples/child-care/model/accs.modeller"] = await ChildCareSource(),
+            ["samples/child-care/model/accs.modeller"] = System.Text.RegularExpressions.Regex.Replace(
+                await ChildCareSource(), "(?m)^\\s*# @id=[0-9a-fA-F-]{36}\\r?\\n", string.Empty),
+            ["samples/child-care/.modeller/identities.json"] = """
+                { "version":"1.0", "documents": { "model/accs.modeller": [
+                  "0191f6d4-4ea0-7000-8000-000000000001", "0191f6d4-4ea0-7000-8000-000000000002",
+                  "0191f6d4-4ea0-7000-8000-000000000003", "0191f6d4-4ea0-7000-8000-000000000004",
+                  "0191f6d4-4ea0-7000-8000-000000000005", "0191f6d4-4ea0-7000-8000-000000000006",
+                  "0191f6d4-4ea0-7000-8000-000000000007", "0191f6d4-4ea0-7000-8000-000000000008",
+                  "0191f6d4-4ea0-7000-8000-000000000009", "0191f6d4-4ea0-7000-8000-00000000000a",
+                  "0191f6d4-4ea0-7000-8000-00000000000b", "0191f6d4-4ea0-7000-8000-00000000000c",
+                  "0191f6d4-4ea0-7000-8000-00000000000d" ] } }
+                """,
             ["samples/child-care/templates/pack.json"] = $$"""
                 { "version":"1.0", "id":"test", "packVersion":"1.0.0", "generationContractVersion":"1.0",
                   "templates":[

@@ -83,6 +83,40 @@ public static partial class RmlCompiler
         return new(source, updated, !string.Equals(source, updated, StringComparison.Ordinal));
     }
 
+    public static RmlSourceEdit ApplyIdentities(string source, IReadOnlyList<string> identities)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(identities);
+        var lines = source.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        var output = new List<string>(lines.Length + identities.Count);
+        var identityIndex = 0;
+        foreach (var line in lines)
+        {
+            var trimmed = line.TrimStart();
+            var separator = trimmed.IndexOf(' ');
+            var keyword = separator < 0 ? trimmed : trimmed[..separator];
+            var value = separator < 0 ? string.Empty : trimmed[(separator + 1)..].TrimStart();
+            var declaration = IdentityDeclarations.Contains(keyword) && !value.StartsWith('"');
+            var hasIdentity = output.LastOrDefault(item => item.Trim().Length > 0)?.TrimStart().StartsWith("# @id=", StringComparison.Ordinal) == true;
+            if (declaration)
+            {
+                if (identityIndex >= identities.Count) throw new ArgumentException("The identity registry does not cover every RML declaration.", nameof(identities));
+                if (!Guid.TryParse(identities[identityIndex], out var identity) || identity.Version != 7)
+                    throw new ArgumentException("The identity registry contains an invalid identity.", nameof(identities));
+                if (!hasIdentity)
+                {
+                    var indentation = line[..(line.Length - trimmed.Length)];
+                    output.Add($"{indentation}# @id={identity}");
+                }
+                identityIndex++;
+            }
+            output.Add(line);
+        }
+        if (identityIndex != identities.Count) throw new ArgumentException("The identity registry contains unused identities.", nameof(identities));
+        var updated = string.Join('\n', output);
+        return new(source, updated, !string.Equals(source, updated, StringComparison.Ordinal));
+    }
+
     private static (ImmutableArray<Node> Roots, ParseDiagnostic? Diagnostic) ParseNodes(
         SourceDocument[] sources, ParseOptions options, CancellationToken cancellationToken)
     {
@@ -120,7 +154,10 @@ public static partial class RmlCompiler
                 var split = text.IndexOf(' ');
                 var keyword = split < 0 ? text : text[..split];
                 var value = split < 0 ? string.Empty : Unquote(text[(split + 1)..].Trim());
-                var node = new Node(keyword, value, pendingId, source.Name, index + 1,
+                var nodeId = pendingId;
+                if (nodeId is null && options.AllowTransientRmlIdentities && IdentityDeclarations.Contains(keyword) && !value.StartsWith('"'))
+                    nodeId = Guid.CreateVersion7().ToString();
+                var node = new Node(keyword, value, nodeId, source.Name, index + 1,
                     raw.IndexOf(keyword, StringComparison.Ordinal) + 1, raw.Length, []);
                 pendingId = null;
                 var parentKeyword = stack.TryPeek(out var parent) ? parent.Keyword : null;

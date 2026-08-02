@@ -15,8 +15,8 @@ description: Build Modeller and validate the Child Care reference model.
 From the repository root:
 
 ```powershell
-dotnet build Modeller.Next.slnx
-dotnet test Modeller.Next.slnx
+dotnet build Modeller.slnx
+dotnet test Modeller.slnx
 ```
 
 Run the CLI from source while developing:
@@ -25,17 +25,7 @@ Run the CLI from source while developing:
 dotnet run --project src/Modeller.Cli -- --help
 ```
 
-## Create a workspace configuration
-
-```powershell
-dotnet run --project src/Modeller.Cli -- init
-```
-
-This creates `.modeller/config.json`, a minimal versioned configuration with a
-generation contract, logical output root, and default profile. Use `--force`
-only when you intend to replace an existing file.
-
-## Validate the Child Care model
+## Open the Child Care workspace
 
 The RML file is the smallest executable slice of the
 [Child Care reference project](/docs/reference/reference-project):
@@ -52,6 +42,10 @@ The source uses the business-facing language documented in the
 [RML reference](/docs/reference/readable-modelling-language). Parsing
 produces the canonical model; semantic validation and downstream workflows do
 not maintain a second interpretation of the domain.
+
+The files under `model/` contain only business-readable RML. Stable canonical
+identities live in `.modeller/identities.json`, which tooling maintains and the
+workspace loader applies in memory; routine authors never enter UUIDs.
 
 Open the repository in VS Code and run the extension from
 `editors/vscode-modeller` to receive syntax highlighting, diagnostics, semantic

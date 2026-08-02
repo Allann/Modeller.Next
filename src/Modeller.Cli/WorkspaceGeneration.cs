@@ -50,13 +50,32 @@ internal static class WorkspaceGeneration
         if (!resolvedConfiguration.IsSuccess)
             return await Failure(host, machine, resolvedConfiguration.Diagnostics[0].Code, resolvedConfiguration.Diagnostics[0].Message);
 
+        if (Unsafe(configuration.IdentityRegistry)) return await Failure(host, machine, "workspace.identity-registry.path-invalid", "The identity-registry path is unsafe.");
+        var identityPath = Join(root, configuration.IdentityRegistry);
+        if (!host.Exists(identityPath)) return await Failure(host, machine, "workspace.identity-registry.missing", "The tooling-owned identity registry could not be read.");
+        IdentityRegistry? identityRegistry;
+        try { identityRegistry = JsonSerializer.Deserialize<IdentityRegistry>(await host.ReadTextAsync(identityPath, cancellationToken), Json); }
+        catch (Exception exception) when (exception is IOException or JsonException or NotSupportedException)
+        { return await Failure(host, machine, "workspace.identity-registry.invalid", "The tooling-owned identity registry is invalid."); }
+        if (identityRegistry is null || identityRegistry.Version != "1.0" || identityRegistry.Documents is null)
+            return await Failure(host, machine, "workspace.identity-registry.invalid", "The tooling-owned identity registry is invalid.");
+
         var documents = ImmutableArray.CreateBuilder<SourceDocument>();
         foreach (var declared in configuration.Sources.Order(StringComparer.Ordinal))
         {
             if (Unsafe(declared)) return await Failure(host, machine, "workspace.source.path-invalid", "A declared source path is unsafe.");
             var path = Join(root, declared);
             if (!host.Exists(path)) return await Failure(host, machine, "workspace.source.missing", "A declared source could not be read.");
-            documents.Add(new(declared.Replace('\\', '/'), await host.ReadTextAsync(path, cancellationToken)));
+            var documentName = declared.Replace('\\', '/');
+            if (!identityRegistry.Documents.TryGetValue(documentName, out var identities))
+                return await Failure(host, machine, "workspace.identity-registry.document-missing", $"The identity registry does not cover '{documentName}'.");
+            try
+            {
+                var source = await host.ReadTextAsync(path, cancellationToken);
+                documents.Add(new(documentName, RmlCompiler.ApplyIdentities(source, identities).Updated));
+            }
+            catch (ArgumentException)
+            { return await Failure(host, machine, "workspace.identity-registry.out-of-sync", $"The identity registry is out of sync with '{documentName}'."); }
         }
 
         var parsed = DefinitionParser.Parse(documents.ToImmutable(), ParseOptions.Language1, cancellationToken);
@@ -189,7 +208,9 @@ internal static class WorkspaceGeneration
     }, Json) + Environment.NewLine;
 
     private sealed record WorkspaceConfiguration(string Version, string GenerationContractVersion, string LogicalOutputRoot, string Profile,
-        IReadOnlyList<string> Sources, string TemplatePack, PackParameters Parameters, string OwnershipManifest = ".modeller/generated-manifest.json");
+        IReadOnlyList<string> Sources, string TemplatePack, PackParameters Parameters,
+        string IdentityRegistry = ".modeller/identities.json", string OwnershipManifest = ".modeller/generated-manifest.json");
+    private sealed record IdentityRegistry(string Version, IReadOnlyDictionary<string, IReadOnlyList<string>> Documents);
     private sealed record PackParameters(string ProjectName, string Namespace, string TargetFramework);
     private sealed record TemplatePackFile(string Version, string Id, string PackVersion, string GenerationContractVersion,
         IReadOnlyList<TemplateFile> Templates, IReadOnlyList<OutputFile> Outputs);

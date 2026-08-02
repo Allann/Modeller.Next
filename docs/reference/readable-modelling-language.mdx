@@ -34,15 +34,16 @@ rule Determine ACCS eligibility
 end
 ```
 
-Tooling maintains a `# @id=<uuidv7>` comment immediately before each
-first-class declaration. Editors may fold this metadata. Authors use readable
-names in normal references; renames update declarations and references while
-preserving the metadata identity.
+Business-facing `.modeller` files contain no UUIDs. The workspace keeps
+canonical UUIDv7 values in the tooling-owned, version-controlled
+`.modeller/identities.json` registry. During workspace loading, Modeller joins
+each document's declarations to its registry entries in declaration order and
+materializes identity only in memory. Authors write and reference readable
+names; they do not create or copy identity values.
 
-When a new declaration has no identity, the language server reports
-`rml.identity.required` and offers **Add missing Modeller identities**. The
-idempotent source action inserts UUIDv7 metadata once; authors do not create the
-values themselves.
+The loader fails with a stable diagnostic when the registry is missing,
+invalid, or out of sync, rather than generating replacement identities and
+silently changing canonical continuity.
 
 ## RML 1.0 blocks
 
@@ -69,12 +70,12 @@ including `entities/booking.modeller`, for a complete structural example.
 
 ## Compilation and diagnostics
 
-The RML anti-corruption layer resolves readable references, checks tooling-owned
-identity metadata, retains source spans, and compiles into the authored canonical
+The RML anti-corruption layer resolves readable references, applies the
+tooling-owned identity registry, retains source spans, and compiles into the authored canonical
 model. SAF may be used internally as a temporary lowering step, but it is not an
 authoring requirement or semantic authority.
 
-Unclosed blocks, missing identity metadata, unknown references, unsupported
+Unclosed blocks, an out-of-sync identity registry, unknown references, unsupported
 expressions, and canonical validation failures return stable diagnostics mapped
 to RML source. Parsing retains the existing character, statement, token,
 cancellation, and package-relative path limits.
@@ -86,9 +87,8 @@ The repository extension under `editors/vscode-modeller` provides:
 - RML TextMate highlighting, comments, brackets, indentation, and folding;
 - source-mapped diagnostics;
 - keyword and semantic concept completion;
-- hover, definition, references, and identity-preserving rename;
+- hover, definition, references, and rename;
 - document symbols and semantic tokens.
-- a quick fix that adds missing identity metadata.
 
 SAF uses a distinct engineering-only language mode. See the
 [editor-integration reference](/docs/reference/editor-integration) and

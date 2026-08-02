@@ -1,5 +1,4 @@
 rml 1.0
-# @id=0191f6d4-4ea0-7000-8000-000000000008
 rule Determine ACCS eligibility
   input "Active enrolment exists"
   input "Supporting evidence is held"
@@ -7,7 +6,6 @@ rule Determine ACCS eligibility
     fact "Active enrolment exists"
     fact "Supporting evidence is held"
   end
-  # @id=0191f6d4-4ea0-7000-8000-000000000009
   conclusion Eligible
   end
   finding "Active enrolment exists" true accs.active-enrolment-confirmed

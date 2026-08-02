@@ -23,7 +23,7 @@ dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care
 
 ## Structure
 
-- `.modeller/config.json` declares every generation input and the owned-output manifest.
+- `.modeller/config.json` declares every generation input and the owned-output manifest; `.modeller/identities.json` is tooling-owned canonical identity metadata.
 - `model/` contains small RML files organised by semantic concept.
 - `templates/csharp/` is the C# pack catalogue; `domain-project/` is the reusable pinned pack selected by this workspace.
 - `expected/` contains the deterministic golden output.

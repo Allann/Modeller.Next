@@ -1,51 +1,38 @@
 rml 1.0
-# @id=0191f6d4-4ea0-7000-8000-000000000300
 enumeration Booking status
-  # @id=0191f6d4-4ea0-7000-8000-000000000301
   member Planned
     value 1
   end
-  # @id=0191f6d4-4ea0-7000-8000-000000000302
   member Missed sign in
     value 2
   end
-  # @id=0191f6d4-4ea0-7000-8000-000000000303
   member Attending
     value 3
   end
-  # @id=0191f6d4-4ea0-7000-8000-000000000304
   member Missed sign out
     value 4
   end
-  # @id=0191f6d4-4ea0-7000-8000-000000000305
   member Attended
     value 5
   end
-  # @id=0191f6d4-4ea0-7000-8000-000000000306
   member Absence
     value 6
   end
-  # @id=0191f6d4-4ea0-7000-8000-000000000307
   member Planned holiday
     value 7
   end
-  # @id=0191f6d4-4ea0-7000-8000-000000000308
   member Public holiday
     value 8
   end
-  # @id=0191f6d4-4ea0-7000-8000-000000000309
   member Room closure
     value 9
   end
-  # @id=0191f6d4-4ea0-7000-8000-00000000030a
   member Removed
     value 10
   end
-  # @id=0191f6d4-4ea0-7000-8000-00000000030b
   member Conflict
     value 11
   end
-  # @id=0191f6d4-4ea0-7000-8000-00000000030c
   member Absence void
     value 12
   end

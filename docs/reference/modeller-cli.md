@@ -77,7 +77,8 @@ modeller generate <request> [--dry-run] [--format human|json]
 
 The normal user workflow reads only inputs declared by the workspace's
 `.modeller/config.json`: RML sources, one pinned local template-pack descriptor,
-pack parameters, the logical output root, and the ownership manifest. Template content is
+pack parameters, the tooling-owned identity registry, the logical output root,
+and the ownership manifest. Template content is
 verified against its declared SHA-256 digest before planning. The parsed
 canonical package is matched against the pack's reusable output recipes; the
 workspace does not enumerate definition-specific output files.

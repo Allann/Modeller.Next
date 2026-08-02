@@ -44,7 +44,6 @@ internal sealed class RmlLspServer(Stream input, Stream output)
                     completionProvider = new { triggerCharacters = new[] { "\"", " " } },
                     hoverProvider = true, definitionProvider = true, referencesProvider = true,
                     renameProvider = new { prepareProvider = false }, documentSymbolProvider = true,
-                    codeActionProvider = true,
                     semanticTokensProvider = new { legend = new { tokenTypes = new[] { "keyword", "comment" }, tokenModifiers = Array.Empty<string>() }, full = true }
                 }, serverInfo = new { name = "Modeller RML Language Server", version = "1.0.0" } }, null, cancellationToken); break;
             case "initialized": break;
@@ -68,8 +67,6 @@ internal sealed class RmlLspServer(Stream input, Stream output)
                 await RespondAsync(id!.Value, Rename(parameters, cancellationToken), null, cancellationToken); break;
             case "textDocument/documentSymbol":
                 await RespondAsync(id!.Value, DocumentSymbols(parameters, cancellationToken), null, cancellationToken); break;
-            case "textDocument/codeAction":
-                await RespondAsync(id!.Value, CodeActions(parameters), null, cancellationToken); break;
             case "textDocument/semanticTokens/full":
                 await RespondAsync(id!.Value, SemanticTokens(parameters, cancellationToken), null, cancellationToken); break;
             default:
@@ -107,13 +104,6 @@ internal sealed class RmlLspServer(Stream input, Stream output)
     {
         var uri = Uri(parameters);
         return Analysis(cancellationToken).Symbols.Where(symbol => symbol.Declaration.Uri == uri).Select(symbol => new { name = symbol.Name, kind = 13, range = Range(symbol.Declaration.Range), selectionRange = Range(symbol.Declaration.Range) });
-    }
-    private object CodeActions(JsonElement parameters)
-    {
-        var uri = Uri(parameters); var document = documents[uri.AbsoluteUri]; var edit = RmlCompiler.EnsureIdentities(document.Text);
-        return edit.Changed
-            ? new[] { new { title = "Add missing Modeller identities", kind = "quickfix", edit = new { changes = new Dictionary<string, object[]> { [uri.AbsoluteUri] = [new { range = Range(Whole(document.Text)), newText = edit.Updated }] } } } }
-            : Array.Empty<object>();
     }
     private object SemanticTokens(JsonElement parameters, CancellationToken cancellationToken)
     {

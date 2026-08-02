@@ -17,6 +17,7 @@
     "model/behaviours/submit-accs-determination-application.modeller"
   ],
   "templatePack": "templates/csharp/domain-project/pack.json",
+  "identityRegistry": ".modeller/identities.json",
   "parameters": {
     "projectName": "ChildCare",
     "namespace": "ChildCare",

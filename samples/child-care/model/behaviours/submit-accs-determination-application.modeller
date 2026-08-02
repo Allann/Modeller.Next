@@ -1,15 +1,11 @@
 rml 1.0
-# @id=0191f6d4-4ea0-7000-8000-00000000000a
 behaviour Submit ACCS determination application
   for "ACCS determination application"
   requires "Determine ACCS eligibility"
-  # @id=0191f6d4-4ea0-7000-8000-00000000000b
   outcome Application submitted
   end
-  # @id=0191f6d4-4ea0-7000-8000-00000000000c
   outcome Application rejected
   end
-  # @id=0191f6d4-4ea0-7000-8000-00000000000d
   transition Submit application
     lifecycle "ACCS determination application lifecycle"
     from "Draft"

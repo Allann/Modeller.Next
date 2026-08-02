@@ -42,6 +42,23 @@ public sealed class RmlLanguageServiceTests
         Assert.Equal("0191f6d4-4ea0-7000-8000-000000000008", reparsed.Symbols.Single(symbol => symbol.Name == "Assess ACCS eligibility").Id);
     }
 
+    [Fact]
+    public async Task Uuid_free_business_source_keeps_source_mapped_editor_features()
+    {
+        var original = await ChildCare();
+        var text = System.Text.RegularExpressions.Regex.Replace(
+            original.Text, "(?m)^\\s*# @id=[0-9a-fA-F-]{36}\\r?\\n", string.Empty);
+        var document = original with { Text = text };
+
+        var analysis = RmlLanguageService.Analyze([document], TestContext.Current.CancellationToken);
+
+        Assert.Empty(analysis.Diagnostics);
+        var reference = Position(text, "\"Determine ACCS eligibility\"");
+        var definition = RmlLanguageService.Definition(analysis, document.Uri, reference);
+        Assert.NotNull(definition);
+        Assert.Equal(Position(text, "rule Determine ACCS eligibility").Line, definition.Range.Start.Line);
+    }
+
     private static async Task<RmlWorkspaceDocument> ChildCare() => new(
         new("file:///workspace/accs-eligibility.modeller"),
         1,

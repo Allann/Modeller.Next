@@ -45,7 +45,7 @@ public static class RmlLanguageService
         var sourceDocuments = documents.OrderBy(document => document.Uri.AbsoluteUri, StringComparer.Ordinal)
             .Select(document => new SourceDocument(Name(document.Uri), document.Text)).ToArray();
         var byName = documents.ToDictionary(document => Name(document.Uri), StringComparer.Ordinal);
-        var parsed = DefinitionParser.Parse(sourceDocuments, ParseOptions.Language1, cancellationToken);
+        var parsed = DefinitionParser.Parse(sourceDocuments, ParseOptions.EditorLanguage1, cancellationToken);
         if (parsed.IsCancelled) return new([], [], [], [], true);
         var locatedDiagnostics = parsed.Diagnostics.Select(diagnostic => new RmlLocatedDiagnostic(
             diagnostic.Location is not null && byName.TryGetValue(diagnostic.Location.Document, out var source) ? source.Uri : documents.First().Uri,
