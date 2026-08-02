@@ -8,6 +8,8 @@ editors/vscode-modeller/server/
 
 # generated content
 .source
+/samples/child-care/generated/
+/samples/child-care/.modeller/generated*-manifest.json
 
 # test & build
 /coverage
