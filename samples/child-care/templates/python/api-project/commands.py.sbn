@@ -1,0 +1,46 @@
+from __future__ import annotations
+
+from datetime import date, datetime, time
+from decimal import Decimal
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel
+
+from ..entities.{{ definition.module_name }} import {{ definition.name }}
+from ..repositories.{{ definition.module_name }} import InMemory{{ definition.name }}Repository
+{{ for import_line in definition.imports }}{{ import_line }}
+{{ end }}
+
+class Create{{ definition.name }}Command(BaseModel):
+{{ for property in definition.properties }}    {{ property.name }}: {{ property.type }}{{ if property.nullable }} | None{{ end }}
+{{ end }}
+    def to_entity(self) -> {{ definition.name }}:
+        return {{ definition.name }}(
+            id=uuid4(),
+{{ for property in definition.properties }}            {{ property.name }}=self.{{ property.name }},
+{{ end }}        )
+
+
+def create_{{ definition.module_name }}(command: Create{{ definition.name }}Command, repository: InMemory{{ definition.name }}Repository) -> {{ definition.name }}:
+    entity = command.to_entity()
+    repository.add(entity)
+    return entity
+
+
+class Update{{ definition.name }}Command(BaseModel):
+    id: UUID
+{{ for property in definition.properties }}    {{ property.name }}: {{ property.type }}{{ if property.nullable }} | None{{ end }}
+{{ end }}
+    def to_entity(self) -> {{ definition.name }}:
+        return {{ definition.name }}(
+            id=self.id,
+{{ for property in definition.properties }}            {{ property.name }}=self.{{ property.name }},
+{{ end }}        )
+
+
+def update_{{ definition.module_name }}(command: Update{{ definition.name }}Command, repository: InMemory{{ definition.name }}Repository) -> bool:
+    return repository.update(command.to_entity())
+
+
+def delete_{{ definition.module_name }}(entity_id: UUID, repository: InMemory{{ definition.name }}Repository) -> bool:
+    return repository.delete(entity_id)

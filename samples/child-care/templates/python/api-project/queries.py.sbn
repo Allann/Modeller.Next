@@ -1,0 +1,14 @@
+from __future__ import annotations
+
+from uuid import UUID
+
+from ..entities.{{ definition.module_name }} import {{ definition.name }}
+from ..repositories.{{ definition.module_name }} import InMemory{{ definition.name }}Repository
+
+
+def get_{{ definition.module_name }}(entity_id: UUID, repository: InMemory{{ definition.name }}Repository) -> {{ definition.name }} | None:
+    return repository.get(entity_id)
+
+
+def list_{{ definition.module_name }}(repository: InMemory{{ definition.name }}Repository) -> list[{{ definition.name }}]:
+    return repository.list()

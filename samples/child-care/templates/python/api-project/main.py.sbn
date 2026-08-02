@@ -1,0 +1,16 @@
+from __future__ import annotations
+
+import pkgutil
+from importlib import import_module
+
+from fastapi import FastAPI
+
+app = FastAPI(title="{{ project_name }}")
+
+_apis_package_name = f"{__package__}.apis"
+_apis_package = import_module(_apis_package_name)
+for module_info in pkgutil.iter_modules(_apis_package.__path__):
+    module = import_module(f"{_apis_package_name}.{module_info.name}")
+    router = getattr(module, "router", None)
+    if router is not None:
+        app.include_router(router)

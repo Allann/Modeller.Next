@@ -1,0 +1,24 @@
+var builder = WebApplication.CreateBuilder(args);
+
+var assembly = typeof(Program).Assembly;
+
+foreach (var repositoryInterface in assembly.GetTypes().Where(type => type.IsInterface && type.Name.StartsWith('I') && type.Name.EndsWith("Repository")))
+{
+    var implementation = assembly.GetTypes().FirstOrDefault(type => !type.IsInterface && !type.IsAbstract && repositoryInterface.IsAssignableFrom(type));
+    if (implementation is not null) builder.Services.AddSingleton(repositoryInterface, implementation);
+}
+
+foreach (var handlerType in assembly.GetTypes().Where(type => !type.IsInterface && !type.IsAbstract && type.Name.EndsWith("Handler")))
+    builder.Services.AddScoped(handlerType);
+
+var app = builder.Build();
+
+foreach (var moduleType in assembly.GetTypes().Where(type => typeof(IEndpointModule).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract))
+{
+    var module = (IEndpointModule)Activator.CreateInstance(moduleType)!;
+    module.Map(app);
+}
+
+app.Run();
+
+public partial class Program;

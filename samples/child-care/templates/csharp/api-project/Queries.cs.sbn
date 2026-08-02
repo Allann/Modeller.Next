@@ -1,0 +1,17 @@
+namespace {{ csharp_namespace }}.Features.{{ definition.name }}Feature;
+
+public sealed record Get{{ definition.name }}Query(Guid Id);
+
+public sealed class Get{{ definition.name }}Handler(I{{ definition.name }}Repository repository)
+{
+    public Task<{{ definition.name }}?> HandleAsync(Get{{ definition.name }}Query query, CancellationToken cancellationToken) =>
+        repository.GetAsync(query.Id, cancellationToken);
+}
+
+public sealed record List{{ definition.name }}Query;
+
+public sealed class List{{ definition.name }}Handler(I{{ definition.name }}Repository repository)
+{
+    public Task<IReadOnlyList<{{ definition.name }}>> HandleAsync(List{{ definition.name }}Query query, CancellationToken cancellationToken) =>
+        repository.ListAsync(cancellationToken);
+}

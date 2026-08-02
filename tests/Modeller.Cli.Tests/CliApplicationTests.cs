@@ -276,6 +276,36 @@ public sealed class CliApplicationTests
         Assert.Equal(1, host.ReadCount - 1);
     }
 
+    [Fact]
+    public async Task Generate_workspace_selects_the_python_globals_provider_for_a_python_language_pack()
+    {
+        var host = new RecordingCliHost(await PythonWorkspaceFiles());
+
+        Assert.Equal(CliExitCode.Success, await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken));
+
+        Assert.Contains("class ACCSEligibilityFacts", host.Files["samples/child-care/generated/eligibility.py"], StringComparison.Ordinal);
+        Assert.Contains("supporting_evidence_is_held: bool", host.Files["samples/child-care/generated/eligibility.py"], StringComparison.Ordinal);
+        Assert.Contains("class ACCSDeterminationApplication",
+            host.Files["samples/child-care/generated/entities/accs_determination_application.py"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Generate_workspace_rejects_a_template_pack_targeting_an_unsupported_language()
+    {
+        var files = await PythonWorkspaceFiles();
+        files["samples/child-care/templates/pack.json"] = files["samples/child-care/templates/pack.json"]
+            .Replace("\"language\":\"python\"", "\"language\":\"cobol\"", StringComparison.Ordinal);
+        var host = new RecordingCliHost(files);
+
+        var exit = await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Configuration, exit);
+        Assert.Contains("workspace.template-pack.invalid", host.StandardError, StringComparison.Ordinal);
+        Assert.Equal(0, host.WriteCount);
+    }
+
     private static async Task<string> ChildCareSource() => await File.ReadAllTextAsync(
         Path.Combine(AppContext.BaseDirectory, "Fixtures", "child-care-accs.modeller"), TestContext.Current.CancellationToken);
 
@@ -317,6 +347,47 @@ public sealed class CliApplicationTests
                 """,
             ["samples/child-care/templates/Rule.cs.sbn"] = template,
             ["samples/child-care/templates/Entity.cs.sbn"] = entityTemplate
+        };
+    }
+
+    private static async Task<Dictionary<string, string>> PythonWorkspaceFiles()
+    {
+        const string template = "class {{ definition.subject_name }}Facts:\n{{ for fact in definition.facts }}    {{ fact.name }}: {{ fact.type }}\n{{ end }}\n";
+        const string entityTemplate = "class {{ definition.name }}:\n    pass\n";
+        var digest = $"sha256:{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(template)))}";
+        var entityDigest = $"sha256:{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(entityTemplate)))}";
+        return new(StringComparer.Ordinal)
+        {
+            ["samples/child-care/.modeller/config.json"] = """
+                { "version":"1.0", "generationContractVersion":"1.0", "logicalOutputRoot":"generated",
+                  "profile":"test", "sources":["model/accs.modeller"], "templatePack":"templates/pack.json",
+                  "parameters":{"projectName":"child_care","namespace":"child-care-api","targetFramework":"3.13"} }
+                """,
+            ["samples/child-care/model/accs.modeller"] = System.Text.RegularExpressions.Regex.Replace(
+                await ChildCareSource(), "(?m)^\\s*# @id=[0-9a-fA-F-]{36}\\r?\\n", string.Empty),
+            ["samples/child-care/.modeller/identities.json"] = """
+                { "version":"1.0", "documents": { "model/accs.modeller": [
+                  "0191f6d4-4ea0-7000-8000-000000000001", "0191f6d4-4ea0-7000-8000-000000000002",
+                  "0191f6d4-4ea0-7000-8000-000000000003", "0191f6d4-4ea0-7000-8000-000000000004",
+                  "0191f6d4-4ea0-7000-8000-000000000005", "0191f6d4-4ea0-7000-8000-000000000006",
+                  "0191f6d4-4ea0-7000-8000-000000000007", "0191f6d4-4ea0-7000-8000-000000000008",
+                  "0191f6d4-4ea0-7000-8000-000000000009", "0191f6d4-4ea0-7000-8000-00000000000a",
+                  "0191f6d4-4ea0-7000-8000-00000000000b", "0191f6d4-4ea0-7000-8000-00000000000c",
+                  "0191f6d4-4ea0-7000-8000-00000000000d" ] } }
+                """,
+            ["samples/child-care/templates/pack.json"] = $$"""
+                { "version":"1.0", "id":"test", "packVersion":"1.0.0", "generationContractVersion":"1.0", "language":"python",
+                  "templates":[
+                    { "id":"rule", "path":"rule.py.sbn", "digest":"{{digest}}" },
+                    { "id":"entity", "path":"entity.py.sbn", "digest":"{{entityDigest}}" }
+                  ],
+                  "outputs":[
+                    { "id":"rule", "scope":"rule", "templateId":"rule", "logicalPath":"eligibility.py", "owner":"test" },
+                    { "id":"entity", "scope":"entity", "templateId":"entity", "logicalPath":"entities/{definitionName}.py", "owner":"test" }
+                  ] }
+                """,
+            ["samples/child-care/templates/rule.py.sbn"] = template,
+            ["samples/child-care/templates/entity.py.sbn"] = entityTemplate
         };
     }
 

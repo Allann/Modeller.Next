@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "id": "csharp-api-project",
+  "packVersion": "1.0.0",
+  "generationContractVersion": "1.0",
+  "language": "csharp",
+  "templates": [
+    { "id": "solution", "path": "Solution.slnx.sbn", "digest": "sha256:83de235a04176e248fbc75cf2155b932ee4a4a2841529ec56a6b858370aec10a" },
+    { "id": "project", "path": "ApiProject.csproj.sbn", "digest": "sha256:87f5b630033ff8a8ec62db4a28361bc377731df69f4783f56f71cc00d11e4e3f" },
+    { "id": "program", "path": "Program.cs.sbn", "digest": "sha256:e4723f1bb8df1a44f491b0aac37655a661df1aa09356588837f55b3c4839500c" },
+    { "id": "global-usings", "path": "GlobalUsings.cs.sbn", "digest": "sha256:b583fb177fbfeb2c09597a11437c5ea41019cc49ce93c4969a14bdc11aa4a9f5" },
+    { "id": "app-settings", "path": "AppSettings.json.sbn", "digest": "sha256:2d8bb40059df22089b94c025be8baad5a869b72d4d755d199c872f03bfe6f225" },
+    { "id": "endpoint-module", "path": "EndpointModule.cs.sbn", "digest": "sha256:8091cd67281888c912bc04cb1a733414ba5cc824f357df74d40c77d083007bc8" },
+    { "id": "entity", "path": "Entity.cs.sbn", "digest": "sha256:d394175df1ab677e5d1410cdec5979468778bebcf6905f8958b2ea5a8150b553" },
+    { "id": "repository", "path": "Repository.cs.sbn", "digest": "sha256:c31a1177e183f7f61430ae6c994c9b9cb7ccb300c84fc367f166133a82915778" },
+    { "id": "commands", "path": "Commands.cs.sbn", "digest": "sha256:9189e895f077f1fcfb103ee5413a4e44f4b2d4a83a7b8f5623bee8e804705c65" },
+    { "id": "queries", "path": "Queries.cs.sbn", "digest": "sha256:b3f7d0036e714a33a681d8fa9978d012d489eb78efe5431cfcc09ba600bb0425" },
+    { "id": "api", "path": "Api.cs.sbn", "digest": "sha256:e02a2a587005c2fd5651fd0d2a43cf66aaf47b333f40bc6fdb7030124b8a4902" },
+    { "id": "enumeration", "path": "Enumeration.cs.sbn", "digest": "sha256:d2881f913fe3796d324dc237658783e2c2034d1c5a7245d0bf21390a8b60a60f" },
+    { "id": "rule", "path": "Rule.cs.sbn", "digest": "sha256:38d60af96f1f8779bc3e025bc9bd004a001c1470db8e87e0badb8ff095400f1e" },
+    { "id": "rule-api", "path": "RuleApi.cs.sbn", "digest": "sha256:d2dd5ae5dfe59b4db29bf544edd60907548764d156e5b3b88781becaf42ad073" },
+    { "id": "behaviour", "path": "Behaviour.cs.sbn", "digest": "sha256:7d86bb44bce76753e918697844c2b93e5621fc4a6273cfaa803e377357a996a6" },
+    { "id": "behaviour-api", "path": "BehaviourApi.cs.sbn", "digest": "sha256:2efb99d54388e3ca39c68d0e414ed71a46a3c059f37ce517a635abe951742926" }
+  ],
+  "outputs": [
+    { "id": "solution", "scope": "context", "templateId": "solution", "logicalPath": "{projectName}.slnx", "owner": "csharp-api-project" },
+    { "id": "project", "scope": "context", "templateId": "project", "logicalPath": "{projectName}/{projectName}.csproj", "owner": "csharp-api-project" },
+    { "id": "program", "scope": "context", "templateId": "program", "logicalPath": "{projectName}/Program.cs", "owner": "csharp-api-project" },
+    { "id": "global-usings", "scope": "context", "templateId": "global-usings", "logicalPath": "{projectName}/GlobalUsings.cs", "owner": "csharp-api-project" },
+    { "id": "app-settings", "scope": "context", "templateId": "app-settings", "logicalPath": "{projectName}/appsettings.json", "owner": "csharp-api-project" },
+    { "id": "endpoint-module", "scope": "context", "templateId": "endpoint-module", "logicalPath": "{projectName}/Apis/IEndpointModule.cs", "owner": "csharp-api-project" },
+    { "id": "entity", "scope": "entity", "templateId": "entity", "logicalPath": "{projectName}/Entities/{definitionName}.cs", "owner": "csharp-api-project" },
+    { "id": "repository", "scope": "entity", "templateId": "repository", "logicalPath": "{projectName}/Repositories/{definitionName}Repository.cs", "owner": "csharp-api-project" },
+    { "id": "commands", "scope": "entity", "templateId": "commands", "logicalPath": "{projectName}/Features/{definitionName}/{definitionName}Commands.cs", "owner": "csharp-api-project" },
+    { "id": "queries", "scope": "entity", "templateId": "queries", "logicalPath": "{projectName}/Features/{definitionName}/{definitionName}Queries.cs", "owner": "csharp-api-project" },
+    { "id": "api", "scope": "entity", "templateId": "api", "logicalPath": "{projectName}/Apis/{definitionName}Api.cs", "owner": "csharp-api-project" },
+    { "id": "enumeration", "scope": "enumeration", "templateId": "enumeration", "logicalPath": "{projectName}/Enumerations/{definitionName}.cs", "owner": "csharp-api-project" },
+    { "id": "rule", "scope": "rule", "templateId": "rule", "logicalPath": "{projectName}/Rules/{definitionName}.cs", "owner": "csharp-api-project" },
+    { "id": "rule-api", "scope": "rule", "templateId": "rule-api", "logicalPath": "{projectName}/Apis/{definitionName}Api.cs", "owner": "csharp-api-project" },
+    { "id": "behaviour", "scope": "behaviour", "templateId": "behaviour", "logicalPath": "{projectName}/Behaviours/{definitionName}.cs", "owner": "csharp-api-project" },
+    { "id": "behaviour-api", "scope": "behaviour", "templateId": "behaviour-api", "logicalPath": "{projectName}/Apis/{definitionName}Api.cs", "owner": "csharp-api-project" }
+  ]
+}

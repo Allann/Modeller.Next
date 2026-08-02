@@ -1,0 +1,6 @@
+namespace {{ csharp_namespace }}.Entities;
+
+public sealed record {{ definition.name }}(
+    Guid Id
+{{ for property in definition.properties }}    , {{ property.type }}{{ if property.nullable }}?{{ end }} {{ property.name }}
+{{ end }});

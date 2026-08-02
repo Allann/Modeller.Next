@@ -1,0 +1,43 @@
+namespace {{ csharp_namespace }}.Features.{{ definition.name }}Feature;
+
+public sealed record Create{{ definition.name }}Command(
+{{ for property in definition.properties }}    {{ property.type }}{{ if property.nullable }}?{{ end }} {{ property.name }}{{ if !for.last }},{{ end }}
+{{ end }});
+
+public sealed class Create{{ definition.name }}Handler(I{{ definition.name }}Repository repository)
+{
+    public async Task<{{ definition.name }}> HandleAsync(Create{{ definition.name }}Command command, CancellationToken cancellationToken)
+    {
+        var entity = new {{ definition.name }}(
+            Guid.NewGuid()
+{{ for property in definition.properties }}            , command.{{ property.name }}
+{{ end }}        );
+        await repository.AddAsync(entity, cancellationToken);
+        return entity;
+    }
+}
+
+public sealed record Update{{ definition.name }}Command(
+    Guid Id
+{{ for property in definition.properties }}    , {{ property.type }}{{ if property.nullable }}?{{ end }} {{ property.name }}
+{{ end }});
+
+public sealed class Update{{ definition.name }}Handler(I{{ definition.name }}Repository repository)
+{
+    public Task<bool> HandleAsync(Update{{ definition.name }}Command command, CancellationToken cancellationToken)
+    {
+        var entity = new {{ definition.name }}(
+            command.Id
+{{ for property in definition.properties }}            , command.{{ property.name }}
+{{ end }}        );
+        return repository.UpdateAsync(entity, cancellationToken);
+    }
+}
+
+public sealed record Delete{{ definition.name }}Command(Guid Id);
+
+public sealed class Delete{{ definition.name }}Handler(I{{ definition.name }}Repository repository)
+{
+    public Task<bool> HandleAsync(Delete{{ definition.name }}Command command, CancellationToken cancellationToken) =>
+        repository.DeleteAsync(command.Id, cancellationToken);
+}

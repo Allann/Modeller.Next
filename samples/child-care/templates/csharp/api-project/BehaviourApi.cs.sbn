@@ -1,0 +1,16 @@
+namespace {{ csharp_namespace }}.Apis;
+
+using {{ csharp_namespace }}.Behaviours;
+using {{ csharp_namespace }}.Rules;
+
+public sealed record {{ definition.name }}Request({{ definition.stage_type }} CurrentStage, {{ definition.facts_type }} Facts);
+
+public sealed class {{ definition.name }}Api : IEndpointModule
+{
+    public void Map(IEndpointRouteBuilder endpoints)
+    {
+        endpoints.MapPost("/api/behaviours/{{ definition.name | string.downcase }}", ({{ definition.name }}Request request) =>
+            Results.Ok(new { stage = {{ definition.name }}.Apply(request.CurrentStage, request.Facts) }))
+            .WithTags("Behaviours");
+    }
+}

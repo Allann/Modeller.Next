@@ -1,0 +1,8 @@
+from __future__ import annotations
+
+from enum import IntEnum
+
+
+class {{ definition.name }}(IntEnum):
+{{ for member in definition.members }}    {{ member.name }} = {{ member.value }}
+{{ end }}

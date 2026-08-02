@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "generationContractVersion": "1.0",
-  "logicalOutputRoot": "generated",
+  "logicalOutputRoot": "generated/api",
   "profile": "child-care-csharp",
   "sources": [
     "model/context.modeller",
@@ -16,12 +16,12 @@
     "model/rules/determine-accs-eligibility.modeller",
     "model/behaviours/submit-accs-determination-application.modeller"
   ],
-  "templatePack": "templates/csharp/domain-project/pack.json",
+  "templatePack": "templates/csharp/api-project/pack.json",
   "identityRegistry": ".modeller/identities.json",
   "parameters": {
     "projectName": "ChildCare",
     "namespace": "ChildCare",
     "targetFramework": "net10.0"
   },
-  "ownershipManifest": ".modeller/generated-manifest.json"
+  "ownershipManifest": ".modeller/generated-api-manifest.json"
 }

@@ -25,7 +25,8 @@ dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care
 
 - `.modeller/config.json` declares every generation input and the owned-output manifest; `.modeller/identities.json` is tooling-owned canonical identity metadata.
 - `model/` contains small RML files organised by semantic concept.
-- `templates/csharp/` is the C# pack catalogue; `domain-project/` is the reusable pinned pack selected by this workspace.
+- `templates/csharp/` is the C# pack catalogue; `domain-project/` is the reusable pinned pack selected by this workspace, and `api-project/` is a deeper Minimal-API pack used for realistic generation testing.
+- `templates/python/` is the Python pack catalogue; `api-project/` is a FastAPI pack that mirrors `templates/csharp/api-project/` scope-for-scope.
 - `expected/` contains the deterministic golden output.
 - `generated/` contains the current manifest-owned output.
 

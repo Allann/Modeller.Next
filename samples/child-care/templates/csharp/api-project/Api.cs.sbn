@@ -1,0 +1,38 @@
+namespace {{ csharp_namespace }}.Apis;
+
+using {{ csharp_namespace }}.Features.{{ definition.name }}Feature;
+
+public sealed class {{ definition.name }}Api : IEndpointModule
+{
+    public void Map(IEndpointRouteBuilder endpoints)
+    {
+        var group = endpoints.MapGroup("/api/{{ definition.name | string.downcase }}").WithTags("{{ definition.name }}");
+
+        group.MapGet("/", async (List{{ definition.name }}Handler handler, CancellationToken cancellationToken) =>
+            Results.Ok(await handler.HandleAsync(new List{{ definition.name }}Query(), cancellationToken)));
+
+        group.MapGet("/{id:guid}", async (Guid id, Get{{ definition.name }}Handler handler, CancellationToken cancellationToken) =>
+        {
+            var result = await handler.HandleAsync(new Get{{ definition.name }}Query(id), cancellationToken);
+            return result is null ? Results.NotFound() : Results.Ok(result);
+        });
+
+        group.MapPost("/", async (Create{{ definition.name }}Command command, Create{{ definition.name }}Handler handler, CancellationToken cancellationToken) =>
+        {
+            var entity = await handler.HandleAsync(command, cancellationToken);
+            return Results.Created($"/api/{{ definition.name | string.downcase }}/{entity.Id}", entity);
+        });
+
+        group.MapPut("/{id:guid}", async (Guid id, Update{{ definition.name }}Command command, Update{{ definition.name }}Handler handler, CancellationToken cancellationToken) =>
+        {
+            var updated = await handler.HandleAsync(command with { Id = id }, cancellationToken);
+            return updated ? Results.NoContent() : Results.NotFound();
+        });
+
+        group.MapDelete("/{id:guid}", async (Guid id, Delete{{ definition.name }}Handler handler, CancellationToken cancellationToken) =>
+        {
+            var deleted = await handler.HandleAsync(new Delete{{ definition.name }}Command(id), cancellationToken);
+            return deleted ? Results.NoContent() : Results.NotFound();
+        });
+    }
+}

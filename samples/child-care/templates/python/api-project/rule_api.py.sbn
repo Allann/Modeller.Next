@@ -1,0 +1,12 @@
+from __future__ import annotations
+
+from fastapi import APIRouter
+
+from ..rules.{{ definition.module_name }} import {{ definition.function_name }}, {{ definition.subject_name }}Facts
+
+router = APIRouter(prefix="/api/rules", tags=["Rules"])
+
+
+@router.post("/{{ definition.module_name }}")
+def evaluate_endpoint(facts: {{ definition.subject_name }}Facts) -> dict[str, bool]:
+    return {"eligible": {{ definition.function_name }}(facts)}

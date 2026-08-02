@@ -98,6 +98,9 @@ internal static class WorkspaceGeneration
             pack.Templates.Select(item => item.Id).Distinct(StringComparer.Ordinal).Count() != pack.Templates.Count ||
             pack.Outputs.Select(item => item.Id).Distinct(StringComparer.Ordinal).Count() != pack.Outputs.Count)
             return await Failure(host, machine, "workspace.template-pack.invalid", "The declared template pack is invalid.");
+        var language = pack.Language ?? "csharp";
+        var nameForPath = SelectNameForPath(language);
+        if (nameForPath is null) return await Failure(host, machine, "workspace.template-pack.invalid", "The declared template pack targets an unsupported language.");
 
         var packDirectory = Path.GetDirectoryName(configuration.TemplatePack.Replace('/', Path.DirectorySeparatorChar))?.Replace('\\', '/') ?? "";
         var templates = ImmutableDictionary.CreateBuilder<string, ScribanTemplateSource>(StringComparer.Ordinal);
@@ -127,7 +130,7 @@ internal static class WorkspaceGeneration
                 return await Failure(host, machine, "workspace.output.scope-invalid", $"Output recipe '{recipe.Id}' uses an unsupported scope.");
             foreach (var definition in selected)
             {
-                var name = definition is null ? configuration.Parameters.ProjectName : CSharpTemplateNaming.Identifier(definition.Name.Value);
+                var name = definition is null ? configuration.Parameters.ProjectName : nameForPath(definition.Name.Value);
                 var logicalPath = recipe.LogicalPath
                     .Replace("{projectName}", configuration.Parameters.ProjectName, StringComparison.Ordinal)
                     .Replace("{definitionName}", name, StringComparison.Ordinal);
@@ -156,8 +159,9 @@ internal static class WorkspaceGeneration
             { return await Failure(host, machine, "workspace.manifest.invalid", "The ownership manifest is invalid."); }
         }
         var outputRoot = Join(root, runtimeConfiguration.LogicalOutputRoot);
-        var scriban = new ScribanRendererAdapter("scriban/csharp", "1.0", templates.ToImmutable(), globalsProvider:
-            new CSharpTemplateGlobalsProvider(package.AuthoredRevision, configuration.Parameters.Namespace, configuration.Parameters.ProjectName, configuration.Parameters.TargetFramework));
+        var globalsProvider = SelectGlobalsProvider(language, package.AuthoredRevision, configuration.Parameters);
+        if (globalsProvider is null) return await Failure(host, machine, "workspace.template-pack.invalid", "The declared template pack targets an unsupported language.");
+        var scriban = new ScribanRendererAdapter($"scriban/{language}", "1.0", templates.ToImmutable(), globalsProvider: globalsProvider);
         var execution = await GenerationExecution.ExecuteAsync(new(planning, manifest, dryRun ? OutputMode.Preview : OutputMode.Apply),
             scriban, new CliOutputFileSystem(host, outputRoot), cancellationToken);
         if (execution.Output is null)
@@ -191,6 +195,18 @@ internal static class WorkspaceGeneration
     private static bool Unsafe(string path) => string.IsNullOrWhiteSpace(path) || Path.IsPathRooted(path) || path.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries).Contains("..", StringComparer.Ordinal) || path.Contains('\0');
     private static bool IsSha256(string value) => value.Length == 71 && value.StartsWith("sha256:", StringComparison.Ordinal) && value[7..].All(Uri.IsHexDigit);
     private static string Digest(string content) => $"sha256:{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(content)))}";
+    private static Func<string, string>? SelectNameForPath(string language) => language switch
+    {
+        "csharp" => CSharpTemplateNaming.Identifier,
+        "python" => PythonTemplateNaming.Identifier,
+        _ => null
+    };
+    private static ITemplateGlobalsProvider? SelectGlobalsProvider(string language, AuthoredContextRevision revision, PackParameters parameters) => language switch
+    {
+        "csharp" => new CSharpTemplateGlobalsProvider(revision, parameters.Namespace, parameters.ProjectName, parameters.TargetFramework),
+        "python" => new PythonTemplateGlobalsProvider(revision, parameters.Namespace, parameters.ProjectName, parameters.TargetFramework),
+        _ => null
+    };
     private static IEnumerable<SemanticDefinition?>? Select(AuthoredContextRevision revision, string scope) => scope switch
     {
         "context" => new SemanticDefinition?[] { null },
@@ -213,7 +229,7 @@ internal static class WorkspaceGeneration
     private sealed record IdentityRegistry(string Version, IReadOnlyDictionary<string, IReadOnlyList<string>> Documents);
     private sealed record PackParameters(string ProjectName, string Namespace, string TargetFramework);
     private sealed record TemplatePackFile(string Version, string Id, string PackVersion, string GenerationContractVersion,
-        IReadOnlyList<TemplateFile> Templates, IReadOnlyList<OutputFile> Outputs);
+        IReadOnlyList<TemplateFile> Templates, IReadOnlyList<OutputFile> Outputs, string? Language = null);
     private sealed record TemplateFile(string Id, string Path, string Digest);
     private sealed record OutputFile(string Id, string Scope, string TemplateId, string LogicalPath, string Owner);
 

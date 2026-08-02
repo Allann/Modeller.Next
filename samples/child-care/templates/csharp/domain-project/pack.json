@@ -3,6 +3,7 @@
   "id": "csharp-domain-project",
   "packVersion": "1.0.0",
   "generationContractVersion": "1.0",
+  "language": "csharp",
   "templates": [
     { "id": "solution", "path": "Solution.slnx.sbn", "digest": "sha256:83de235a04176e248fbc75cf2155b932ee4a4a2841529ec56a6b858370aec10a" },
     { "id": "project", "path": "DomainProject.csproj.sbn", "digest": "sha256:592070c8bc957c50d09f5b1bf70bfa1e63e76e56c948219f612a047a88eef48e" },

@@ -1,0 +1,37 @@
+namespace {{ csharp_namespace }}.Repositories;
+
+public interface I{{ definition.name }}Repository
+{
+    Task<{{ definition.name }}?> GetAsync(Guid id, CancellationToken cancellationToken);
+    Task<IReadOnlyList<{{ definition.name }}>> ListAsync(CancellationToken cancellationToken);
+    Task AddAsync({{ definition.name }} entity, CancellationToken cancellationToken);
+    Task<bool> UpdateAsync({{ definition.name }} entity, CancellationToken cancellationToken);
+    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken);
+}
+
+public sealed class InMemory{{ definition.name }}Repository : I{{ definition.name }}Repository
+{
+    private readonly Dictionary<Guid, {{ definition.name }}> store = [];
+
+    public Task<{{ definition.name }}?> GetAsync(Guid id, CancellationToken cancellationToken) =>
+        Task.FromResult(store.GetValueOrDefault(id));
+
+    public Task<IReadOnlyList<{{ definition.name }}>> ListAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<{{ definition.name }}>>([.. store.Values]);
+
+    public Task AddAsync({{ definition.name }} entity, CancellationToken cancellationToken)
+    {
+        store[entity.Id] = entity;
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> UpdateAsync({{ definition.name }} entity, CancellationToken cancellationToken)
+    {
+        if (!store.ContainsKey(entity.Id)) return Task.FromResult(false);
+        store[entity.Id] = entity;
+        return Task.FromResult(true);
+    }
+
+    public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken) =>
+        Task.FromResult(store.Remove(id));
+}

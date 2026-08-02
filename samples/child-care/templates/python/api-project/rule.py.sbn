@@ -1,0 +1,16 @@
+from __future__ import annotations
+
+from datetime import date
+from decimal import Decimal
+
+from pydantic import BaseModel
+
+
+class {{ definition.subject_name }}Facts(BaseModel):
+{{ for fact in definition.facts }}    {{ fact.name }}: {{ fact.type }}
+{{ end }}
+
+def {{ definition.function_name }}(facts: {{ definition.subject_name }}Facts) -> bool:
+    return all([
+{{ for fact in definition.facts }}        facts.{{ fact.name }},
+{{ end }}    ])

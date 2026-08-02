@@ -1,0 +1,55 @@
+from __future__ import annotations
+
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from ..entities.{{ definition.module_name }} import {{ definition.name }}
+from ..features.{{ definition.module_name }}_commands import (
+    Create{{ definition.name }}Command,
+    Update{{ definition.name }}Command,
+    create_{{ definition.module_name }},
+    delete_{{ definition.module_name }},
+    update_{{ definition.module_name }},
+)
+from ..features.{{ definition.module_name }}_queries import get_{{ definition.module_name }}, list_{{ definition.module_name }}
+from ..repositories.{{ definition.module_name }} import InMemory{{ definition.name }}Repository
+from ..repositories.{{ definition.module_name }} import repository as _repository
+
+router = APIRouter(prefix="/api/{{ definition.module_name }}", tags=["{{ definition.name }}"])
+
+
+def get_repository() -> InMemory{{ definition.name }}Repository:
+    return _repository
+
+
+@router.get("/", response_model=list[{{ definition.name }}])
+def list_endpoint(repository: InMemory{{ definition.name }}Repository = Depends(get_repository)) -> list[{{ definition.name }}]:
+    return list_{{ definition.module_name }}(repository)
+
+
+@router.get("/{entity_id}", response_model={{ definition.name }})
+def get_endpoint(entity_id: UUID, repository: InMemory{{ definition.name }}Repository = Depends(get_repository)) -> {{ definition.name }}:
+    entity = get_{{ definition.module_name }}(entity_id, repository)
+    if entity is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return entity
+
+
+@router.post("/", response_model={{ definition.name }}, status_code=status.HTTP_201_CREATED)
+def create_endpoint(command: Create{{ definition.name }}Command, repository: InMemory{{ definition.name }}Repository = Depends(get_repository)) -> {{ definition.name }}:
+    return create_{{ definition.module_name }}(command, repository)
+
+
+@router.put("/{entity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def update_endpoint(entity_id: UUID, command: Update{{ definition.name }}Command, repository: InMemory{{ definition.name }}Repository = Depends(get_repository)) -> None:
+    updated = update_{{ definition.module_name }}(command.model_copy(update={"id": entity_id}), repository)
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+
+@router.delete("/{entity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_endpoint(entity_id: UUID, repository: InMemory{{ definition.name }}Repository = Depends(get_repository)) -> None:
+    deleted = delete_{{ definition.module_name }}(entity_id, repository)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)

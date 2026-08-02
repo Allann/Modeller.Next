@@ -1,0 +1,19 @@
+from __future__ import annotations
+
+from fastapi import APIRouter
+from pydantic import BaseModel
+
+from ..behaviours.{{ definition.module_name }} import {{ definition.function_name }}, {{ definition.stage_type }}
+from ..rules.{{ definition.rule_function_name }} import {{ definition.facts_type }}
+
+router = APIRouter(prefix="/api/behaviours", tags=["Behaviours"])
+
+
+class {{ definition.name }}Request(BaseModel):
+    current_stage: {{ definition.stage_type }}
+    facts: {{ definition.facts_type }}
+
+
+@router.post("/{{ definition.module_name }}")
+def apply_endpoint(request: {{ definition.name }}Request) -> dict[str, {{ definition.stage_type }}]:
+    return {"stage": {{ definition.function_name }}(request.current_stage, request.facts)}
