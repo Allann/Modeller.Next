@@ -9,13 +9,16 @@ The `modeller` CLI exposes the same parsing, planning, rendering, and safe-outpu
 contracts used by other integrations. It is implemented with
 `System.CommandLine`; usage errors and cancellation are handled consistently.
 
-## Run from source
+## Installation
 
 ```powershell
-dotnet run --project src/Modeller.Cli -- --help
+dotnet tool install --global Modeller.Cli
+modeller --help
 ```
 
-When installed as a .NET tool, replace the prefix with `modeller`.
+For repository-pinned installation and prerelease feeds, see
+[Install Modeller](/docs/getting-started/install-modeller). Running with
+`dotnet run --project src/Modeller.Cli --` is a contributor workflow only.
 
 ## Commands
 

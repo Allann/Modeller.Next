@@ -1,0 +1,84 @@
+---
+title: Build and run entry points
+description: Run the CLI, language server, and documentation site from source.
+---
+
+# Build and run entry points
+
+The executable entry points have different audiences. The CLI is interactive,
+the language server speaks the Language Server Protocol over standard streams,
+and the documentation site is a web application. The VS Code extension is
+covered in its [dedicated guide](/docs/contributing/vscode-extension).
+
+## Modeller CLI
+
+Build the CLI and its project dependencies:
+
+```powershell
+dotnet build src/Modeller.Cli/Modeller.Cli.csproj
+```
+
+Run repository code by placing application arguments after `--`:
+
+```powershell
+dotnet run --project src/Modeller.Cli -- --help
+dotnet run --project src/Modeller.Cli -- validate samples/child-care/model/context.modeller
+dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care --dry-run
+```
+
+Use `--dry-run` before applying generated output. CLI paths are resolved from
+the current working directory, so run these examples from the repository root.
+See the [CLI reference](/docs/reference/modeller-cli) for commands, formats, and
+exit codes.
+
+## Language server
+
+Build the server directly:
+
+```powershell
+dotnet build src/Modeller.LanguageServer/Modeller.LanguageServer.csproj
+```
+
+It is a stdio Language Server Protocol process, not a command-line application
+with a prompt or HTTP port. Running it directly waits for framed JSON-RPC input:
+
+```powershell
+dotnet run --project src/Modeller.LanguageServer
+```
+
+Normally, launch it through the VS Code extension. The extension integration
+test is the simplest standalone smoke test because it starts the server and
+exchanges real protocol messages.
+
+## Documentation site
+
+Install dependencies and start the development server:
+
+```powershell
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). Pages under `docs/` are
+loaded by Fumadocs and refresh during development; application code lives under
+`app/`, `components/`, and `lib/`.
+
+Build and run the production form locally:
+
+```powershell
+npm run build
+npm run start
+```
+
+Run `npm run start` only after a successful build. Both development and
+production servers use port 3000 by default.
+
+## Library projects
+
+The remaining projects under `src/` are libraries and do not run independently.
+Exercise them through their tests, the CLI, or the language server. To build
+everything in dependency order, use:
+
+```powershell
+dotnet build Modeller.slnx
+```

@@ -1,0 +1,84 @@
+---
+title: Testing and verification
+description: Run the full suite or focus feedback on one Modeller component.
+---
+
+# Testing and verification
+
+## .NET solution
+
+Run the complete .NET suite from the repository root:
+
+```powershell
+dotnet test Modeller.slnx
+```
+
+After an explicit build, avoid rebuilding during the test run:
+
+```powershell
+dotnet restore Modeller.slnx
+dotnet build Modeller.slnx --no-restore
+dotnet test Modeller.slnx --no-build
+```
+
+Target one test project for a faster loop:
+
+```powershell
+dotnet test tests/Modeller.Parsing.Tests/Modeller.Parsing.Tests.csproj
+```
+
+Use the standard `dotnet test --filter` option to target a namespace, class, or
+test name. Keep `conformance/` and `samples/child-care/expected/` changes
+intentional: these files are reviewed acceptance evidence, not disposable test
+output.
+
+## Python conformance
+
+Most Python renderer tests run entirely through .NET. Two toolchain tests also
+compile the generated Python and build its FastAPI OpenAPI schema. Enable those
+checks with:
+
+```powershell
+python -m pip install -r tests/Modeller.Conformance.Python.Tests/requirements-conformance.txt
+dotnet test tests/Modeller.Conformance.Python.Tests/Modeller.Conformance.Python.Tests.csproj
+```
+
+Locally, toolchain checks skip when a Python interpreter is unavailable, and
+the OpenAPI check skips when FastAPI or Pydantic cannot be imported. CI uses
+Python 3.13 and requires all of them to execute.
+
+## VS Code extension
+
+The extension test builds the language server in Release mode and then runs a
+Node integration test against it:
+
+```powershell
+npm --prefix editors/vscode-modeller test
+```
+
+For TypeScript-only feedback, compile or bundle the extension:
+
+```powershell
+npm --prefix editors/vscode-modeller run compile
+npm --prefix editors/vscode-modeller run bundle
+```
+
+## Documentation site
+
+Run all three documentation checks:
+
+```powershell
+npm run lint
+npm run types:check
+npm run build
+```
+
+`types:check` generates Next.js route types before invoking TypeScript. The
+production build also catches invalid MDX and documentation navigation.
+
+## Match continuous integration
+
+The GitHub workflow restores, builds, and tests the .NET solution on Linux with
+.NET 10 and Python 3.13. The workspace's **verify** task additionally runs the
+documentation lint, type, and production-build checks. Before opening a pull
+request, run **verify** plus the extension test when editor code is affected.

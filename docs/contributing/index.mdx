@@ -1,0 +1,90 @@
+---
+title: Contributor setup
+description: Set up the repository and verify a development environment.
+---
+
+# Contributor setup
+
+Modeller combines a .NET solution, a Next.js documentation site, and a VS Code
+extension. The repository name and local directory still use `Modeller.Next`,
+but the product is named Modeller.
+
+## Prerequisites
+
+Install the following tools:
+
+- [.NET SDK 10.0.302](https://dotnet.microsoft.com/download/dotnet/10.0), as
+  pinned by `global.json`. A later 10.0 patch is accepted.
+- Node.js with npm. The documentation site's development dependencies require a
+  current Node.js release; use Node.js 22 or later.
+- VS Code 1.95 or later when working on the editor extension.
+- Python 3.13 or later, plus the conformance requirements, to run every Python
+  toolchain check locally. Python is optional for other development work.
+
+## Clone and restore
+
+Run the following from the repository root:
+
+```powershell
+dotnet restore Modeller.slnx
+npm install
+npm --prefix editors/vscode-modeller install
+```
+
+The root npm installation is for the documentation site. The extension has an
+independent `package.json` and `node_modules` directory, so restore it separately
+when working on editor integration.
+
+To enable all Python conformance checks:
+
+```powershell
+python -m pip install -r tests/Modeller.Conformance.Python.Tests/requirements-conformance.txt
+```
+
+## First verification
+
+```powershell
+dotnet build Modeller.slnx --no-restore
+dotnet test Modeller.slnx --no-build
+npm run lint
+npm run types:check
+npm run build
+npm --prefix editors/vscode-modeller test
+```
+
+The Python toolchain tests skip locally when Python or their packages are not
+available. CI installs them and treats their absence as a failure.
+
+## Recommended VS Code workspace
+
+Open `Modeller.Next.code-workspace`. It recommends the documentation extensions
+and provides tasks for setup, the docs development server, .NET tests, and the
+combined `verify` workflow. Press `F5` and choose **Modeller Docs** to run the
+site with browser debugging.
+
+The `verify` task covers the .NET solution and documentation site. Run the
+extension test separately when changing `editors/vscode-modeller` or the
+language server.
+
+## Repository map
+
+| Path | Purpose |
+| --- | --- |
+| `src/` | .NET product modules and executable entry points |
+| `tests/` | xUnit tests, including cross-language conformance tests |
+| `editors/vscode-modeller/` | VS Code extension, grammars, bundle, and extension tests |
+| `docs/` | Canonical documentation rendered by Fumadocs |
+| `app/`, `components/`, `lib/` | Next.js documentation application |
+| `conformance/` | Versioned acceptance fixtures |
+| `samples/child-care/` | Reference workspace, template packs, and generated-output expectations |
+
+Warnings are treated as errors and nullable reference types are enabled across
+the .NET solution. Before changing an architectural contract, read
+[Architecture 101](/docs/architecture/architecture-101) and the accepted
+[architecture decisions](/docs/architecture/decisions).
+
+## Next steps
+
+- [Build and run each entry point](/docs/contributing/entry-points)
+- [Run and target tests](/docs/contributing/testing)
+- [Develop and package the VS Code extension](/docs/contributing/vscode-extension)

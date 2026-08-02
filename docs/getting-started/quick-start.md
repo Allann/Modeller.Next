@@ -1,83 +1,120 @@
 ---
 title: Quick start
-description: Build Modeller and validate the Child Care reference model.
+description: Take a Modeller definition from an empty folder to repeatable generation.
 ---
 
 # Quick start
 
-## Prerequisites
+This guide is for people using Modeller in their own project. Commands that
+build Modeller's source repository are intentionally kept out of this path.
 
-- .NET 10 SDK or later
-- Git
-
-## Build and test
-
-From the repository root:
+## 1. Create and open a project folder
 
 ```powershell
-dotnet build Modeller.slnx
-dotnet test Modeller.slnx
+mkdir Acme.Bookings
+cd Acme.Bookings
+git init
+code .
 ```
 
-Run the CLI from source while developing:
+You need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and VS Code.
+
+## 2. Install Modeller
+
+Install the released CLI as a .NET global tool:
 
 ```powershell
-dotnet run --project src/Modeller.Cli -- --help
+dotnet tool install --global Modeller.Cli
+modeller --help
 ```
 
-## Open the Child Care workspace
+If it is already installed, run `dotnet tool update --global Modeller.Cli`.
+See [Install Modeller](/docs/getting-started/install-modeller) for local-tool and
+prerelease package-source options.
 
-The RML file is the smallest executable slice of the
-[Child Care reference project](/docs/reference/reference-project):
+## 3. Initialize and write the definition
 
 ```powershell
-dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care --dry-run
+modeller init
+mkdir model
 ```
 
-A successful workspace preview reports its deterministic changes with no
-diagnostics and writes nothing. For stable machine-readable output, add
-`--format json`.
+Create `model/context.modeller`:
 
-The source uses the business-facing language documented in the
-[RML reference](/docs/reference/readable-modelling-language). Parsing
-produces the canonical model; semantic validation and downstream workflows do
-not maintain a second interpretation of the domain.
+```text
+rml 1.0
 
-The files under `model/` contain only business-readable RML. Stable canonical
-identities live in `.modeller/identities.json`, which tooling maintains and the
-workspace loader applies in memory; routine authors never enter UUIDs.
+context Acme Bookings
+  version 1.0.0
+end
 
-Open the repository in VS Code and run the extension from
-`editors/vscode-modeller` to receive syntax highlighting, diagnostics, semantic
-completion, hover, definition, references, and safe rename. The extension starts
-the repository language-server project automatically.
+entity Booking
+  field Booking date
+    type date
+  end
+end
+```
 
-## Plan and generate output
+Add `model/context.modeller` to the `sources` array in
+`.modeller/config.json`. The complete syntax is in the
+[RML schema and language reference](/docs/reference/readable-modelling-language).
 
-The Child Care workspace declares its RML sources, the reusable pinned C# Domain
-Project pack, pack parameters, output root, and ownership manifest in
-`.modeller/config.json`. The pack expands over the complete context; the
-workspace does not list Booking or ACCS-specific output files. Preview the
-exact proposed changes before applying them:
+## 4. Add editor support and validate
+
+Install the **Modeller RML** VS Code extension, then reopen the folder. It
+provides `.modeller` syntax highlighting and live language-server diagnostics.
+See [Set up VS Code](/docs/getting-started/vscode) for Marketplace, VSIX, and
+language-server setup.
+
+Validate at the command line as well:
 
 ```powershell
-dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care --dry-run
-dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care
-dotnet build samples/child-care/generated/ChildCare.slnx
+modeller validate model/context.modeller
 ```
 
-The second generation is deterministic and reports every artifact as
-`Unchanged`. Apply mode writes only through the
-[safe output-application contract](/docs/reference/output-application), which
-uses manifest-proven ownership and reports conflicts with handwritten files.
-The lower-level request-based `plan` and `generate` forms remain available for
-automation and contract testing.
+Success is reported as `Valid: no diagnostics.` and returns exit code `0`.
+Use `--format json` in scripts and CI. See
+[Verify definitions](/docs/getting-started/verify-definition) for multi-file
+models and exit codes.
 
-## Next steps
+## 5. Configure and preview generation
 
-- Learn all command arguments and exit codes in the
-  [CLI reference](/docs/reference/modeller-cli).
-- Follow the implemented pipeline through
-  [Architecture 101](/docs/architecture/architecture-101).
-- Explore parsing, validation, rules, projections, generation, and editor APIs
-  from the [reference index](/docs/reference).
+Generation needs more than the minimal file produced by `init`. Configure:
+
+- `sources`: every `.modeller` file in the context;
+- `templatePack`: a project-relative path to a pinned template pack;
+- `identityRegistry`: the tooling-owned identity registry supplied with the
+  initialized starter or template pack;
+- `parameters.projectName` and the language-specific parameter block;
+- `logicalOutputRoot` and `ownershipManifest`.
+
+The current prerelease does not download a starter template pack or create the
+identity registry during `modeller init`. Until starter distribution is
+available, copy those assets from a supported starter such as the
+[Child Care reference project](/docs/reference/reference-project), then adapt
+its configuration and definitions. Do not invent or routinely edit identity
+values by hand.
+
+Preview before writing anything:
+
+```powershell
+modeller generate --workspace . --dry-run
+modeller generate --workspace .
+```
+
+The first command shows creates, changes, conflicts, and removals without
+writing files. The second applies the same safe, ownership-tracked plan. See
+[Run the initial generation](/docs/getting-started/initial-generation).
+
+## 6. Keep generated output current
+
+After manual generation succeeds, add the incremental MSBuild target from
+[Automatic generation](/docs/getting-started/automatic-generation). A build
+then runs `modeller generate --workspace ...` only when a `.modeller` input,
+configuration file, or template changes.
+
+The finished lifecycle is:
+
+```text
+edit RML -> editor diagnostics -> CLI validation -> dry-run -> generation -> build
+```

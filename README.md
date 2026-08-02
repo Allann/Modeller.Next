@@ -56,6 +56,10 @@ VS Code. Run the `setup`, `docs: dev`, or `verify` tasks from the task picker.
 Press F5 and choose **Modeller Docs** to start the development server and open
 the site with browser debugging attached.
 
+Contributor setup, entry-point commands, targeted testing, and VS Code extension
+development are documented in the
+[contributor guide](docs/contributing/index.mdx).
+
 The existing `CSharp-Catalyst/Modeller` repository is retained as historical
 design evidence. It is not a compatibility target or an alternative product
 implementation.

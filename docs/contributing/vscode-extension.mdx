@@ -1,0 +1,75 @@
+---
+title: VS Code extension development
+description: Build, run, test, and package the Modeller RML extension.
+---
+
+# VS Code extension development
+
+The extension under `editors/vscode-modeller` provides RML and SAF syntax
+highlighting and starts `Modeller.LanguageServer` for language features. Its npm
+dependencies and build output are independent from the documentation site.
+
+## Restore and build
+
+From the repository root:
+
+```powershell
+dotnet build src/Modeller.LanguageServer/Modeller.LanguageServer.csproj
+npm --prefix editors/vscode-modeller install
+npm --prefix editors/vscode-modeller run bundle
+```
+
+`bundle` writes `editors/vscode-modeller/out/extension.js`, the extension entry
+point declared in its manifest. Use `compile` instead when you only need a
+TypeScript type check.
+
+## Run an Extension Development Host
+
+Launch a second VS Code instance with the repository root as its workspace:
+
+```powershell
+code --extensionDevelopmentPath="$((Resolve-Path editors/vscode-modeller).Path)" .
+```
+
+Opening the repository root matters: in development, the extension discovers
+`src/Modeller.LanguageServer/Modeller.LanguageServer.csproj` relative to an open
+workspace folder. Open a `.modeller` or `.saf` file in the new window to activate
+the extension and start the server.
+
+After changing extension TypeScript, rebuild the bundle and run **Developer:
+Reload Window** in the Extension Development Host. Changes to the language
+server are picked up by `dotnet run` when the client restarts; reload the window
+to restart it cleanly.
+
+Useful places to inspect failures are the **Output** panel's Modeller language
+client channel and **Developer: Toggle Developer Tools** in the development
+host.
+
+## Test
+
+```powershell
+npm --prefix editors/vscode-modeller test
+```
+
+This command builds `Modeller.LanguageServer` in Release mode, starts it with
+`dotnet run --no-build`, and verifies a real Language Server Protocol exchange.
+
+## Package a VSIX
+
+```powershell
+npm --prefix editors/vscode-modeller run package
+```
+
+Packaging publishes the language server into the extension's `server/`
+directory, then creates a `.vsix` under `editors/vscode-modeller`. Packaged
+installations use that bundled server. Developers can instead set
+`modeller.languageServer.path` to a specific `Modeller.LanguageServer.dll`.
+
+Install the resulting artifact for a final smoke test:
+
+```powershell
+code --install-extension editors/vscode-modeller/modeller-rml-0.1.0.vsix
+```
+
+The filename contains the version from the extension's `package.json`; adjust
+the command after a version change.
