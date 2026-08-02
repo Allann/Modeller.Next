@@ -64,8 +64,8 @@ public static class DiagramProjector
     {
         var entity = revision.Definitions.OfType<EntityDefinition>()
             .FirstOrDefault(item => view.Roots.Contains(item.Id));
-        if (entity is null)
-            return new(null, [new("projection.root.invalid", "A lifecycle view requires an entity root.")]);
+        if (entity?.Lifecycle is null)
+            return new(null, [new("projection.root.invalid", "A lifecycle view requires an entity root with a lifecycle.")]);
 
         var nodes = entity.Lifecycle.Stages
             .Select(stage => new ProjectionNode(ElementId("stage", stage.Id), "lifecycle-stage", stage.Name.Value, [stage.Id]))

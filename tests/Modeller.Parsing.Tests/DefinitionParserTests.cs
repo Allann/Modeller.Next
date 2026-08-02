@@ -1,5 +1,7 @@
 using Modeller.Parsing;
 using Modeller.Conformance;
+using Modeller.Model;
+using Modeller.Contexts;
 using System.Text.Json;
 using Xunit;
 
@@ -41,7 +43,7 @@ public sealed class DefinitionParserTests
         Assert.Null(result.Package);
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("rml.reference.unresolved", diagnostic.Code);
-        Assert.Equal(35, diagnostic.Location!.Line);
+        Assert.Equal(28, diagnostic.Location!.Line);
     }
 
     [Fact]
@@ -74,7 +76,7 @@ public sealed class DefinitionParserTests
 
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("rml.statement.required", diagnostic.Code);
-        Assert.Equal(65, diagnostic.Location!.Line);
+        Assert.Equal(54, diagnostic.Location!.Line);
     }
 
     [Fact]
@@ -223,6 +225,29 @@ public sealed class DefinitionParserTests
 
         Assert.Equal("parse.path.invalid", Assert.Single(unsafePath.Diagnostics).Code);
         Assert.Equal("parse.limit.tokens", Assert.Single(tooManyTokens.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void Multi_file_Rml_preserves_Booking_data_types_relationships_and_package_round_trip()
+    {
+        var result = DefinitionParser.Parse([
+            new SourceDocument("model/context.modeller", "rml 1.0\n# @id=0191f6d4-4ea0-7000-8000-000000000001\ncontext Child Care\n version 1.0.0\nend\n"),
+            new SourceDocument("model/enumerations/status.modeller", "rml 1.0\n# @id=0191f6d4-4ea0-7000-8000-000000000300\nenumeration Booking status\n # @id=0191f6d4-4ea0-7000-8000-000000000301\n member Planned\n  value 1\n end\nend\n"),
+            new SourceDocument("model/entities/child.modeller", "rml 1.0\n# @id=0191f6d4-4ea0-7000-8000-000000000207\nentity Child\nend\n"),
+            new SourceDocument("model/entities/booking.modeller", "rml 1.0\n# @id=0191f6d4-4ea0-7000-8000-000000000100\nentity Booking\n # @id=0191f6d4-4ea0-7000-8000-000000000101\n field Booking date\n  type date\n end\n # @id=0191f6d4-4ea0-7000-8000-000000000102\n field Adjusted hours\n  type decimal(12,2)\n  optional\n end\n # @id=0191f6d4-4ea0-7000-8000-000000000103\n field Booking status\n  type enumeration \"Booking status\"\n end\n # @id=0191f6d4-4ea0-7000-8000-000000000104\n relationship Child\n  target \"Child\"\n  cardinality one\n end\nend\n")
+        ], ParseOptions.Language1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join(Environment.NewLine, result.Diagnostics));
+        var booking = Assert.Single(result.Package!.AuthoredRevision.Definitions.OfType<EntityDefinition>(), item => item.Name.Value == "Booking");
+        Assert.IsType<DateDataType>(booking.Fields[0].Type);
+        Assert.Equal((12, 2), (Assert.IsType<DecimalDataType>(booking.Fields[1].Type).Precision, Assert.IsType<DecimalDataType>(booking.Fields[1].Type).Scale));
+        Assert.True(booking.Fields[1].IsOptional);
+        Assert.IsType<EnumerationDataType>(booking.Fields[2].Type);
+        Assert.Equal(RelationshipCardinality.One, Assert.Single(booking.Relationships).Cardinality);
+        var persisted = ContextPackageSystem.Persist(result.Package);
+        var reloaded = ContextPackageSystem.Load(persisted.Document);
+        Assert.True(reloaded.IsSuccess);
+        Assert.Equal(result.Package.SemanticDigest, reloaded.Package!.SemanticDigest);
     }
 
     private sealed class ParsingConformanceAdapter(string fixtureDirectory) : IConformanceAdapter

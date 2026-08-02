@@ -24,6 +24,7 @@ public interface ICliHost
     TextWriter Output { get; }
     TextWriter Error { get; }
     bool Exists(string path);
+    bool IsSymbolicLink(string path);
     ValueTask<string> ReadTextAsync(string path, CancellationToken cancellationToken);
     ValueTask WriteTextAsync(string path, string content, bool overwrite, CancellationToken cancellationToken);
     ValueTask ApplyOutputAsync(string root, ImmutableArray<FileOperation> operations, string recoveryToken, CancellationToken cancellationToken);
@@ -66,13 +67,24 @@ public static class CliApplication
 
     private static Command GenerateCommand(ICliHost host)
     {
-        var request = new Argument<string>("request") { Description = "Package-relative generation workflow request." };
+        var request = new Argument<string?>("request") { Description = "Optional package-relative generation workflow request.", Arity = ArgumentArity.ZeroOrOne };
+        var workspace = new Option<string?>("--workspace") { Description = "Workspace containing a declared .modeller/config.json." };
         var dryRun = new Option<bool>("--dry-run") { Description = "Preview output without writing files." };
         var format = FormatOption();
         var command = new Command("generate", "Plan, render, and safely preview or apply generated output.");
-        command.Arguments.Add(request); command.Options.Add(dryRun); command.Options.Add(format);
-        command.SetAction(async (parse, cancellation) => (int)await Generate(
-            parse.GetRequiredValue(request), parse.GetValue(dryRun), parse.GetValue(format) == "json", host, cancellation));
+        command.Arguments.Add(request); command.Options.Add(workspace); command.Options.Add(dryRun); command.Options.Add(format);
+        command.Validators.Add(result =>
+        {
+            if ((result.GetValue(request) is null) == (result.GetValue(workspace) is null))
+                result.AddError("Specify either a generation request or --workspace, but not both.");
+        });
+        command.SetAction(async (parse, cancellation) =>
+        {
+            var workspacePath = parse.GetValue(workspace);
+            return workspacePath is not null
+                ? (int)await WorkspaceGeneration.ExecuteAsync(workspacePath, parse.GetValue(dryRun), parse.GetValue(format) == "json", host, cancellation)
+                : (int)await Generate(parse.GetValue(request)!, parse.GetValue(dryRun), parse.GetValue(format) == "json", host, cancellation);
+        });
         return command;
     }
 
@@ -292,7 +304,7 @@ internal sealed class CliOutputFileSystem(ICliHost host, string root) : IOutputF
     {
         var target = Target(path);
         return host.Exists(target)
-            ? new(true, await host.ReadTextAsync(target, cancellationToken), false)
+            ? new(true, await host.ReadTextAsync(target, cancellationToken), host.IsSymbolicLink(target))
             : new(false, null, false);
     }
 

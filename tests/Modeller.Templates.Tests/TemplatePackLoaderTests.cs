@@ -14,7 +14,7 @@ public sealed class TemplatePackLoaderTests
 
         Assert.True(first.IsSuccess);
         Assert.Equal(first.Pack!.Digest, second.Pack!.Digest);
-        Assert.Equal(["eligibility"], first.Pack.Artifacts.Select(x => x.ArtifactId));
+        Assert.Equal(["rule"], first.Pack.Outputs.Select(x => x.Id));
     }
 
     [Fact]
@@ -28,6 +28,6 @@ public sealed class TemplatePackLoaderTests
     private static PackSource Source(string manifest) => new("child-care-pack", manifest,
         ImmutableDictionary<string, string>.Empty.Add("rule.cs", "public static class Eligibility;"));
     private static string Manifest(bool reordered) => reordered ?
-        """{"rendererVersion":"1.0","rendererId":"scriban","generationContractVersion":"1.0","version":"1.0.0","id":"child-care-csharp","artifacts":[{"semanticInputIds":["accs-eligibility"],"template":"rule.cs","owner":"child-care","path":"domain/eligibility.cs","id":"eligibility"}]}""" :
-        """{"id":"child-care-csharp","version":"1.0.0","generationContractVersion":"1.0","rendererId":"scriban","rendererVersion":"1.0","artifacts":[{"id":"eligibility","path":"domain/eligibility.cs","owner":"child-care","template":"rule.cs","semanticInputIds":["accs-eligibility"]}]}""";
+        """{"rendererVersion":"1.0","rendererId":"scriban","generationContractVersion":"1.0","version":"1.0.0","id":"csharp-domain-project","outputs":[{"scope":"rule","template":"rule.cs","owner":"csharp-domain-project","path":"Rules/{definitionName}.cs","id":"rule"}]}""" :
+        """{"id":"csharp-domain-project","version":"1.0.0","generationContractVersion":"1.0","rendererId":"scriban","rendererVersion":"1.0","outputs":[{"id":"rule","scope":"rule","path":"Rules/{definitionName}.cs","owner":"csharp-domain-project","template":"rule.cs"}]}""";
 }

@@ -10,6 +10,8 @@ internal sealed class PhysicalCliHost(string workingDirectory) : ICliHost
     public TextWriter Output => Console.Out;
     public TextWriter Error => Console.Error;
     public bool Exists(string path) => File.Exists(Resolve(path));
+    public bool IsSymbolicLink(string path) => File.Exists(Resolve(path)) &&
+        (File.GetAttributes(Resolve(path)) & FileAttributes.ReparsePoint) != 0;
     public async ValueTask<string> ReadTextAsync(string path, CancellationToken cancellationToken) =>
         await File.ReadAllTextAsync(Resolve(path), cancellationToken);
     public async ValueTask WriteTextAsync(string path, string content, bool overwrite, CancellationToken cancellationToken)
@@ -21,7 +23,9 @@ internal sealed class PhysicalCliHost(string workingDirectory) : ICliHost
     }
     public async ValueTask ApplyOutputAsync(string root, ImmutableArray<FileOperation> operations, string recoveryToken, CancellationToken cancellationToken)
     {
-        var recoveryRoot = Resolve($".modeller/recovery/{recoveryToken.Replace(':', '-')}");
+        var normalizedRoot = root.Replace('\\', '/').TrimEnd('/');
+        var workspace = normalizedRoot.Contains('/') ? normalizedRoot[..normalizedRoot.LastIndexOf('/')] : string.Empty;
+        var recoveryRoot = Resolve($"{(workspace.Length == 0 ? "" : workspace + "/")}.modeller/recovery/{recoveryToken.Replace(':', '-')}");
         Directory.CreateDirectory(recoveryRoot);
         await File.WriteAllTextAsync(Path.Combine(recoveryRoot, "operations.json"), JsonSerializer.Serialize(operations), cancellationToken);
         foreach (var operation in operations)

@@ -1,12 +1,8 @@
-# Child Care ACCS acceptance slice — Readable Modelling Language 1.0
 rml 1.0
-
-# Identity metadata is maintained by Modeller tooling and normally folded by editors.
 # @id=0191f6d4-4ea0-7000-8000-000000000001
 context Child Care
   version 1.0.0
 end
-
 # @id=0191f6d4-4ea0-7000-8000-000000000002
 entity ACCS determination application
   # @id=0191f6d4-4ea0-7000-8000-000000000003
@@ -17,19 +13,16 @@ entity ACCS determination application
     stage Submitted
   end
 end
-
 # @id=0191f6d4-4ea0-7000-8000-000000000006
 fact Active enrolment exists
   type truth
   export
 end
-
 # @id=0191f6d4-4ea0-7000-8000-000000000007
 fact Supporting evidence is held
   type truth
   export
 end
-
 # @id=0191f6d4-4ea0-7000-8000-000000000008
 rule Determine ACCS eligibility
   input "Active enrolment exists"
@@ -47,20 +40,16 @@ rule Determine ACCS eligibility
   finding "Supporting evidence is held" missing accs.supporting-evidence-required
   export
 end
-
 # @id=0191f6d4-4ea0-7000-8000-00000000000a
 behaviour Submit ACCS determination application
   for "ACCS determination application"
   requires "Determine ACCS eligibility"
-
   # @id=0191f6d4-4ea0-7000-8000-00000000000b
   outcome Application submitted
   end
-
   # @id=0191f6d4-4ea0-7000-8000-00000000000c
   outcome Application rejected
   end
-
   # @id=0191f6d4-4ea0-7000-8000-00000000000d
   transition Submit application
     lifecycle "ACCS determination application lifecycle"

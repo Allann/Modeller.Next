@@ -138,8 +138,9 @@ public static partial class RmlCompiler
 
     private static Model Build(ImmutableArray<Node> roots)
     {
-        var version = Single(roots, "rml");
-        if (version.Value != "1.0") throw new RmlException("rml.language.unsupported", $"RML version '{version.Value}' is not supported.", version);
+        var versions = roots.Where(item => item.Keyword == "rml").ToArray();
+        var version = versions.FirstOrDefault() ?? throw new RmlException("rml.statement.required", "At least one 'rml' declaration is required.", roots.First());
+        if (versions.Any(item => item.Value != "1.0")) throw new RmlException("rml.language.unsupported", $"RML version '{version.Value}' is not supported.", version);
         var context = Single(roots, "context");
         var symbols = new List<Symbol>();
         var byName = new Dictionary<string, Node>(StringComparer.OrdinalIgnoreCase);
@@ -149,13 +150,21 @@ public static partial class RmlCompiler
             symbols.Add(new(node.Id!, node.Document, node.Line, node.Column, node.TextLength, path));
         }
         Register(context);
-        foreach (var node in roots.Where(item => item.Keyword is "entity" or "fact" or "rule" or "behaviour"))
+        foreach (var node in roots.Where(item => item.Keyword is "entity" or "enumeration" or "fact" or "rule" or "behaviour"))
         {
             Register(node);
             if (node.Keyword == "entity")
             {
-                var lifecycle = Child(node, "lifecycle"); Register(lifecycle);
-                foreach (var stage in lifecycle.Children.Where(item => item.Keyword == "stage")) Register(stage);
+                var lifecycle = node.Children.SingleOrDefault(item => item.Keyword == "lifecycle");
+                if (lifecycle is not null) { Register(lifecycle); foreach (var stage in lifecycle.Children.Where(item => item.Keyword == "stage")) Register(stage); }
+                foreach (var child in node.Children.Where(item => item.Keyword is "field" or "relationship"))
+                {
+                    RequiredId(child); symbols.Add(new(child.Id!, child.Document, child.Line, child.Column, child.TextLength, null));
+                }
+            }
+            if (node.Keyword == "enumeration") foreach (var member in node.Children.Where(item => item.Keyword == "member"))
+            {
+                RequiredId(member); symbols.Add(new(member.Id!, member.Document, member.Line, member.Column, member.TextLength, null));
             }
             if (node.Keyword == "rule") Register(Child(node, "conclusion"));
             if (node.Keyword == "behaviour")
@@ -169,10 +178,28 @@ public static partial class RmlCompiler
         var lines = new List<string> { "language 1.0", $"context id={context.Id} name=\"{context.Value}\" slug={Slug(context.Value)} version={Child(context, "version").Value}" };
         foreach (var entity in roots.Where(item => item.Keyword == "entity"))
         {
-            var lifecycle = Child(entity, "lifecycle");
-            lines.Add($"entity id={entity.Id} name=\"{entity.Value}\" slug={Slug(entity.Value)} lifecycle-id={lifecycle.Id} lifecycle-name=\"{lifecycle.Value}\" lifecycle-slug={Slug(lifecycle.Value)}");
-            foreach (var stage in lifecycle.Children.Where(item => item.Keyword == "stage"))
+            var lifecycle = entity.Children.SingleOrDefault(item => item.Keyword == "lifecycle");
+            var lifecycleText = lifecycle is null ? "" : $" lifecycle-id={lifecycle.Id} lifecycle-name=\"{lifecycle.Value}\" lifecycle-slug={Slug(lifecycle.Value)}";
+            lines.Add($"entity id={entity.Id} name=\"{entity.Value}\" slug={Slug(entity.Value)}{lifecycleText}");
+            if (lifecycle is not null) foreach (var stage in lifecycle.Children.Where(item => item.Keyword == "stage"))
                 lines.Add($"stage owner={entity.Id} id={stage.Id} name=\"{stage.Value}\" slug={Slug(stage.Value)}");
+            foreach (var field in entity.Children.Where(item => item.Keyword == "field"))
+            {
+                var type = Child(field, "type");
+                var namedKind = new[] { "enumeration", "entity", "value" }.FirstOrDefault(kind => type.Value.StartsWith(kind + " ", StringComparison.Ordinal));
+                var named = namedKind is not null ? $" named-type={Id(Unquote(type.Value[(namedKind.Length + 1)..]), type)}" : "";
+                var primitive = namedKind switch { "enumeration" => "Enumeration", "entity" => "EntityReference", "value" => "ValueTypeReference", _ => CanonicalType(type.Value.Split('(')[0]) };
+                var precision = DecimalPrecision(type.Value);
+                lines.Add($"field owner={entity.Id} id={field.Id} name=\"{field.Value}\" slug={Slug(field.Value)} type={primitive}{named}{precision}{Flag(field, "optional")}");
+            }
+            foreach (var relationship in entity.Children.Where(item => item.Keyword == "relationship"))
+                lines.Add($"relationship owner={entity.Id} id={relationship.Id} name=\"{relationship.Value}\" slug={Slug(relationship.Value)} target={Id(Child(relationship, "target").Value, relationship)} cardinality={Title(Child(relationship, "cardinality").Value)}{Flag(relationship, "optional")}");
+        }
+        foreach (var enumeration in roots.Where(item => item.Keyword == "enumeration"))
+        {
+            lines.Add($"enumeration id={enumeration.Id} name=\"{enumeration.Value}\" slug={Slug(enumeration.Value)}");
+            foreach (var member in enumeration.Children.Where(item => item.Keyword == "member"))
+                lines.Add($"enumeration-member owner={enumeration.Id} id={member.Id} name=\"{member.Value}\" slug={Slug(member.Value)} value={Child(member, "value").Value}");
         }
         foreach (var fact in roots.Where(item => item.Keyword == "fact"))
             lines.Add($"fact id={fact.Id} name=\"{fact.Value}\" slug={Slug(fact.Value)} type={Title(Child(fact, "type").Value)}{Flag(fact, "export")}");
@@ -213,6 +240,22 @@ public static partial class RmlCompiler
         return (parts[0], parts[1].ToLowerInvariant(), parts[2], node);
     }
     private static string Flag(Node node, string keyword) => node.Children.Any(item => item.Keyword == keyword) ? $" {keyword}=true" : string.Empty;
+    private static string DecimalPrecision(string value)
+    {
+        var match = Regex.Match(value, "^decimal\\((?<precision>[0-9]+),(?<scale>[0-9]+)\\)$", RegexOptions.CultureInvariant);
+        return match.Success ? $" precision={match.Groups["precision"].Value} scale={match.Groups["scale"].Value}" : "";
+    }
+    private static string CanonicalType(string value) => value.ToLowerInvariant() switch
+    {
+        "boolean" or "bool" => "Boolean",
+        "text" or "string" => "String",
+        "integer" or "int32" => "Int32",
+        "byte" => "Byte", "int16" => "Int16", "int64" => "Int64",
+        "date" => "Date", "time" => "Time", "datetime" => "DateTime",
+        "datetimeoffset" => "DateTimeOffset", "identifier" or "uuid" => "UniqueIdentifier",
+        "coordinate" => "GeographicCoordinate", "decimal" => "Decimal",
+        _ => Title(value)
+    };
     private static Node Single(IEnumerable<Node> nodes, string keyword) => nodes.SingleOrDefault(item => item.Keyword == keyword) ?? throw new RmlException("rml.statement.required", $"One '{keyword}' declaration is required.", nodes.First());
     private static Node Child(Node node, string keyword) => node.Children.SingleOrDefault(item => item.Keyword == keyword) ?? throw new RmlException("rml.statement.required", $"'{node.Keyword}' requires '{keyword}'.", node);
     private static string RequiredId(Node node)
@@ -233,11 +276,12 @@ public static partial class RmlCompiler
     }
     private static SourceSpan Span(Node node) => new(node.Document, node.Line, node.Column, node.TextLength);
     private static bool OpensBlock(string keyword, string? parent) =>
-        parent is null && keyword is "context" or "entity" or "fact" or "rule" or "behaviour" ||
-        parent == "entity" && keyword == "lifecycle" ||
+        parent is null && keyword is "context" or "entity" or "enumeration" or "fact" or "rule" or "behaviour" ||
+        parent == "entity" && keyword is "lifecycle" or "field" or "relationship" ||
+        parent == "enumeration" && keyword == "member" ||
         parent == "rule" && keyword is "when" or "conclusion" ||
         parent == "behaviour" && keyword is "outcome" or "transition";
-    private static readonly HashSet<string> IdentityDeclarations = ["context", "entity", "lifecycle", "stage", "fact", "rule", "conclusion", "behaviour", "outcome", "transition"];
+    private static readonly HashSet<string> IdentityDeclarations = ["context", "entity", "lifecycle", "stage", "field", "relationship", "enumeration", "member", "fact", "rule", "conclusion", "behaviour", "outcome", "transition"];
     [GeneratedRegex("^#\\s*@id=(?<id>[0-9a-fA-F-]{36})\\s*$", RegexOptions.CultureInvariant)] private static partial Regex Identity();
     [GeneratedRegex("[^a-z0-9]+", RegexOptions.CultureInvariant)] private static partial Regex SlugCharacters();
     [GeneratedRegex("\"(?<quoted>[^\"]+)\"|(?<bare>\\S+)", RegexOptions.CultureInvariant)] private static partial Regex QuotedTokens();

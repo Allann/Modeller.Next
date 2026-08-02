@@ -3,6 +3,8 @@ using System.Text.Json.Nodes;
 using Modeller.Cli;
 using Modeller.Output;
 using System.Collections.Immutable;
+using System.Security.Cryptography;
+using System.Text;
 using Xunit;
 
 namespace Modeller.Cli.Tests;
@@ -42,7 +44,7 @@ public sealed class CliApplicationTests
         using var json = JsonDocument.Parse(host.StandardOutput);
         var diagnostic = Assert.Single(json.RootElement.GetProperty("diagnostics").EnumerateArray());
         Assert.Equal("rml.reference.unresolved", diagnostic.GetProperty("code").GetString());
-        Assert.Equal(38, diagnostic.GetProperty("line").GetInt32());
+        Assert.Equal(31, diagnostic.GetProperty("line").GetInt32());
         Assert.Equal("child-care.modeller", diagnostic.GetProperty("document").GetString());
     }
 
@@ -154,8 +156,141 @@ public sealed class CliApplicationTests
         Assert.Equal(0, host.WriteCount);
     }
 
+    [Fact]
+    public async Task Generate_workspace_discovers_declared_inputs_and_is_deterministic()
+    {
+        var host = new RecordingCliHost(await WorkspaceFiles());
+
+        var preview = await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care", "--dry-run", "--format", "json"],
+            host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Success, preview);
+        Assert.Equal(0, host.WriteCount);
+        using (var json = JsonDocument.Parse(host.StandardOutput))
+            Assert.All(json.RootElement.GetProperty("changes").EnumerateArray(), change =>
+                Assert.Equal("create", change.GetProperty("status").GetString()));
+
+        Assert.Equal(CliExitCode.Success, await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken));
+        Assert.Contains("public sealed record ACCSEligibilityFacts", host.Files["samples/child-care/generated/Eligibility.cs"], StringComparison.Ordinal);
+        Assert.Contains("bool SupportingEvidenceIsHeld", host.Files["samples/child-care/generated/Eligibility.cs"], StringComparison.Ordinal);
+        Assert.Contains("public sealed record ACCSDeterminationApplication", host.Files["samples/child-care/generated/Entities/ACCSDeterminationApplication.cs"], StringComparison.Ordinal);
+        Assert.Contains("generated-manifest.json", host.Files.Keys.Single(path => path.EndsWith("generated-manifest.json", StringComparison.Ordinal)));
+
+        var second = new RecordingCliHost(host.Files);
+        Assert.Equal(CliExitCode.Success, await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care", "--dry-run", "--format", "json"], second, TestContext.Current.CancellationToken));
+        using var repeated = JsonDocument.Parse(second.StandardOutput);
+        Assert.All(repeated.RootElement.GetProperty("changes").EnumerateArray(), change =>
+            Assert.Equal("unchanged", change.GetProperty("status").GetString()));
+        Assert.Equal(0, second.WriteCount);
+    }
+
+    [Fact]
+    public async Task Generate_workspace_projects_changed_semantics_through_the_same_template()
+    {
+        var originalFiles = await WorkspaceFiles();
+        var changedFiles = await WorkspaceFiles();
+        changedFiles["samples/child-care/model/accs.modeller"] = changedFiles["samples/child-care/model/accs.modeller"]
+            .Replace("Supporting evidence is held", "Residency evidence is held", StringComparison.Ordinal);
+
+        var original = new RecordingCliHost(originalFiles);
+        var changed = new RecordingCliHost(changedFiles);
+        Assert.Equal(CliExitCode.Success, await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], original, TestContext.Current.CancellationToken));
+        Assert.Equal(CliExitCode.Success, await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], changed, TestContext.Current.CancellationToken));
+
+        Assert.Equal(
+            originalFiles["samples/child-care/templates/Rule.cs.sbn"],
+            changedFiles["samples/child-care/templates/Rule.cs.sbn"]);
+        Assert.Contains("bool SupportingEvidenceIsHeld", original.Files["samples/child-care/generated/Eligibility.cs"], StringComparison.Ordinal);
+        Assert.Contains("bool ResidencyEvidenceIsHeld", changed.Files["samples/child-care/generated/Eligibility.cs"], StringComparison.Ordinal);
+        Assert.NotEqual(original.Files["samples/child-care/generated/Eligibility.cs"], changed.Files["samples/child-care/generated/Eligibility.cs"]);
+    }
+
+    [Fact]
+    public async Task Generate_workspace_rejects_an_unpinned_template()
+    {
+        var files = await WorkspaceFiles();
+        files["samples/child-care/templates/Rule.cs.sbn"] = "tampered";
+        var host = new RecordingCliHost(files);
+
+        var exit = await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Configuration, exit);
+        Assert.Contains("workspace.template.digest-mismatch", host.StandardError, StringComparison.Ordinal);
+        Assert.Equal(0, host.WriteCount);
+    }
+
+    [Fact]
+    public async Task Generate_workspace_preserves_a_handwritten_output_collision()
+    {
+        var files = await WorkspaceFiles();
+        files["samples/child-care/generated/Eligibility.cs"] = "handwritten";
+        var host = new RecordingCliHost(files);
+
+        var exit = await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Configuration, exit);
+        Assert.Equal("handwritten", host.Files["samples/child-care/generated/Eligibility.cs"]);
+        Assert.Equal(0, host.WriteCount);
+    }
+
+    [Fact]
+    public async Task Generate_workspace_rejects_a_declared_path_that_leaves_the_workspace()
+    {
+        var files = await WorkspaceFiles();
+        files["samples/child-care/.modeller/config.json"] = """
+            { "version":"1.0", "generationContractVersion":"1.0", "logicalOutputRoot":"generated",
+              "profile":"test", "sources":["../private.modeller"], "templatePack":"templates/pack.json",
+              "parameters":{"projectName":"ChildCare","namespace":"ChildCare","targetFramework":"net10.0"} }
+            """;
+        var host = new RecordingCliHost(files);
+
+        var exit = await CliApplication.RunAsync(
+            ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Configuration, exit);
+        Assert.Contains("workspace.source.path-invalid", host.StandardError, StringComparison.Ordinal);
+        Assert.Equal(0, host.ReadCount - 1);
+    }
+
     private static async Task<string> ChildCareSource() => await File.ReadAllTextAsync(
         Path.Combine(AppContext.BaseDirectory, "Fixtures", "child-care-accs.modeller"), TestContext.Current.CancellationToken);
+
+    private static async Task<Dictionary<string, string>> WorkspaceFiles()
+    {
+        const string template = "namespace {{ csharp_namespace }};\npublic sealed record {{ definition.subject_name }}Facts(\n{{ for fact in definition.facts }}    {{ fact.type }} {{ fact.name }}{{ if !for.last }},{{ end }}\n{{ end }});\n";
+        const string entityTemplate = "namespace {{ csharp_namespace }};\npublic sealed record {{ definition.name }};\n";
+        var digest = $"sha256:{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(template)))}";
+        var entityDigest = $"sha256:{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(entityTemplate)))}";
+        return new(StringComparer.Ordinal)
+        {
+            ["samples/child-care/.modeller/config.json"] = """
+                { "version":"1.0", "generationContractVersion":"1.0", "logicalOutputRoot":"generated",
+                  "profile":"test", "sources":["model/accs.modeller"], "templatePack":"templates/pack.json",
+                  "parameters":{"projectName":"ChildCare","namespace":"ChildCare","targetFramework":"net10.0"} }
+                """,
+            ["samples/child-care/model/accs.modeller"] = await ChildCareSource(),
+            ["samples/child-care/templates/pack.json"] = $$"""
+                { "version":"1.0", "id":"test", "packVersion":"1.0.0", "generationContractVersion":"1.0",
+                  "templates":[
+                    { "id":"rule", "path":"Rule.cs.sbn", "digest":"{{digest}}" },
+                    { "id":"entity", "path":"Entity.cs.sbn", "digest":"{{entityDigest}}" }
+                  ],
+                  "outputs":[
+                    { "id":"rule", "scope":"rule", "templateId":"rule", "logicalPath":"Eligibility.cs", "owner":"test" },
+                    { "id":"entity", "scope":"entity", "templateId":"entity", "logicalPath":"Entities/{definitionName}.cs", "owner":"test" }
+                  ] }
+                """,
+            ["samples/child-care/templates/Rule.cs.sbn"] = template,
+            ["samples/child-care/templates/Entity.cs.sbn"] = entityTemplate
+        };
+    }
 
     private sealed class RecordingCliHost(IReadOnlyDictionary<string, string> files) : ICliHost
     {
@@ -196,6 +331,7 @@ public sealed class CliApplicationTests
             return ValueTask.CompletedTask;
         }
         public bool Exists(string path) => _files.ContainsKey(path);
+        public bool IsSymbolicLink(string path) => false;
     }
 
     private static string GenerationRequest()

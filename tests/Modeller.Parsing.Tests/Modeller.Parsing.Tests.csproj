@@ -6,7 +6,7 @@
   <ItemGroup><ProjectReference Include="../../src/Modeller.Conformance/Modeller.Conformance.csproj" /><ProjectReference Include="../../src/Modeller.Parsing/Modeller.Parsing.csproj" /></ItemGroup>
   <ItemGroup>
     <None Include="Fixtures/**/*.modeller" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../../samples/child-care/model/accs-eligibility.modeller" Link="Fixtures/child-care-accs.modeller" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../Fixtures/child-care-accs.modeller" Link="Fixtures/child-care-accs.modeller" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../conformance/fixtures/child-care/readable-source.v1.json" Link="Fixtures/readable-source.v1.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

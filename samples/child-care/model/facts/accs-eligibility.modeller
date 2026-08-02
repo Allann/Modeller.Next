@@ -1,0 +1,11 @@
+rml 1.0
+# @id=0191f6d4-4ea0-7000-8000-000000000006
+fact Active enrolment exists
+  type truth
+  export
+end
+# @id=0191f6d4-4ea0-7000-8000-000000000007
+fact Supporting evidence is held
+  type truth
+  export
+end

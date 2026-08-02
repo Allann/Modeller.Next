@@ -165,9 +165,9 @@ public sealed class CanonicalModelTests
         var entity = ChildCareFixture.ApplicationEntity();
         var invalidEntity = entity with
         {
-            Lifecycle = entity.Lifecycle with
+            Lifecycle = entity.Lifecycle! with
             {
-                Stages = entity.Lifecycle.Stages.Add(
+                Stages = entity.Lifecycle!.Stages.Add(
                     new LifecycleStage(
                         Id("0191f6d4-4ea0-7000-8000-00000000000e"),
                         new SemanticName("Another draft stage"),

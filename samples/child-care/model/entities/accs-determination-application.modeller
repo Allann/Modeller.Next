@@ -1,0 +1,11 @@
+rml 1.0
+# @id=0191f6d4-4ea0-7000-8000-000000000002
+entity ACCS determination application
+  # @id=0191f6d4-4ea0-7000-8000-000000000003
+  lifecycle ACCS determination application lifecycle
+    # @id=0191f6d4-4ea0-7000-8000-000000000004
+    stage Draft
+    # @id=0191f6d4-4ea0-7000-8000-000000000005
+    stage Submitted
+  end
+end

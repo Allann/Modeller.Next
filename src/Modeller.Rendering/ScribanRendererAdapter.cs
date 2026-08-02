@@ -6,6 +6,11 @@ namespace Modeller.Rendering;
 
 public sealed record ScribanTemplateSource(string Digest, string Content);
 
+public interface ITemplateGlobalsProvider
+{
+    IReadOnlyDictionary<string, object?> GetGlobals(ArtifactRenderingContext context);
+}
+
 public sealed record ScribanRendererLimits(
     int MaximumTemplateCharacters = 262_144,
     int MaximumOutputBytes = 1_048_576,
@@ -16,17 +21,20 @@ public sealed class ScribanRendererAdapter : IRendererAdapter
 {
     private readonly ImmutableDictionary<string, ScribanTemplateSource> templates;
     private readonly ScribanRendererLimits limits;
+    private readonly ITemplateGlobalsProvider? globalsProvider;
 
     public ScribanRendererAdapter(
         string rendererId,
         string contractVersion,
         ImmutableDictionary<string, ScribanTemplateSource> templates,
-        ScribanRendererLimits? limits = null)
+        ScribanRendererLimits? limits = null,
+        ITemplateGlobalsProvider? globalsProvider = null)
     {
         RendererId = rendererId;
         ContractVersion = contractVersion;
         this.templates = templates.WithComparers(StringComparer.Ordinal);
         this.limits = limits ?? new ScribanRendererLimits();
+        this.globalsProvider = globalsProvider;
     }
 
     public string RendererId { get; }
@@ -78,6 +86,13 @@ public sealed class ScribanRendererAdapter : IRendererAdapter
                         { "semantic_digest", input.SemanticDigest }
                     }).ToArray() }
             };
+            if (globalsProvider is not null)
+            {
+                foreach (var value in globalsProvider.GetGlobals(context))
+                {
+                    globals.Add(value.Key, value.Value);
+                }
+            }
             var templateContext = new TemplateContext
             {
                 StrictVariables = true,

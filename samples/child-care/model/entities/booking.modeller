@@ -1,0 +1,128 @@
+rml 1.0
+# A Booking of attendance for a child at a centre for a session.
+# @id=0191f6d4-4ea0-7000-8000-000000000100
+entity Booking
+  # @id=0191f6d4-4ea0-7000-8000-000000000101
+  field Booking date
+    type date
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000102
+  field Minutes early
+    type int32
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000103
+  field Minutes late
+    type int32
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000104
+  field Session start time
+    type time
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000105
+  field Session end time
+    type time
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000106
+  field Adjusted start time
+    type time
+    optional
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000107
+  field Adjusted end time
+    type time
+    optional
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000108
+  field Adjusted hours
+    type decimal(12,2)
+    optional
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000109
+  field Absence is chargeable
+    type boolean
+    optional
+  end
+  # @id=0191f6d4-4ea0-7000-8000-00000000010a
+  field Attending preschool program
+    type boolean
+    optional
+  end
+  # @id=0191f6d4-4ea0-7000-8000-00000000010b
+  field Absence document is held
+    type boolean
+    optional
+  end
+  # @id=0191f6d4-4ea0-7000-8000-00000000010c
+  field Grace period in minutes
+    type int32
+  end
+  # @id=0191f6d4-4ea0-7000-8000-00000000010d
+  field Booking status
+    type enumeration "Booking status"
+  end
+  # @id=0191f6d4-4ea0-7000-8000-00000000010e
+  field Adjusted reason
+    type enumeration "Booking adjusted reason"
+  end
+  # @id=0191f6d4-4ea0-7000-8000-00000000010f
+  field Arrangement type
+    type enumeration "Arrangement type"
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000110
+  field Booking summary state
+    type enumeration "Booking summary state"
+  end
+
+  # @id=0191f6d4-4ea0-7000-8000-000000000120
+  relationship Routine booking session
+    target "Routine booking session"
+    cardinality one
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000121
+  relationship Casual booking session
+    target "Casual booking session"
+    cardinality one
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000122
+  relationship Arrangement
+    target "Arrangement"
+    cardinality one
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000123
+  relationship Absence
+    target "Absence"
+    cardinality one
+    optional
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000124
+  relationship Session
+    target "Session"
+    cardinality one
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000125
+  relationship Room
+    target "Room"
+    cardinality one
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000126
+  relationship Room session fee
+    target "Room session fee"
+    cardinality one
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000127
+  relationship Child
+    target "Child"
+    cardinality one
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000128
+  relationship Absence reason
+    target "Absence reason"
+    cardinality one
+    optional
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000129
+  relationship Attendances
+    target "Attendance"
+    cardinality many
+  end
+end

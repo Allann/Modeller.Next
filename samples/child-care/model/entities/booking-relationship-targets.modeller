@@ -1,0 +1,32 @@
+rml 1.0
+# Identity-only declarations; their structure belongs to later migration slices.
+# @id=0191f6d4-4ea0-7000-8000-000000000200
+entity Routine booking session
+end
+# @id=0191f6d4-4ea0-7000-8000-000000000201
+entity Casual booking session
+end
+# @id=0191f6d4-4ea0-7000-8000-000000000202
+entity Arrangement
+end
+# @id=0191f6d4-4ea0-7000-8000-000000000203
+entity Absence
+end
+# @id=0191f6d4-4ea0-7000-8000-000000000204
+entity Session
+end
+# @id=0191f6d4-4ea0-7000-8000-000000000205
+entity Room
+end
+# @id=0191f6d4-4ea0-7000-8000-000000000206
+entity Room session fee
+end
+# @id=0191f6d4-4ea0-7000-8000-000000000207
+entity Child
+end
+# @id=0191f6d4-4ea0-7000-8000-000000000208
+entity Absence reason
+end
+# @id=0191f6d4-4ea0-7000-8000-000000000209
+entity Attendance
+end

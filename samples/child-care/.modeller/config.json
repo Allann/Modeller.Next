@@ -2,5 +2,25 @@
   "version": "1.0",
   "generationContractVersion": "1.0",
   "logicalOutputRoot": "generated",
-  "profile": "default"
+  "profile": "child-care-csharp",
+  "sources": [
+    "model/context.modeller",
+    "model/entities/accs-determination-application.modeller",
+    "model/entities/booking.modeller",
+    "model/entities/booking-relationship-targets.modeller",
+    "model/enumerations/arrangement-type.modeller",
+    "model/enumerations/booking-adjusted-reason.modeller",
+    "model/enumerations/booking-status.modeller",
+    "model/enumerations/booking-summary-state.modeller",
+    "model/facts/accs-eligibility.modeller",
+    "model/rules/determine-accs-eligibility.modeller",
+    "model/behaviours/submit-accs-determination-application.modeller"
+  ],
+  "templatePack": "templates/csharp/domain-project/pack.json",
+  "parameters": {
+    "projectName": "ChildCare",
+    "namespace": "ChildCare",
+    "targetFramework": "net10.0"
+  },
+  "ownershipManifest": ".modeller/generated-manifest.json"
 }

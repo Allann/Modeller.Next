@@ -1,0 +1,85 @@
+{
+  "version": "1.0",
+  "artifacts": {
+    "ChildCare.slnx": {
+      "artifactId": "solution:context",
+      "contentDigest": "sha256:886df12c7ff23254d1dc9d8637e243693f11b5838dd8703e8e21594f1fee057b"
+    },
+    "ChildCare/Behaviours/SubmitACCSDeterminationApplication.cs": {
+      "artifactId": "behaviour:submit-accs-determination-application",
+      "contentDigest": "sha256:b37c8b5e2e3d054a2b86c0f16f78b7d29198a63914855d688882c321421f42f0"
+    },
+    "ChildCare/ChildCare.csproj": {
+      "artifactId": "project:context",
+      "contentDigest": "sha256:7d2841f7b6db5cfe5df0c17cea55cd916c08825162a340fd60ffb95b9317b535"
+    },
+    "ChildCare/Entities/ACCSDeterminationApplication.cs": {
+      "artifactId": "entity:accs-determination-application",
+      "contentDigest": "sha256:43656c4cc2e271c237ee1f5620374e7553ee517165a53ef358c6df3fc2113951"
+    },
+    "ChildCare/Entities/Absence.cs": {
+      "artifactId": "entity:absence",
+      "contentDigest": "sha256:1fbee1cc4b6bf117baf98f7f1059ec95f03f4b8612d5da947343de9ae57f74ac"
+    },
+    "ChildCare/Entities/AbsenceReason.cs": {
+      "artifactId": "entity:absence-reason",
+      "contentDigest": "sha256:286c26e155f2195e1bafcd701930cf6c2d91e78a74fe2592471f33b8bf7edcca"
+    },
+    "ChildCare/Entities/Arrangement.cs": {
+      "artifactId": "entity:arrangement",
+      "contentDigest": "sha256:44205b08ff1d96023a6b370835bebaa26bb9984a142d75b475203f3fed5b951f"
+    },
+    "ChildCare/Entities/Attendance.cs": {
+      "artifactId": "entity:attendance",
+      "contentDigest": "sha256:38d87a16f087493cf7792a4e4776c5cf992e2bef13ace5ebebfc168e614b35a4"
+    },
+    "ChildCare/Entities/Booking.cs": {
+      "artifactId": "entity:booking",
+      "contentDigest": "sha256:04c771ebddc6ad41dcd5fcb8368d1e5d181796956b495c522b410d3fbdedc4c0"
+    },
+    "ChildCare/Entities/CasualBookingSession.cs": {
+      "artifactId": "entity:casual-booking-session",
+      "contentDigest": "sha256:13b004e393e6c37819db8511602d06437b6a7511ec47348849248e8ba3af790e"
+    },
+    "ChildCare/Entities/Child.cs": {
+      "artifactId": "entity:child",
+      "contentDigest": "sha256:2667e6d6cef2ae1bb669a23bf8510dfe9943b229169ea361f7783d099ac45cfd"
+    },
+    "ChildCare/Entities/Room.cs": {
+      "artifactId": "entity:room",
+      "contentDigest": "sha256:0caa7e2b605288253cd49c3d881bd88a7d94cdcd139f7cf684a7fcc0cf04782b"
+    },
+    "ChildCare/Entities/RoomSessionFee.cs": {
+      "artifactId": "entity:room-session-fee",
+      "contentDigest": "sha256:76d75d39becf443ec30728b4d32de7afd93a8ae10071f767fa30ab2374f7a2a3"
+    },
+    "ChildCare/Entities/RoutineBookingSession.cs": {
+      "artifactId": "entity:routine-booking-session",
+      "contentDigest": "sha256:286c4ad5d61b6d1ba089e17e74564259bb1b7f1fb0303c70a1887ec4ad26c89d"
+    },
+    "ChildCare/Entities/Session.cs": {
+      "artifactId": "entity:session",
+      "contentDigest": "sha256:a14011832fa555bb04154646a8f34b7e6a3ae669680545c7e36f2fffc23dc9e2"
+    },
+    "ChildCare/Enumerations/ArrangementType.cs": {
+      "artifactId": "enumeration:arrangement-type",
+      "contentDigest": "sha256:a35f498f96aeb9fd7816ef09770c557f024fa941f82ae999c7a65182d1005953"
+    },
+    "ChildCare/Enumerations/BookingAdjustedReason.cs": {
+      "artifactId": "enumeration:booking-adjusted-reason",
+      "contentDigest": "sha256:c84e704eedb60bb4db3861f46e179cf7ee9b9d7cf5183d3b07e23f83816d4575"
+    },
+    "ChildCare/Enumerations/BookingStatus.cs": {
+      "artifactId": "enumeration:booking-status",
+      "contentDigest": "sha256:6368d4ac31d2c90401eb465f4aff6c52bd71ed29b34c465b63ec5d11207f621d"
+    },
+    "ChildCare/Enumerations/BookingSummaryState.cs": {
+      "artifactId": "enumeration:booking-summary-state",
+      "contentDigest": "sha256:bbb91e9e5ce8e128e87866e3f63917582f1c0a97ef0fa25719b8ade609d2b0f5"
+    },
+    "ChildCare/Rules/DetermineACCSEligibility.cs": {
+      "artifactId": "rule:determine-accs-eligibility",
+      "contentDigest": "sha256:7761682ff10b1672d197d25afb63a1a7bf1aad99d59d96fa6b28f906d9362756"
+    }
+  }
+}

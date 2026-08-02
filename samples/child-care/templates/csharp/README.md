@@ -1,5 +1,5 @@
-# C# template pack
+# C# template catalogue
 
-This directory is reserved for the validated template pack that will realise
-the first Child Care generation slice. Templates will be added only after the
-expected compiling output and required semantic inputs are explicit.
+Each child directory is one independently selectable pack for a particular C#
+purpose. `domain-project/` is the first pack; future `api-project/` or
+`dto-project/` packs can coexist without mixing their recipes or templates.

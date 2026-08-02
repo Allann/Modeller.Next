@@ -1,0 +1,16 @@
+rml 1.0
+# @id=0191f6d4-4ea0-7000-8000-000000000310
+enumeration Booking adjusted reason
+  # @id=0191f6d4-4ea0-7000-8000-000000000311
+  member Not adjusted
+    value 1
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000312
+  member Partial public holiday
+    value 2
+  end
+  # @id=0191f6d4-4ea0-7000-8000-000000000313
+  member Partial room closure
+    value 3
+  end
+end

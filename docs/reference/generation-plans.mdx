@@ -18,11 +18,12 @@ GenerationPlanResult GenerationPlanner.Plan(
 ```
 
 The request contains a resolved generation snapshot, validated configuration,
-and validated template-pack descriptor. The snapshot combines the exact
+and the concrete descriptors expanded from a validated template pack. The snapshot combines the exact
 [federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot)
-lock with a stable-ID-to-semantic-digest index. Each artifact descriptor names
-the semantic inputs it consumes; a template cannot discover or reinterpret
-additional domain meaning.
+lock with a stable-ID-to-semantic-digest index. Pack orchestration, not workspace
+configuration, expands reusable recipes across matching canonical definitions.
+Each resulting descriptor names the semantic input it consumes; a template
+cannot discover or reinterpret additional domain meaning.
 
 ## Plan schema and ordering
 
@@ -53,10 +54,10 @@ safe application separately decides whether a rendered artifact may be written.
 
 ## Child Care example
 
-The executable Child Care scenario proposes an application artifact for
-**Submit application** and a domain artifact for **Determine ACCS eligibility**.
-Changing only the eligibility semantic digest changes only the latter
-artifact's input digest while preserving the submit-application proposal.
+The executable Child Care scenario applies the C# Domain Project pack to the
+complete context. It proposes project-level outputs and one artifact for every
+supported Entity, Enumeration, Rule, and Behaviour. Adding another Entity
+therefore expands another entity artifact without editing the pack.
 
 ## Legacy disposition
 

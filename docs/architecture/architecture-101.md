@@ -374,8 +374,9 @@ flowchart LR
     Rules --> Explain[Reference evaluation and explanation]
 
     Model --> Projections[Diagram and documentation projections]
-    Model --> Planner[Generation planner]
-    Pack[Versioned template pack] --> Planner
+    Model --> Expand[Expand pack recipes over matching definitions]
+    Pack[Versioned purpose-specific template pack] --> Expand
+    Expand --> Planner[Generation planner]
     Planner --> Render[Render adapters]
     Render --> Write[Ownership-aware writer]
     Write --> Output[Generated architecture]

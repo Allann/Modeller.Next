@@ -202,6 +202,15 @@ requires a major version.
 Avoid using *schema version*, *snapshot version*, or *latest* as synonyms for a
 context version.
 
+### Data Type
+
+A closed canonical description of the values a [Field](#field) may contain.
+Each Data Type carries only its valid constraints: for example, precision and
+scale belong only to Decimal, while semantic reference types require a stable
+target identity. Optionality and collection cardinality are not Data Types.
+
+See [Readable Modelling Language](/docs/reference/readable-modelling-language).
+
 ### Decision
 
 A named composition of [rules](#rule) that resolves a domain question by
@@ -324,6 +333,12 @@ they have different identities.
 Avoid using *record*, *table*, *document*, or *generated class* as synonyms for
 entity.
 
+### Enumeration
+
+A stable semantic definition containing a closed, explicitly numbered set of
+Enumeration Members. A Field refers to an Enumeration by semantic identity,
+not by a renderer-specific type name.
+
 ### Event
 
 An immutable statement that a domain-significant fact occurred. It may result
@@ -393,6 +408,12 @@ For an ACCS determination, facts may include the child's enrolment, identified
 risk reasons, relevant dates, and whether supporting evidence is held.
 
 Avoid using *variable*, *parameter*, or *raw data* as synonyms for fact.
+
+### Field
+
+Named, typed data owned by an [Entity](#entity). A Field has stable identity,
+one [Data Type](#data-type), and explicit optionality. Relationships and
+uniqueness rules are modelled separately.
 
 ### Federation snapshot
 
@@ -630,6 +651,12 @@ synonyms for Readable Modelling Language.
 See the [RML reference](/docs/reference/readable-modelling-language) and
 [authoring-language decision](/docs/architecture/decisions/authoring-language-and-editing).
 
+### Relationship
+
+A stable semantic link from one [Entity](#entity) to another with explicit
+one-or-many cardinality and optionality. A Relationship is not a Field or a
+renderer-specific foreign-key property.
+
 ### Requirement
 
 A domain prerequisite that must be satisfied before a
@@ -811,15 +838,18 @@ state.
 
 ### Template pack
 
-An independently versioned adapter declaring generated artifacts, their
-semantic inputs, confined logical paths, renderer requirements, and pinned
-templates. It projects canonical meaning but cannot add or reinterpret it.
+An independently versioned adapter for one reusable output purpose, such as a
+C# Domain Project, API Project, or DTO Project. It declares output recipes,
+definition scopes, confined path patterns, renderer requirements, and pinned
+templates. Applying it to a canonical context expands those recipes into the
+concrete generated artifacts. It projects canonical meaning but cannot add or
+reinterpret it.
 
-A Child Care C# pack may generate separate ACCS eligibility and submission
-artifacts while consuming the same canonical stable identities used by other
-projections.
+A C# Domain Project pack may generate files for every supported Entity,
+Enumeration, Rule, and Behaviour in Child Care. The pack does not name Booking,
+ACCS eligibility, or any other definition from that context.
 
-Avoid using *semantic model*, *generator implementation*, or *output directory*
+Avoid using *individual template*, *semantic model*, *generator implementation*, or *output directory*
 as synonyms for template pack.
 
 See [Template packs](/docs/reference/template-packs).

@@ -20,7 +20,7 @@ public sealed class EditorIntegrationTests
         var diagnostic = Assert.Single(Assert.IsType<DiagnosticsResponse>(result).Diagnostics);
         Assert.Equal("rml.reference.unresolved", diagnostic.Code);
         Assert.Equal(EditorDiagnosticSeverity.Error, diagnostic.Severity);
-        Assert.Equal(37, diagnostic.Range.Start.Line);
+        Assert.Equal(30, diagnostic.Range.Start.Line);
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public sealed class EditorIntegrationTests
             new NavigateToConcept(Id("0191f6d4-4ea0-7000-8000-000000000006"))), TestContext.Current.CancellationToken);
 
         var navigation = Assert.IsType<NavigationResponse>(result);
-        Assert.Equal(21, navigation.Target.Range.Start.Line);
+        Assert.Equal(16, navigation.Target.Range.Start.Line);
         Assert.Equal(document.Uri, navigation.Target.Uri);
     }
 

@@ -427,7 +427,7 @@ public sealed class ConformanceRunnerTests
             var concepts = new[]
             {
                 entity.Id,
-                entity.Lifecycle.Id,
+                entity.Lifecycle!.Id,
                 entity.Lifecycle.Stages[0].Id,
                 entity.Lifecycle.Stages[1].Id
             }.Select(id => revision.FindConcept(id)!).Select(concept => new

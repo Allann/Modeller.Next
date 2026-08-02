@@ -15,6 +15,10 @@ public enum SemanticKind
     Effect,
     Event,
     Transition
+    ,Field
+    ,Relationship
+    ,Enumeration
+    ,EnumerationMember
 }
 
 public sealed record SemanticConceptAddress(
@@ -45,27 +49,26 @@ internal static class SemanticNavigation
             switch (definition)
             {
                 case EntityDefinition entity:
-                    var lifecycleName = $"{definitionName}.{entity.Lifecycle.Slug}";
-                    yield return new SemanticConceptAddress(
-                        entity.Lifecycle.Id,
-                        entity.Lifecycle.Name,
-                        entity.Lifecycle.Slug,
-                        SemanticKind.Lifecycle,
-                        entity.Id,
-                        lifecycleName,
-                        entity.Lifecycle.FormerQualifiedNames);
-                    foreach (var stage in entity.Lifecycle.Stages)
+                    if (entity.Lifecycle is not null)
                     {
                         yield return new SemanticConceptAddress(
-                            stage.Id,
-                            stage.Name,
-                            stage.Slug,
-                            SemanticKind.LifecycleStage,
-                            entity.Lifecycle.Id,
-                            $"{lifecycleName}.{stage.Slug}",
-                            stage.FormerQualifiedNames);
+                            entity.Lifecycle.Id, entity.Lifecycle.Name, entity.Lifecycle.Slug, SemanticKind.Lifecycle,
+                            entity.Id, $"{definitionName}.{entity.Lifecycle.Slug}", entity.Lifecycle.FormerQualifiedNames);
+                        foreach (var stage in entity.Lifecycle.Stages)
+                            yield return new(stage.Id, stage.Name, stage.Slug, SemanticKind.LifecycleStage, entity.Lifecycle.Id,
+                                $"{definitionName}.{entity.Lifecycle.Slug}.{stage.Slug}", stage.FormerQualifiedNames);
                     }
 
+                    foreach (var field in entity.Fields)
+                        yield return new(field.Id, field.Name, field.Slug, SemanticKind.Field, entity.Id, $"{definitionName}.{field.Slug}", field.FormerQualifiedNames);
+                    foreach (var relationship in entity.Relationships)
+                        yield return new(relationship.Id, relationship.Name, relationship.Slug, SemanticKind.Relationship, entity.Id, $"{definitionName}.{relationship.Slug}", relationship.FormerQualifiedNames);
+
+                    break;
+
+                case EnumerationDefinition enumeration:
+                    foreach (var member in enumeration.Members)
+                        yield return new(member.Id, member.Name, member.Slug, SemanticKind.EnumerationMember, enumeration.Id, $"{definitionName}.{member.Slug}", member.FormerQualifiedNames);
                     break;
 
                 case RuleDefinition rule:
@@ -166,6 +169,7 @@ internal static class SemanticNavigation
                 RuleDefinition => SemanticKind.Rule,
                 DecisionDefinition => SemanticKind.Decision,
                 BehaviourDefinition => SemanticKind.Behaviour,
+                EnumerationDefinition => SemanticKind.Enumeration,
                 _ => throw new InvalidOperationException(
                     $"Unsupported semantic definition '{definition.GetType().Name}'.")
             },

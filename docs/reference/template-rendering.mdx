@@ -27,11 +27,18 @@ cannot become semantic authority.
 
 ## Documented template context
 
-The reference Scriban adapter exposes only `artifact_id`, `logical_path`,
+The reference Scriban adapter always exposes `artifact_id`, `logical_path`,
 `owner`, `pack_id`, `pack_version`, `template_id`, `plan_digest`,
 `input_digest`, and ordered `semantic_inputs`. Each semantic input contains its
-`id`, `context_id`, and `semantic_digest`. No filesystem, environment, clock,
-network, secret store, or mutable model object is exposed.
+`id`, `context_id`, and `semantic_digest`.
+
+A renderer-specific `ITemplateGlobalsProvider` may add an immutable projection
+of the semantic input selected while expanding an output recipe. The reference C# provider adds project
+settings and a `definition` view containing the selected Entity fields,
+relationships, Enumerations, Rule Facts, or Behaviour lifecycle data. Templates
+iterate over that view to produce source; the CLI contains no C# file-generation
+logic. No filesystem, environment, clock, network, secret store, or mutable
+model object is exposed.
 
 Template lookup is by the pinned template identity and digest in the plan.
 Missing or changed templates fail before producing output for the batch.
@@ -43,9 +50,11 @@ digest mismatch, cancellation, or configured template/output/work limit returns
 no artifacts. Diagnostics use stable codes and bounded disclosure-safe messages;
 adapter exception text is never copied into them.
 
-The Child Care reference slice renders deterministic C# artifacts for **Determine
-ACCS eligibility** and **Submit application** from the accepted ACCS generation
-plan.
+The Child Care reference slice renders a complete deterministic C# Domain
+Project: project infrastructure plus files for all supported Entities,
+Enumerations, Rules, and Behaviours. Its regression test changes a Fact in the
+model while keeping the template bytes unchanged and verifies that the generated
+C# changes.
 
 The next filesystem step consumes these artifacts through the separate safe
 application contract; rendering itself performs no writes.

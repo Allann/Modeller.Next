@@ -24,6 +24,10 @@ public static class RmlLanguageService
     [
         new("context", "keyword", "Declare the owning bounded context."),
         new("entity", "keyword", "Declare a domain concept with stable identity."),
+        new("field", "keyword", "Declare typed data owned by an Entity."),
+        new("relationship", "keyword", "Declare a cardinality-aware reference between Entities."),
+        new("enumeration", "keyword", "Declare a closed set of named values."),
+        new("member", "keyword", "Declare an Enumeration value."),
         new("lifecycle", "keyword", "Declare the governed stages of an Entity."),
         new("stage", "keyword", "Declare a Lifecycle stage."),
         new("fact", "keyword", "Declare typed information used by Rules."),
@@ -97,9 +101,15 @@ public static class RmlLanguageService
             yield return definition;
             if (definition is EntityDefinition entity)
             {
-                yield return entity.Lifecycle;
-                foreach (var stage in entity.Lifecycle.Stages) yield return stage;
+                if (entity.Lifecycle is not null)
+                {
+                    yield return entity.Lifecycle;
+                    foreach (var stage in entity.Lifecycle.Stages) yield return stage;
+                }
+                foreach (var field in entity.Fields) yield return field;
+                foreach (var relationship in entity.Relationships) yield return relationship;
             }
+            if (definition is EnumerationDefinition enumeration) foreach (var member in enumeration.Members) yield return member;
             if (definition is RuleDefinition rule) foreach (var conclusion in rule.Conclusions) yield return conclusion;
             if (definition is BehaviourDefinition behaviour)
             {

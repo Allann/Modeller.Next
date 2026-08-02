@@ -107,19 +107,51 @@ public static partial class DefinitionParser
                         statement.Kind == "stage" && Required(statement, "owner") == Required(entity, "id"))
                     .Select(statement => Identity(statement))
                     .ToArray();
-                definitions.Add(new JsonObject
+                var fields = statements.Where(statement => statement.Kind == "field" && Required(statement, "owner") == Required(entity, "id")).Select(statement =>
+                {
+                    var field = Identity(statement);
+                    field["type"] = Required(statement, "type");
+                    AddOptional(field, "namedType", statement.Values.GetValueOrDefault("named-type"));
+                    if (statement.Values.TryGetValue("precision", out var precision)) field["precision"] = int.Parse(precision);
+                    if (statement.Values.TryGetValue("scale", out var scale)) field["scale"] = int.Parse(scale);
+                    field["optional"] = statement.Values.GetValueOrDefault("optional") == "true";
+                    return field;
+                }).ToArray();
+                var relationships = statements.Where(statement => statement.Kind == "relationship" && Required(statement, "owner") == Required(entity, "id")).Select(statement =>
+                {
+                    var relationship = Identity(statement);
+                    relationship["target"] = Required(statement, "target");
+                    relationship["cardinality"] = Required(statement, "cardinality");
+                    relationship["optional"] = statement.Values.GetValueOrDefault("optional") == "true";
+                    return relationship;
+                }).ToArray();
+                var entityDefinition = new JsonObject
                 {
                     ["kind"] = "Entity",
                     ["id"] = Required(entity, "id"),
                     ["name"] = Required(entity, "name"),
-                    ["slug"] = Required(entity, "slug"),
-                    ["lifecycle"] = new JsonObject
+                    ["slug"] = Required(entity, "slug")
+                };
+                if (fields.Length > 0) entityDefinition["fields"] = new JsonArray(fields);
+                if (relationships.Length > 0) entityDefinition["relationships"] = new JsonArray(relationships);
+                if (entity.Values.ContainsKey("lifecycle-id")) entityDefinition["lifecycle"] = new JsonObject
+                {
+                    ["id"] = Required(entity, "lifecycle-id"), ["name"] = Required(entity, "lifecycle-name"),
+                    ["slug"] = Required(entity, "lifecycle-slug"), ["stages"] = new JsonArray(stages)
+                };
+                definitions.Add(entityDefinition);
+            }
+
+            foreach (var enumeration in statements.Where(statement => statement.Kind == "enumeration"))
+            {
+                var owner = Required(enumeration, "id");
+                definitions.Add(new JsonObject
+                {
+                    ["kind"] = "Enumeration", ["id"] = owner, ["name"] = Required(enumeration, "name"), ["slug"] = Required(enumeration, "slug"),
+                    ["members"] = new JsonArray(statements.Where(item => item.Kind == "enumeration-member" && Required(item, "owner") == owner).Select(item =>
                     {
-                        ["id"] = Required(entity, "lifecycle-id"),
-                        ["name"] = Required(entity, "lifecycle-name"),
-                        ["slug"] = Required(entity, "lifecycle-slug"),
-                        ["stages"] = new JsonArray(stages)
-                    }
+                        var member = Identity(item); member["value"] = int.Parse(Required(item, "value")); return member;
+                    }).ToArray())
                 });
             }
 

@@ -13,7 +13,7 @@ description: Disposition of legacy evidence and the current Modeller implementat
 | Diagram views | Editor-specific model views | `Modeller.Projections`: behaviour, lifecycle, causality/event-flow, context, structural, and rule-decision projections |
 | Conformance and compatibility | Dispersed tests | `Modeller.Conformance`: shared fixtures, evidence, compatibility, mutation, and generated-failure checks |
 | Profiles and configuration | `.modeller/config.yaml` | `Modeller.Configuration`: deterministic layered resolution, profiles, overrides, provenance, redaction, and version checks |
-| Template packs | `templates/csharp/*` | `Modeller.Templates`: normalized pinned manifests, contracts, renderers, templates, paths, and descriptors |
+| Template packs | `templates/csharp/{purpose}/*` | `Modeller.Templates`: normalized pinned manifests, reusable output recipes, scopes, renderers, templates, path patterns, and descriptors |
 | Generation planning | `Modeller.Generator` | `Modeller.Generation`: deterministic immutable plans, affected-artifact detection, path safety, cancellation, and budgets |
 | Template rendering | Generator template engine | `Modeller.Rendering`: pinned side-effect-free Scriban adapter, immutable output, provenance, diagnostics, and limits |
 | Safe output ownership | `.g.*` convention | `Modeller.Output`: manifest-proven ownership, preview/apply reports, conflict and stale policies, recovery, and atomic adapter batches |

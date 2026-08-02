@@ -1,0 +1,11 @@
+namespace {{ csharp_namespace }};
+
+public sealed record {{ definition.subject_name }}Facts(
+{{ for fact in definition.facts }}    {{ fact.type }} {{ fact.name }}{{ if !for.last }},{{ end }}
+{{ end }});
+
+public static class {{ definition.subject_name }}
+{
+    public static bool Determine({{ definition.subject_name }}Facts facts) =>
+{{ for fact in definition.facts }}        facts.{{ fact.name }}{{ if !for.last }} &&{{ else }};{{ end }}
+{{ end }}}

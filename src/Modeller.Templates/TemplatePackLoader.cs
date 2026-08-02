@@ -8,10 +8,10 @@ namespace Modeller.Templates;
 public sealed record PackSource(string Name, string Manifest, ImmutableDictionary<string, string> Templates);
 public sealed record RendererSupport(string Id, string Version);
 public sealed record PackLoadRequest(PackSource Source, ImmutableArray<string> GenerationContractVersions, ImmutableArray<RendererSupport> Renderers);
-public sealed record ValidatedPackArtifact(string ArtifactId, string LogicalPath, string Owner, string TemplateId,
-    string TemplateDigest, ImmutableArray<string> SemanticInputIds);
+public sealed record ValidatedPackOutput(string Id, string Scope, string LogicalPathPattern, string Owner, string TemplateId,
+    string TemplateDigest);
 public sealed record ValidatedTemplatePack(string Id, string Version, string GenerationContractVersion, string RendererId,
-    string RendererVersion, ImmutableArray<ValidatedPackArtifact> Artifacts, ImmutableDictionary<string, string> Templates, string Digest);
+    string RendererVersion, ImmutableArray<ValidatedPackOutput> Outputs, ImmutableDictionary<string, string> Templates, string Digest);
 public sealed record TemplatePackDiagnostic(string Code, string Message);
 public sealed record TemplatePackResult(ValidatedTemplatePack? Pack, ImmutableArray<TemplatePackDiagnostic> Diagnostics)
 { public bool IsSuccess => Pack is not null && Diagnostics.IsEmpty; }
@@ -30,20 +30,19 @@ public static class TemplatePackLoader
             return Failure("template-pack.generation-contract.incompatible", "The template pack requires an unsupported generation contract.");
         if (!request.Renderers.Contains(new(manifest.RendererId, manifest.RendererVersion)))
             return Failure("template-pack.renderer.incompatible", "The template pack requires an unsupported renderer.");
-        var artifacts = ImmutableArray.CreateBuilder<ValidatedPackArtifact>();
-        foreach (var artifact in (manifest.Artifacts ?? []).OrderBy(x => x.Id, StringComparer.Ordinal))
+        var outputs = ImmutableArray.CreateBuilder<ValidatedPackOutput>();
+        foreach (var output in (manifest.Outputs ?? []).OrderBy(x => x.Id, StringComparer.Ordinal))
         {
-            if (!SafePath(artifact.Path) || !SafePath(artifact.Template)) return Failure("template-pack.path.invalid", "Template-pack paths must remain relative and confined.");
-            if (!request.Source.Templates.TryGetValue(artifact.Template, out var content)) return Failure("template-pack.template.missing", "A declared template was not supplied.");
-            artifacts.Add(new(artifact.Id, artifact.Path, artifact.Owner, artifact.Template, Digest(content),
-                (artifact.SemanticInputIds ?? []).Order(StringComparer.Ordinal).ToImmutableArray()));
+            if (!Scopes.Contains(output.Scope) || !SafePath(output.Path) || !SafePath(output.Template)) return Failure("template-pack.output.invalid", "Template-pack output recipes require a supported scope and confined paths.");
+            if (!request.Source.Templates.TryGetValue(output.Template, out var content)) return Failure("template-pack.template.missing", "A declared template was not supplied.");
+            outputs.Add(new(output.Id, output.Scope, output.Path, output.Owner, output.Template, Digest(content)));
         }
-        if (artifacts.GroupBy(x => x.LogicalPath, StringComparer.OrdinalIgnoreCase).Any(x => x.Count() > 1))
-            return Failure("template-pack.path.duplicate", "Template-pack artifacts claim the same logical path.");
+        if (outputs.GroupBy(x => x.Id, StringComparer.Ordinal).Any(x => x.Count() > 1))
+            return Failure("template-pack.output.duplicate", "Template-pack output recipe identities must be unique.");
         var canonical = JsonSerializer.Serialize(new { manifest.Id, manifest.Version, manifest.GenerationContractVersion,
-            manifest.RendererId, manifest.RendererVersion, Artifacts = artifacts.ToImmutable() }, JsonOptions);
+            manifest.RendererId, manifest.RendererVersion, Outputs = outputs.ToImmutable() }, JsonOptions);
         return new(new(manifest.Id, manifest.Version, manifest.GenerationContractVersion, manifest.RendererId,
-            manifest.RendererVersion, artifacts.ToImmutable(), request.Source.Templates, Digest(canonical)), []);
+            manifest.RendererVersion, outputs.ToImmutable(), request.Source.Templates, Digest(canonical)), []);
     }
 
     private static bool Blank(string value) => string.IsNullOrWhiteSpace(value);
@@ -52,6 +51,7 @@ public static class TemplatePackLoader
     private static string Digest(string value) => $"sha256:{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(value)))}";
     private static TemplatePackResult Failure(string code, string message) => new(null, [new(code, message)]);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private sealed record Manifest(string Id, string Version, string GenerationContractVersion, string RendererId, string RendererVersion, ManifestArtifact[]? Artifacts);
-    private sealed record ManifestArtifact(string Id, string Path, string Owner, string Template, string[]? SemanticInputIds);
+    private static readonly ImmutableHashSet<string> Scopes = ["context", "entity", "enumeration", "rule", "behaviour"];
+    private sealed record Manifest(string Id, string Version, string GenerationContractVersion, string RendererId, string RendererVersion, ManifestOutput[]? Outputs);
+    private sealed record ManifestOutput(string Id, string Scope, string Path, string Owner, string Template);
 }

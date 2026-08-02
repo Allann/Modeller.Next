@@ -1,0 +1,6 @@
+namespace {{ csharp_namespace }};
+
+public enum {{ definition.name }}
+{
+{{ for member in definition.members }}    {{ member.name }} = {{ member.value }},
+{{ end }}}

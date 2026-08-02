@@ -4,6 +4,7 @@
 editors/vscode-modeller/out/
 editors/vscode-modeller/*.vsix
 editors/vscode-modeller/server/
+**/.modeller/recovery/
 
 # generated content
 .source

@@ -41,11 +41,12 @@ The RML file is the smallest executable slice of the
 [Child Care reference project](/docs/reference/reference-project):
 
 ```powershell
-dotnet run --project src/Modeller.Cli -- validate samples/child-care/model/accs-eligibility.modeller
+dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care --dry-run
 ```
 
-A successful model reports `Valid: no diagnostics.` For stable machine-readable
-diagnostics, add `--format json`.
+A successful workspace preview reports its deterministic changes with no
+diagnostics and writes nothing. For stable machine-readable output, add
+`--format json`.
 
 The source uses the business-facing language documented in the
 [RML reference](/docs/reference/readable-modelling-language). Parsing
@@ -59,20 +60,24 @@ the repository language-server project automatically.
 
 ## Plan and generate output
 
-Generation consumes an explicit JSON request containing the resolved semantic
-snapshot, configuration, template-pack descriptor, and previous generation
-state. This makes planning reproducible and keeps filesystem access outside the
-planner.
+The Child Care workspace declares its RML sources, the reusable pinned C# Domain
+Project pack, pack parameters, output root, and ownership manifest in
+`.modeller/config.json`. The pack expands over the complete context; the
+workspace does not list Booking or ACCS-specific output files. Preview the
+exact proposed changes before applying them:
 
 ```powershell
-dotnet run --project src/Modeller.Cli -- plan path/to/plan-request.json
-dotnet run --project src/Modeller.Cli -- generate path/to/workflow-request.json --dry-run
-dotnet run --project src/Modeller.Cli -- generate path/to/workflow-request.json
+dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care --dry-run
+dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care
+dotnet build samples/child-care/generated/ChildCare.slnx
 ```
 
-Start with `--dry-run`. Apply mode writes only through the
+The second generation is deterministic and reports every artifact as
+`Unchanged`. Apply mode writes only through the
 [safe output-application contract](/docs/reference/output-application), which
 uses manifest-proven ownership and reports conflicts with handwritten files.
+The lower-level request-based `plan` and `generate` forms remain available for
+automation and contract testing.
 
 ## Next steps
 

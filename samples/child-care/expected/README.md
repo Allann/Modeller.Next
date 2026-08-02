@@ -1,5 +1,6 @@
 # Expected output
 
-This directory will hold the deterministic golden output for the first Child
-Care C# generation slice. The acceptance output must compile and must remain
-derived from the canonical model rather than duplicating domain meaning here.
+This directory holds the deterministic golden output for the first Child Care
+C# Domain Project pack. Its files must exactly match `../generated` except for the
+workspace ownership manifest and build intermediates. The generated solution
+must compile with the .NET 10 SDK.

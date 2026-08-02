@@ -49,8 +49,8 @@ Human output is concise. JSON output has `outputVersion`, `valid`, and ordered
 diagnostics with code, message, document, line, column, and length.
 
 ```powershell
-modeller validate samples/child-care/model/accs-eligibility.modeller
-modeller validate samples/child-care/model/accs-eligibility.modeller --format json
+modeller validate path/to/a-complete-context.modeller
+modeller validate path/to/a-complete-context.modeller --format json
 ```
 
 ### `plan`
@@ -71,20 +71,32 @@ stable diagnostics.
 Plan, render, and preview or apply generated output.
 
 ```text
+modeller generate --workspace <path> [--dry-run] [--format human|json]
 modeller generate <request> [--dry-run] [--format human|json]
 ```
 
-The workflow request contains a `GenerationPlanningRequest`, template content
-keyed by template ID, and an optional ownership manifest. `--dry-run` selects
-preview mode; without it, output is applied atomically through the safe output
-contract. Both modes report each path as create, change, unchanged, conflict,
+The normal user workflow reads only inputs declared by the workspace's
+`.modeller/config.json`: RML sources, one pinned local template-pack descriptor,
+pack parameters, the logical output root, and the ownership manifest. Template content is
+verified against its declared SHA-256 digest before planning. The parsed
+canonical package is matched against the pack's reusable output recipes; the
+workspace does not enumerate definition-specific output files.
+
+The request form is the lower-level automation interface. Its JSON contains a
+`GenerationPlanningRequest`, template content keyed by template ID, and an
+optional ownership manifest.
+
+`--dry-run` selects preview mode and writes nothing. Without it, output is
+applied through the safe output contract and the workspace ownership manifest
+is updated. Both modes report each path as create, change, unchanged, conflict,
 stale, or remove.
 
 Always preview a new request before apply:
 
 ```powershell
-modeller generate child-care-generation.json --dry-run
-modeller generate child-care-generation.json
+modeller generate --workspace samples/child-care --dry-run
+modeller generate --workspace samples/child-care
+dotnet build samples/child-care/generated/ChildCare.slnx
 ```
 
 ## Output format

@@ -77,6 +77,13 @@ public static class CanonicalModel
 
     private static bool References(SemanticDefinition definition, SemanticId id) => definition switch
     {
+        EntityDefinition entity => entity.Fields.Any(field => field.Type switch
+        {
+            EnumerationDataType named => named.EnumerationId == id,
+            EntityReferenceDataType named => named.EntityId == id,
+            ValueTypeReferenceDataType named => named.ValueTypeId == id,
+            _ => false
+        }) || entity.Relationships.Any(relationship => relationship.TargetId == id),
         RuleDefinition rule => rule.InputFacts.Any(reference => reference.TargetId == id),
         DecisionDefinition decision => decision.InputFacts.Any(reference => reference.TargetId == id) ||
             decision.Table.Rows.Any(row => row.Conclusion.TargetId == id || row.Conditions.Any(condition => condition.Fact.TargetId == id)),
@@ -96,6 +103,7 @@ public static class CanonicalModel
 
         if (definition is not FactDefinition and
             not EntityDefinition and
+            not EnumerationDefinition and
             not RuleDefinition and
             not DecisionDefinition and
             not BehaviourDefinition)
@@ -160,7 +168,9 @@ public static class CanonicalModel
         EntityDefinition entity => entity with
         {
             FormerQualifiedNames = OrEmpty(entity.FormerQualifiedNames),
-            Lifecycle = entity.Lifecycle with
+            Fields = OrEmpty(entity.Fields).Select(field => field with { FormerQualifiedNames = OrEmpty(field.FormerQualifiedNames) }).ToImmutableArray(),
+            Relationships = OrEmpty(entity.Relationships).Select(relationship => relationship with { FormerQualifiedNames = OrEmpty(relationship.FormerQualifiedNames) }).ToImmutableArray(),
+            Lifecycle = entity.Lifecycle is null ? null : entity.Lifecycle with
             {
                 FormerQualifiedNames = OrEmpty(entity.Lifecycle.FormerQualifiedNames),
                 Stages = OrEmpty(entity.Lifecycle.Stages)
@@ -170,6 +180,11 @@ public static class CanonicalModel
                     })
                     .ToImmutableArray()
             }
+        },
+        EnumerationDefinition enumeration => enumeration with
+        {
+            FormerQualifiedNames = OrEmpty(enumeration.FormerQualifiedNames),
+            Members = OrEmpty(enumeration.Members).Select(member => member with { FormerQualifiedNames = OrEmpty(member.FormerQualifiedNames) }).ToImmutableArray()
         },
         RuleDefinition rule => rule with
         {
@@ -272,8 +287,11 @@ public static class CanonicalModel
         {
             EntityDefinition entity => entity with
             {
-                Lifecycle = Rename(entity.Lifecycle, operation, formerQualifiedName)
+                Lifecycle = entity.Lifecycle is null ? null : Rename(entity.Lifecycle, operation, formerQualifiedName),
+                Fields = entity.Fields.Select(field => field.Id == operation.ConceptId ? field with { Name = operation.Name, Slug = operation.Slug, FormerQualifiedNames = Aliases(field, operation.Slug, formerQualifiedName) } : field).ToImmutableArray(),
+                Relationships = entity.Relationships.Select(relationship => relationship.Id == operation.ConceptId ? relationship with { Name = operation.Name, Slug = operation.Slug, FormerQualifiedNames = Aliases(relationship, operation.Slug, formerQualifiedName) } : relationship).ToImmutableArray()
             },
+            EnumerationDefinition enumeration => enumeration with { Members = enumeration.Members.Select(member => member.Id == operation.ConceptId ? member with { Name = operation.Name, Slug = operation.Slug, FormerQualifiedNames = Aliases(member, operation.Slug, formerQualifiedName) } : member).ToImmutableArray() },
             RuleDefinition rule => rule with
             {
                 Conclusions = rule.Conclusions
@@ -411,15 +429,18 @@ public static class CanonicalModel
         switch (definition)
         {
             case EntityDefinition entity:
-                yield return new SemanticNode(
-                    entity.Lifecycle.Id,
-                    entity.Lifecycle.Slug,
-                    entity.Id);
-                foreach (var stage in entity.Lifecycle.Stages)
+                if (entity.Lifecycle is not null)
                 {
-                    yield return new SemanticNode(stage.Id, stage.Slug, entity.Lifecycle.Id);
+                    yield return new SemanticNode(entity.Lifecycle.Id, entity.Lifecycle.Slug, entity.Id);
+                    foreach (var stage in entity.Lifecycle.Stages) yield return new SemanticNode(stage.Id, stage.Slug, entity.Lifecycle.Id);
                 }
+                foreach (var field in entity.Fields) yield return new SemanticNode(field.Id, field.Slug, entity.Id);
+                foreach (var relationship in entity.Relationships) yield return new SemanticNode(relationship.Id, relationship.Slug, entity.Id);
 
+                break;
+
+            case EnumerationDefinition enumeration:
+                foreach (var member in enumeration.Members) yield return new SemanticNode(member.Id, member.Slug, enumeration.Id);
                 break;
 
             case RuleDefinition rule:

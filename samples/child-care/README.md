@@ -15,19 +15,19 @@ The first slice models an ACCS determination application:
 - submission and rejection Outcomes; and
 - the guarded transition produced by a successful submission.
 
-Validate it from the repository root:
+Compile and validate the complete declared model with a generation preview:
 
 ```powershell
-dotnet run --project src/Modeller.Cli -- validate samples/child-care/model/accs-eligibility.modeller
+dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care --dry-run
 ```
 
 ## Structure
 
-- `.modeller/config.json` is the current minimal workspace configuration.
-- `model/` contains the current RML source.
-- `templates/csharp/` will contain the first validated C# template pack.
-- `expected/` describes and later stores deterministic acceptance output.
-- `generated/` is reserved for CLI output and is not yet checked in.
+- `.modeller/config.json` declares every generation input and the owned-output manifest.
+- `model/` contains small RML files organised by semantic concept.
+- `templates/csharp/` is the C# pack catalogue; `domain-project/` is the reusable pinned pack selected by this workspace.
+- `expected/` contains the deterministic golden output.
+- `generated/` contains the current manifest-owned output.
 
 ## Acceptance destination
 
@@ -35,11 +35,10 @@ The sample is complete as a first usable vertical slice when these commands
 work without hand-assembled planning requests:
 
 ```powershell
-modeller validate samples/child-care/model/accs-eligibility.modeller
 modeller generate --workspace samples/child-care --dry-run
 modeller generate --workspace samples/child-care
 dotnet build samples/child-care/generated/ChildCare.slnx
 ```
 
-The last three commands describe the intended product workflow and are not yet
-implemented.
+Run generation a second time to confirm that every artifact is reported as
+`Unchanged`.

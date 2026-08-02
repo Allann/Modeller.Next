@@ -49,16 +49,23 @@ values themselves.
 | Declaration | Nested statements |
 | --- | --- |
 | `context` | `version` |
-| `entity` | one `lifecycle` |
+| `entity` | optional `lifecycle`, `field`, and `relationship` declarations |
 | `lifecycle` | `stage` declarations |
+| `field` | one `type`, optional `optional` |
+| `relationship` | one `target`, one `cardinality`, optional `optional` |
+| `enumeration` | `member` declarations |
+| `member` | one integer `value` |
 | `fact` | `type`, optional `export` |
 | `rule` | `input`, `when all`, `conclusion`, `finding`, optional `export` |
 | `behaviour` | `for`, `requires`, `outcome`, `transition` |
 | `transition` | `lifecycle`, `from`, `to`, `outcome` |
 
-RML 1.0 deliberately covers the accepted Child Care ACCS slice. Structural
-generation concepts will be added only after their canonical semantics are
-accepted; legacy syntax is design evidence rather than a compatibility promise.
+Field types include `boolean`, `text`, `byte`, `int16`, `int32`, `int64`,
+`decimal(precision,scale)`, `date`, `time`, `datetime`, `datetimeoffset`,
+`identifier`, `coordinate`, and stable references such as
+`enumeration "Booking status"`. See the multi-file
+[Child Care sample](https://github.com/Allann/Modeller.Next/tree/main/samples/child-care/model),
+including `entities/booking.modeller`, for a complete structural example.
 
 ## Compilation and diagnostics
 

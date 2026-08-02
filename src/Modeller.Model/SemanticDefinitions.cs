@@ -40,9 +40,55 @@ public sealed record EntityDefinition(
     SemanticId Id,
     SemanticName Name,
     SemanticSlug Slug,
-    LifecycleDefinition Lifecycle,
+    LifecycleDefinition? Lifecycle,
     SemanticDocumentation? Documentation = null)
-    : SemanticDefinition(Id, Name, Slug, Documentation);
+    : SemanticDefinition(Id, Name, Slug, Documentation)
+{
+    public ImmutableArray<FieldDefinition> Fields { get; init; } = [];
+    public ImmutableArray<RelationshipDefinition> Relationships { get; init; } = [];
+}
+
+public sealed record FieldDefinition(
+    SemanticId Id,
+    SemanticName Name,
+    SemanticSlug Slug,
+    DataType Type,
+    bool IsOptional = false,
+    SemanticDocumentation? Documentation = null) : ISemanticConcept
+{
+    public ImmutableArray<string> FormerQualifiedNames { get; init; } = [];
+}
+
+public enum RelationshipCardinality { One, Many }
+
+public sealed record RelationshipDefinition(
+    SemanticId Id,
+    SemanticName Name,
+    SemanticSlug Slug,
+    SemanticId TargetId,
+    RelationshipCardinality Cardinality,
+    bool IsOptional = false,
+    SemanticDocumentation? Documentation = null) : ISemanticConcept
+{
+    public ImmutableArray<string> FormerQualifiedNames { get; init; } = [];
+}
+
+public sealed record EnumerationDefinition(
+    SemanticId Id,
+    SemanticName Name,
+    SemanticSlug Slug,
+    ImmutableArray<EnumerationMember> Members,
+    SemanticDocumentation? Documentation = null) : SemanticDefinition(Id, Name, Slug, Documentation);
+
+public sealed record EnumerationMember(
+    SemanticId Id,
+    SemanticName Name,
+    SemanticSlug Slug,
+    int Value,
+    SemanticDocumentation? Documentation = null) : ISemanticConcept
+{
+    public ImmutableArray<string> FormerQualifiedNames { get; init; } = [];
+}
 
 public sealed record LifecycleDefinition(
     SemanticId Id,
