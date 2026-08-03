@@ -17,6 +17,7 @@
     <Project Path="src/Modeller.Templates/Modeller.Templates.csproj" />
     <Project Path="src/Modeller.Rules/Modeller.Rules.csproj" />
     <Project Path="src/Modeller.Validation/Modeller.Validation.csproj" />
+    <Project Path="src/Modeller.Workspace/Modeller.Workspace.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Modeller.AI.Tests/Modeller.AI.Tests.csproj" />
@@ -37,5 +38,6 @@
     <Project Path="tests/Modeller.Templates.Tests/Modeller.Templates.Tests.csproj" />
     <Project Path="tests/Modeller.Rules.Tests/Modeller.Rules.Tests.csproj" />
     <Project Path="tests/Modeller.Validation.Tests/Modeller.Validation.Tests.csproj" />
+    <Project Path="tests/Modeller.Workspace.Tests/Modeller.Workspace.Tests.csproj" />
   </Folder>
 </Solution>

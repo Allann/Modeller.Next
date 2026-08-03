@@ -231,4 +231,81 @@ public sealed class RmlCompilerTests
         Assert.Throws<ArgumentNullException>(() => RmlCompiler.ApplyIdentities(null!, []));
         Assert.Throws<ArgumentNullException>(() => RmlCompiler.ApplyIdentities("rml 1.0\n", null!));
     }
+
+    [Fact]
+    public void HarvestIdentities_reads_back_the_ordered_identities_ensure_identities_minted()
+    {
+        var source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n";
+        var minted = RmlCompiler.EnsureIdentities(source).Updated;
+
+        var harvested = RmlCompiler.HarvestIdentities(minted);
+
+        Assert.Single(harvested);
+        Assert.Matches("^[0-9a-fA-F-]{36}$", harvested[0]);
+    }
+
+    [Fact]
+    public void HarvestIdentities_round_trips_through_apply_identities()
+    {
+        var source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n";
+        var minted = RmlCompiler.EnsureIdentities(source).Updated;
+        var harvested = RmlCompiler.HarvestIdentities(minted);
+
+        var reapplied = RmlCompiler.ApplyIdentities(source, harvested).Updated;
+
+        Assert.Equal(minted, reapplied);
+    }
+
+    [Fact]
+    public void HarvestIdentities_returns_identities_in_declaration_order_for_multiple_declarations()
+    {
+        var source = "rml 1.0\ncontext Child Care\n  version 1.0.0\n  fact Age\n    type integer\n  end\nend\n";
+        var minted = RmlCompiler.EnsureIdentities(source).Updated;
+
+        var harvested = RmlCompiler.HarvestIdentities(minted);
+
+        Assert.Equal(2, harvested.Length);
+        Assert.NotEqual(harvested[0], harvested[1]);
+    }
+
+    [Fact]
+    public void HarvestIdentities_throws_when_a_declaration_lacks_a_preceding_identity_comment()
+    {
+        var source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n";
+
+        var exception = Assert.Throws<ArgumentException>(() => RmlCompiler.HarvestIdentities(source));
+        Assert.Equal("source", exception.ParamName);
+    }
+
+    [Fact]
+    public void HarvestIdentities_throws_when_a_preceding_comment_is_not_a_valid_uuid_v7()
+    {
+        var source = "rml 1.0\n# @id=00000000-0000-4000-8000-000000000000\ncontext Child Care\n  version 1.0.0\nend\n";
+
+        Assert.Throws<ArgumentException>(() => RmlCompiler.HarvestIdentities(source));
+    }
+
+    [Fact]
+    public void HarvestIdentities_skips_a_declaration_keyword_whose_value_is_itself_a_quoted_reference()
+    {
+        var source = "rule \"Quoted Value\"\nend\n";
+
+        var harvested = RmlCompiler.HarvestIdentities(source);
+
+        Assert.Empty(harvested);
+    }
+
+    [Fact]
+    public void HarvestIdentities_returns_empty_for_a_source_with_no_declarations()
+    {
+        var harvested = RmlCompiler.HarvestIdentities("# just a comment\n");
+
+        Assert.Empty(harvested);
+    }
+
+    [Fact]
+    public void HarvestIdentities_throws_for_null_source()
+    {
+        Assert.Throws<ArgumentNullException>(() => RmlCompiler.HarvestIdentities(null!));
+    }
 }

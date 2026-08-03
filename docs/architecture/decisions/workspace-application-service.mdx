@@ -1,0 +1,149 @@
+---
+title: Transport-neutral workspace application service
+description: Extract parsing, validation, and projection into one seam shared by the CLI, local Studio, a hosted API, and tests.
+---
+
+Status: **Accepted**
+
+## Canonical terms
+
+[Workspace](/docs/concepts/ubiquitous-language#workspace) ·
+[Workspace export](/docs/concepts/ubiquitous-language#workspace-export) ·
+[Identity registry](/docs/concepts/ubiquitous-language#identity-registry) ·
+[Context package](/docs/concepts/ubiquitous-language#context-package) ·
+[Federation snapshot](/docs/concepts/ubiquitous-language#federation-snapshot)
+
+## Context
+
+The public playground (issue #68) needs to parse, validate, and project a
+visitor's RML without a host filesystem, a CLI process, or an installed .NET
+toolchain — a visitor's edits exist only as in-memory, session-scoped text.
+Before this decision, that pipeline existed only as `internal` code inside
+`Modeller.Cli` (`WorkspaceLoader`, `WorkspaceProjection`, `WorkspaceGeneration`),
+coupled to `ICliHost`, `CliExitCode`, and physical paths. The local Studio app
+already worked around the same gap by spawning the CLI as a subprocess per
+request, and the website's current example gallery only works because a build
+script shells out to the CLI once, ahead of time, for a fixed set of curated
+examples — there was no way for a visitor's own input to reach parsing,
+validation, or projection without a filesystem underneath it.
+
+## Decision
+
+`Modeller.Workspace` is a new library sitting between `Modeller.Parsing`,
+`Modeller.Configuration`, and `Modeller.Projections` and every consumer that
+needs a workspace's canonical semantic model: the CLI, local Studio, a future
+hosted API, and tests. It depends on none of `Modeller.Cli`, `Modeller.Templates`,
+`Modeller.Output`, `Modeller.Generation`, or `Modeller.Rendering` — template
+selection, output application, and generation execution remain a deliberately
+separate, later concern (see Non-goals).
+
+Its vocabulary:
+
+- **`LogicalPath`** — a validated value type confining a document path to the
+  workspace boundary (never rooted, never escaping via `..` segments, never
+  blank, never containing a NUL byte). Construction is the only way to obtain
+  one, so a `LogicalPath` cannot become invalid after the fact.
+- **`WorkspaceDocument`** — a `LogicalPath` paired with text content. No file
+  path, no host, no I/O.
+- **`WorkspaceIdentityRegistry`** — the in-memory shape of a tooling-owned
+  `.modeller/identities.json`: an ordered identity sequence per document.
+- **`IdentityStrategy`** — a closed union of `Ephemeral` (mint identities via
+  `RmlCompiler.EnsureIdentities`, for anonymous/draft workspaces) or
+  `Durable(WorkspaceIdentityRegistry)` (apply via `RmlCompiler.ApplyIdentities`,
+  where a mismatch is a diagnostic, never a silent repair) — an exhaustive
+  pattern match rather than a boolean flag.
+- **`WorkspaceConfigurationInput`** — a minimal, validated wrapper producing a
+  `Modeller.Configuration.ConfigurationRequest`; it reuses that library's layered
+  source/profile model rather than reinventing configuration shape.
+- **`WorkspaceInput`** — a bounded set of `WorkspaceDocument`s, an
+  `IdentityStrategy`, and a `WorkspaceConfigurationInput`. Directly constructible
+  in memory — this directness *is* the in-memory adapter used by tests and the
+  future hosted API; no separate builder or loader class is needed.
+- **`ModellerWorkspace`** — the static seam:
+  - `Analyze(WorkspaceInput, CancellationToken)` resolves configuration, applies
+    identity per strategy, and calls `DefinitionParser.Parse` (which already
+    validates internally), returning an `AnalyzedWorkspace` (the parsed package,
+    resolved configuration, source provenance, the identity strategy used, and
+    the post-identity-application document text needed by `Export`).
+  - `Project(AnalyzedWorkspace, ViewDefinition, LayoutState?, CancellationToken)`
+    validates the requested view kind against `ModellerWorkspace.SupportedViewKinds`
+    — the `Lifecycle`/`RuleDecision` allowlist promoted from the CLI's own
+    workaround for `DiagramProjector` silently returning an empty graph for its
+    four unimplemented view kinds (issue #64) — then calls `DiagramProjector.Project`.
+  - `Export(AnalyzedWorkspace)` harvests each document's currently-effective
+    ordered identities into a fresh `WorkspaceIdentityRegistry`, via a new
+    `RmlCompiler.HarvestIdentities` primitive (the inverse of `ApplyIdentities`).
+- **`WorkspaceOutcome<T>`** — a closed `Success`/`Failed`/`Cancelled` union.
+  Deliberately not a `(ErrorCode? Error, T Value)` pair: that shape allows
+  constructing a result that is simultaneously an error and a value, and folds
+  cancellation into "failed" instead of making it a distinct case.
+
+## Identity invariants preserved
+
+[Readable authoring language and deterministic editing](/docs/architecture/decisions/authoring-language-and-editing)
+requires that identity registry handling: materialize IDs only in memory during
+loading; never let renaming or moving lose identity; never let deleting and
+recreating a concept reclaim identity; and never silently repair a mismatch.
+`Analyze` and `Export` satisfy each of these:
+
+- `Analyze` never writes a registry itself — only its caller decides whether
+  and where to persist a `WorkspaceIdentityRegistry` `Export` returns.
+- `Export` only harvests identities already present in the analyzed documents
+  (freshly minted via `EnsureIdentities`, or carried through unchanged via
+  `ApplyIdentities`) — it never infers identity by matching names against a
+  prior registry, so deleting and recreating a declaration never reclaims an
+  old identity.
+- A `Durable` strategy whose registry does not cover a document, or whose
+  identity count does not match, is a diagnostic (`workspace.identity-registry.document-missing`,
+  `workspace.identity-registry.out-of-sync`) — the same codes and messages the
+  CLI reported before this change — never a silent repair.
+
+## Adapters
+
+**CLI**: `WorkspaceLoader` still owns reading `.modeller/config.json`, the
+identity-registry file, and each declared source via `ICliHost`, and still
+performs its existing path-safety, existence, and identity-coverage checks
+in the same order as before — none of that changed, so the CLI's `ReadCount`
+and short-circuit behavior are byte-for-byte identical to before this change.
+What changed is the last step: instead of manually calling `RmlCompiler.ApplyIdentities`
+per file and `DefinitionParser.Parse` directly, it builds a `WorkspaceInput`
+from the already-validated raw documents and registry and calls
+`ModellerWorkspace.Analyze`, translating `WorkspaceOutcome<AnalyzedWorkspace>`
+back to the CLI's existing `CliExitCode`/diagnostic-text shapes. `WorkspaceProjection`
+now calls `ModellerWorkspace.Project` and shares `ModellerWorkspace.SupportedViewKinds`
+instead of declaring its own allowlist. `WorkspaceGeneration` (template pack
+loading, output application) is unchanged — see Non-goals.
+
+**In-memory**: no separate adapter type exists — a `WorkspaceInput` built
+directly from in-memory documents, an `IdentityStrategy`, and a
+`WorkspaceConfigurationInput` is itself the in-memory adapter, used by
+`Modeller.Workspace.Tests` and intended for the future hosted API and the
+public playground.
+
+## Consequences
+
+- Two of the four near-duplicate path-confinement checks that existed before
+  this change (`CliApplication.IsWorkspaceRelative`, `WorkspaceLoader.Unsafe`)
+  now delegate to `LogicalPath`. The other two (`Modeller.Contexts`' inline
+  check, `Modeller.Parsing`'s `IsPackageRelative`) remain as-is: they guard
+  existing public `string`-based APIs in libraries `Modeller.Workspace` itself
+  depends on, so folding them into `LogicalPath` would invert the dependency
+  graph. This is intentional layered defense-in-depth, not an oversight.
+- `RmlCompiler.HarvestIdentities` is a new, small, independently testable
+  primitive — the read-back inverse of `ApplyIdentities`.
+- Template pack loading, digest verification, and output application remain
+  entirely within `Modeller.Cli`/`Modeller.Templates`/`Modeller.Output` for now.
+
+## Non-goals
+
+- Wiring template selection or generation execution through `Modeller.Workspace`.
+  `Modeller.Templates`' `PackSource` and `Modeller.Output`'s `IOutputFileSystem`
+  are already filesystem-neutral seams of their own; folding them in now would
+  blur the "parse, validate, project — no filesystem" boundary this issue asks
+  for. A future `WorkspaceGenerationRequest` composing a `WorkspaceInput` with a
+  `PackSource` is a natural extension once #64 (the remaining view kinds) and
+  generation's own neutrality are both settled.
+- Adapting `Modeller.LanguageServer`/local Studio's LSP bridge onto this seam.
+  Studio's live-editing path goes through a separate LSP process today; whether
+  it should also front onto `ModellerWorkspace` is an open question for a
+  follow-up, not resolved here.

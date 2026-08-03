@@ -426,8 +426,8 @@ For example, an ACCS evaluation identifies the exact Child Care context package
 and imported package versions captured by its federation snapshot rather than
 silently using whichever versions are newest.
 
-Avoid using *context package*, *workspace*, or *latest version* as synonyms for
-a federation snapshot.
+Avoid using *context package*, *[workspace](#workspace)*, or *latest version*
+as synonyms for a federation snapshot.
 
 See the [canonical persistence decision](/docs/architecture/decisions/canonical-persistence-versioning-migration)
 for package resolution and snapshot-locking constraints, and the
@@ -487,6 +487,26 @@ binding.
 
 Avoid using *row order*, *default branch*, or *engine setting* as synonyms for
 hit policy.
+
+### Identity registry
+
+A tooling-owned, version-controlled record of durable per-document canonical
+identities (`.modeller/identities.json`), consulted when applying identities to
+authored [Readable Modelling Language](#readable-modelling-language) source and
+produced by a [workspace](#workspace) export. Distinct from identities minted
+transiently for anonymous or draft workspaces, which are never captured in a
+registry unless explicitly exported.
+
+For example, renaming an RML `entity Booking` to `entity Booking Reservation`
+leaves its registry entry unchanged, so a later `generate` run refers to the
+same canonical identity rather than minting a new one.
+
+Avoid using *identity map* or *ID cache* as synonyms for the identity registry.
+
+See the [readable authoring language decision](/docs/architecture/decisions/authoring-language-and-editing)
+for the registry's stable-identity invariants, and the
+[workspace application service decision](/docs/architecture/decisions/workspace-application-service)
+for how analysis and export apply and harvest it.
 
 ### Invariant
 
@@ -922,6 +942,45 @@ government response, record approval, rejection, or no-change, and notify the
 responsible provider role. The steps remain independently defined behaviours.
 
 Avoid using *pipeline*, *script*, or *orchestration* as synonyms for workflow.
+
+### Workspace
+
+A bounded set of logical-path documents, an identity strategy (ephemeral or
+durable), and resolved configuration, analyzed together to produce one
+[context package](#context-package). A workspace is the input to analysis and
+[diagram projection](#diagram-projection); it is not itself a
+[federation snapshot](#federation-snapshot) — a federation snapshot is what
+resolution derives from one or more context packages.
+
+For example, the local Child Care sample is a workspace: its declared RML
+sources, `.modeller/identities.json` registry, and `.modeller/config.json` are
+analyzed together into the context package the CLI, Studio, and the public
+playground all project diagrams from.
+
+Avoid using *project directory*, *repository*, or *filesystem tree* as
+synonyms for workspace.
+
+See the [workspace application service decision](/docs/architecture/decisions/workspace-application-service)
+for the transport-neutral seam shared by the CLI, local Studio, a hosted API,
+and tests.
+
+### Workspace export
+
+The operation that harvests a [workspace](#workspace)'s currently-effective
+ordered identities — whether freshly minted or already durable — into a fresh,
+valid [identity registry](#identity-registry). It is the mechanism by which an
+anonymous draft becomes durable.
+
+For example, exporting an anonymous playground draft produces a
+`.modeller/identities.json` a visitor can download alongside their edited RML,
+turning the draft into a durable local workspace.
+
+Avoid using *save*, *publish*, or *commit* as synonyms for workspace export,
+since those already carry other meanings in Modeller's generation and output
+vocabulary.
+
+See the [workspace application service decision](/docs/architecture/decisions/workspace-application-service)
+for how export satisfies the identity registry's stable-identity invariants.
 
 ## Settled relationships
 

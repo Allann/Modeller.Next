@@ -88,6 +88,10 @@ inventing replacement identities during validation or generation. Editor
 operations that add, move, or remove declarations must update the source and
 registry as one workspace edit.
 
+See the [workspace application service decision](/docs/architecture/decisions/workspace-application-service)
+for how loading and export are exposed as a transport-neutral seam shared by
+the CLI, local Studio, a hosted API, and tests.
+
 ## Legacy DSL reuse
 
 The legacy DSL is design evidence, not a compatibility contract. Reuse is

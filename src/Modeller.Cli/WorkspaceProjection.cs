@@ -2,13 +2,14 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Modeller.Model;
 using Modeller.Projections;
+using Modeller.Workspace;
 
 namespace Modeller.Cli;
 
 /// <summary>
 /// The <c>project</c> capability: loads a workspace (via <see cref="WorkspaceLoader"/>, the same
 /// pipeline <c>generate</c> uses) and either lists the roots a view kind can be rooted at, or
-/// projects a diagram for a chosen root, via <see cref="DiagramProjector"/>.
+/// projects a diagram for a chosen root, via <see cref="ModellerWorkspace.Project"/>.
 ///
 /// Only <see cref="ViewKind.Lifecycle"/> and <see cref="ViewKind.RuleDecision"/> are implemented in
 /// <see cref="DiagramProjector"/> today — the other four view kinds are rejected here with a clear
@@ -21,7 +22,6 @@ internal static class WorkspaceProjection
         PropertyNameCaseInsensitive = true,
         Converters = { new JsonStringEnumConverter(), new SemanticIdJsonConverter() },
     };
-    private static readonly ViewKind[] SupportedViewKinds = [ViewKind.Lifecycle, ViewKind.RuleDecision];
 
     public static async ValueTask<CliExitCode> ExecuteAsync(
         string workspace, string viewKindText, string? rootText, bool machine, ICliHost host, CancellationToken cancellationToken)
@@ -33,7 +33,7 @@ internal static class WorkspaceProjection
         if (!Enum.TryParse<ViewKind>(viewKindText, ignoreCase: true, out var viewKind) || !Enum.IsDefined(viewKind))
             return await WorkspaceLoader.Failure(host, machine, "project.view.invalid", $"'{viewKindText}' is not a recognised diagram view kind.");
 
-        if (!SupportedViewKinds.Contains(viewKind))
+        if (!ModellerWorkspace.SupportedViewKinds.Contains(viewKind))
             return await WorkspaceLoader.Failure(host, machine, "project.view.unsupported", $"The '{viewKind}' view is not implemented yet.");
 
         return rootText is null

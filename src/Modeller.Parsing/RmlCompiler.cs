@@ -117,6 +117,44 @@ public static partial class RmlCompiler
         return new(source, updated, !string.Equals(source, updated, StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// Reads the ordered "# @id=" sequence already present in <paramref name="source"/> — the
+    /// inverse of <see cref="ApplyIdentities"/>. Used by workspace export to materialize a durable
+    /// registry from a document that has already had identities minted (via
+    /// <see cref="EnsureIdentities"/>) or applied (via <see cref="ApplyIdentities"/>).
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// An identity-bearing declaration lacks a preceding "# @id=" comment, or that comment's value
+    /// is not a valid UUIDv7 — the source must already be fully identified before harvesting.
+    /// </exception>
+    public static ImmutableArray<string> HarvestIdentities(string source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        var lines = source.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        var identities = ImmutableArray.CreateBuilder<string>();
+        string? lastNonBlank = null;
+        foreach (var line in lines)
+        {
+            var trimmed = line.TrimStart();
+            var separator = trimmed.IndexOf(' ');
+            var keyword = separator < 0 ? trimmed : trimmed[..separator];
+            var value = separator < 0 ? string.Empty : trimmed[(separator + 1)..].TrimStart();
+            var declaration = IdentityDeclarations.Contains(keyword) && !value.StartsWith('"');
+            if (declaration)
+            {
+                var identityMatch = lastNonBlank is null ? null : Identity().Match(lastNonBlank.TrimStart());
+                if (identityMatch is not { Success: true })
+                    throw new ArgumentException($"'{keyword} {value}' requires tooling-managed '# @id=<uuidv7>' metadata.", nameof(source));
+                var identity = identityMatch.Groups["id"].Value;
+                if (!Guid.TryParse(identity, out var parsed) || parsed.Version != 7)
+                    throw new ArgumentException($"'{keyword} {value}' has an invalid identity.", nameof(source));
+                identities.Add(identity);
+            }
+            if (trimmed.Trim().Length > 0) lastNonBlank = line;
+        }
+        return identities.ToImmutable();
+    }
+
     private static (ImmutableArray<Node> Roots, ParseDiagnostic? Diagnostic) ParseNodes(
         SourceDocument[] sources, ParseOptions options, CancellationToken cancellationToken)
     {

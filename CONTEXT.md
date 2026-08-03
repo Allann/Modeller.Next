@@ -167,7 +167,9 @@ _Avoid_: Variable, parameter, raw data
 **Federation snapshot**:
 An immutable, reproducible resolution of exact context-package versions,
 content digests, imports, and exports. It is the authority consumed by
-evaluation and generation, but is derived rather than directly authored.
+evaluation and generation, but is derived rather than directly authored. It is
+distinct from a workspace: a workspace is analyzed into a context package, and
+a federation snapshot is derived from one or more context packages.
 _Avoid_: Context package, workspace, latest version
 
 **Finding**:
@@ -194,6 +196,13 @@ The declared rule determining how matching decision-table rows produce a
 conclusion. Every supported policy has explicit overlap, completeness, and
 ordering semantics.
 _Avoid_: Row order, default branch, engine setting
+
+**Identity registry**:
+A tooling-owned, version-controlled record of durable per-document canonical
+identities, consulted when applying identities to authored source and produced
+by a workspace export. Distinct from identities minted transiently for
+anonymous or draft workspaces, which are never captured unless exported.
+_Avoid_: Identity map, ID cache
 
 **Invariant**:
 A rule that must hold for domain state to be valid before and after every
@@ -364,3 +373,17 @@ A behaviour that coordinates multiple behaviours toward a domain outcome,
 often across time and in response to outcomes or events. Its coordination and
 progress are explicit domain meaning rather than a sequence of technical calls.
 _Avoid_: Pipeline, script, orchestration
+
+**Workspace**:
+A bounded set of logical-path documents, an identity strategy (ephemeral or
+durable), and resolved configuration, analyzed together to produce one context
+package. A workspace is the input to analysis and diagram projection; it is
+not itself a federation snapshot.
+_Avoid_: Project directory, repository, filesystem tree
+
+**Workspace export**:
+The operation that harvests a workspace's currently-effective ordered
+identities — whether freshly minted or already durable — into a fresh, valid
+identity registry. It is the mechanism by which an anonymous draft becomes
+durable.
+_Avoid_: Save, publish, commit

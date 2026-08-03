@@ -6,6 +6,7 @@ using Modeller.Rendering;
 using Modeller.Output;
 using System.Collections.Immutable;
 using Modeller.GenerationWorkflow;
+using Modeller.Workspace;
 
 namespace Modeller.Cli;
 
@@ -299,16 +300,8 @@ public static class CliApplication
         return result.IsSuccess ? CliExitCode.Success : CliExitCode.ValidationFailed;
     }
 
-    private static bool IsWorkspaceRelative(string path)
-    {
-        var normalized = path.Replace('\\', '/');
-        return !IsRooted(path) &&
-            !normalized.Split('/', StringSplitOptions.RemoveEmptyEntries).Contains("..", StringComparer.Ordinal);
-    }
-
-    private static bool IsRooted(string value) =>
-        Path.IsPathRooted(value) || value.StartsWith('/') || value.StartsWith('\\') ||
-        (value.Length >= 2 && value[1] == ':' && char.IsAsciiLetter(value[0]));
+    /// <summary>Confined to the workspace per <see cref="LogicalPath"/> — the shared path-confinement primitive; see docs/architecture/decisions/workspace-application-service.mdx.</summary>
+    private static bool IsWorkspaceRelative(string path) => LogicalPath.TryCreate(path, out _);
 }
 
 public sealed record GenerationTemplateInput(string Digest, string Content);
