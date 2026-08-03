@@ -3,7 +3,15 @@
 // Modeller.LanguageServer's stdio). The wire format is standard LSP framing:
 // `Content-Length: <n>\r\n\r\n<n bytes of UTF-8 JSON>`. Frame boundaries don't
 // align with WebSocket message boundaries, so this accumulates bytes itself.
+//
+// Requests carry their own timeout (see REQUEST_TIMEOUT_MS below) and every
+// pending request is rejected the moment the socket closes/errors. Both exist
+// for the same reason: a wedged server process (e.g. non-LSP text on its
+// stdout desyncing the frame parser — see resolveDotnetTool's requireBundledDll)
+// must surface as a rejected promise, not an indefinite silent hang.
 export type JsonRpcId = number;
+
+const REQUEST_TIMEOUT_MS = 15_000;
 
 interface PendingRequest {
   resolve: (value: unknown) => void;
@@ -28,6 +36,8 @@ export class LspConnection {
       this.socket.addEventListener('error', () => reject(new Error('LSP WebSocket failed to connect')), { once: true });
     });
     this.socket.addEventListener('message', (event) => this.onMessage(event));
+    this.socket.addEventListener('close', () => this.rejectAllPending(new Error('LSP connection closed')));
+    this.socket.addEventListener('error', () => this.rejectAllPending(new Error('LSP connection error')));
   }
 
   async whenReady(): Promise<void> {
@@ -43,7 +53,14 @@ export class LspConnection {
   async request<T>(method: string, params: unknown): Promise<T> {
     const id = this.nextId++;
     const promise = new Promise<T>((resolve, reject) => {
-      this.pending.set(id, { resolve: resolve as (value: unknown) => void, reject });
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error(`LSP request '${method}' timed out after ${REQUEST_TIMEOUT_MS}ms`));
+      }, REQUEST_TIMEOUT_MS);
+      this.pending.set(id, {
+        resolve: (value) => { clearTimeout(timer); resolve(value as T); },
+        reject: (reason) => { clearTimeout(timer); reject(reason); },
+      });
     });
     this.send({ jsonrpc: '2.0', id, method, params });
     return promise;
@@ -93,6 +110,11 @@ export class LspConnection {
       this.buffer = this.buffer.slice(consumedChars);
       this.dispatch(JSON.parse(bodyText));
     }
+  }
+
+  private rejectAllPending(reason: Error): void {
+    for (const pending of this.pending.values()) pending.reject(reason);
+    this.pending.clear();
   }
 
   private dispatch(message: { id?: JsonRpcId; method?: string; params?: unknown; result?: unknown; error?: unknown }): void {

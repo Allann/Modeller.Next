@@ -6,7 +6,20 @@ import { spawnLanguageServer } from './lsp-process';
 // self-framed (Content-Length headers), so the bridge never parses messages —
 // reassembly is the client library's job, not this proxy's.
 export function bridgeLanguageServer(socket: WebSocket): void {
-  const child = spawnLanguageServer();
+  let child: ReturnType<typeof spawnLanguageServer>;
+  try {
+    child = spawnLanguageServer();
+  } catch (error) {
+    // resolveDotnetTool(requireBundledDll: true) throws when no bundled dll
+    // is available — fail the connection loudly instead of falling back to
+    // `dotnet run --project`, which would corrupt the LSP wire protocol (see
+    // dotnet-tool.ts). Closing here (rather than leaving the socket open with
+    // no server behind it) lets LspConnection's close handler reject any
+    // pending requests immediately instead of waiting out the request timeout.
+    console.error('[Modeller.LanguageServer]', error instanceof Error ? error.message : error);
+    socket.close(1011, 'Modeller.LanguageServer is not available');
+    return;
+  }
 
   socket.on('message', (data) => {
     child.stdin.write(data as Buffer);
