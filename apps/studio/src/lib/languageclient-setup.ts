@@ -1,21 +1,11 @@
 // Creates a plain monaco-editor instance for one document and wires it to
-// Modeller.LanguageServer over the server's /lsp WebSocket bridge, using the
-// hand-rolled LSP client in src/lib/lsp/ rather than monaco-languageclient —
-// see the KNOWN PHASE-1 SIMPLIFICATION note below for the one real limitation
-// of that choice.
-//
-// KNOWN PHASE-1 SIMPLIFICATION: each open document gets its own editor/model/
-// LSP connection/LanguageServer process (one per mounted MonacoEditor), rather
-// than one connection per browser session with multiple documents
-// multiplexed onto it via didOpen. That's a deviation from decision #52's
-// "one process per session" intent — correct but wasteful for multi-tab use.
-// Follow-up: keep one LspConnection alive per session and attach additional
-// models to it instead of opening a new WebSocket per tab.
+// Modeller.LanguageServer over the server's single shared /lsp WebSocket
+// connection (see src/lib/lsp/session.ts), using the hand-rolled LSP client
+// in src/lib/lsp/ rather than monaco-languageclient.
 import * as monaco from 'monaco-editor';
 import { registerModellerLanguages, languageIdForPath } from './monaco-languages';
 import { watchMonacoTheme } from './monaco-theme';
-import { LspConnection } from './lsp/protocol';
-import { attachLanguageServer } from './lsp/monaco-bridge';
+import { openDocument } from './lsp/session';
 
 export interface StudioEditorSession {
   editor: monaco.editor.IStandaloneCodeEditor;
@@ -64,11 +54,9 @@ export async function startLanguageClient(
   // (undeduped, since Monaco merges suggestions across providers without deduping).
   const editor = monaco.editor.create(container, { model, automaticLayout: true, wordBasedSuggestions: 'off' });
 
-  const connection = new LspConnection(lspSocketUrl());
-  const attached = await attachLanguageServer({ monaco, connection, languageId, uri, model });
+  const attached = await openDocument(monaco, languageId, uri, model);
   if (isCancelled()) {
     attached.dispose();
-    connection.close();
     editor.dispose();
     model.dispose();
     return undefined;
@@ -78,7 +66,6 @@ export async function startLanguageClient(
     editor,
     dispose: () => {
       attached.dispose();
-      connection.close();
       editor.dispose();
       model.dispose();
     },
@@ -87,10 +74,4 @@ export async function startLanguageClient(
 
 function toModelUri(path: string): string {
   return `file:///workspace/${path}`;
-}
-
-function lspSocketUrl(): string {
-  const { protocol, host } = window.location;
-  const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${wsProtocol}//${host}/lsp`;
 }
