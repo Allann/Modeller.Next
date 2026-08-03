@@ -50,10 +50,13 @@ p {
   border-bottom: 1px solid var(--modeller-line);
 }
 
+/* 1400px + 1rem side padding matches fumadocs' --fd-layout-width nav bar on
+   modeller.wiki, so the two sites' header chrome lines up exactly. */
 .site-header-inner {
-  max-width: 60rem;
+  max-width: 1400px;
+  height: 3.5rem;
   margin: 0 auto;
-  padding: 1.1rem 1.5rem;
+  padding: 0 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -131,9 +134,9 @@ p {
 }
 
 .site-footer-inner {
-  max-width: 60rem;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 1.5rem 1.5rem 2.5rem;
+  padding: 1.5rem 1rem 2.5rem;
   font-size: 0.85rem;
   color: var(--modeller-muted);
 }
@@ -147,10 +150,12 @@ p {
   color: var(--modeller-teal-bright);
 }
 
+/* Matches modeller.wiki's marketing/content sections (min(1180px, 100% - 3rem)) —
+   narrower than the 1400px header bar, same as wiki's own hierarchy. */
 main {
-  max-width: 60rem;
+  width: min(1180px, calc(100% - 3rem));
   margin: 0 auto;
-  padding: 2.5rem 1.5rem 4rem;
+  padding: 2.5rem 0 4rem;
 }
 
 .breadcrumb {

@@ -4,7 +4,7 @@
     "workspace": "samples/ordering",
     "title": "Ordering",
     "tagline": "A small workflow, understood at a glance.",
-    "description": "A minimal order-to-placement workflow. Start here to see how readable RML declares an entity's lifecycle, a rule, and the behaviour that moves it forward.",
+    "description": "A minimal order-to-placement workflow. Start here to see how Modeller's plain-language model source declares an entity's lifecycle, a rule, and the behaviour that moves it forward.",
     "kind": "intro"
   },
   {
