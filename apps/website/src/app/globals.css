@@ -1,0 +1,93 @@
+:root {
+  --modeller-ink: #10232a;
+  --modeller-teal: #0f766e;
+  --modeller-teal-bright: #14b8a6;
+  --modeller-mint: #99f6e4;
+  --modeller-paper: #f5f3ed;
+  --modeller-line: rgba(16, 35, 42, 0.13);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --modeller-line: rgba(226, 252, 246, 0.13);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  background: #fbfaf7;
+  color: var(--modeller-ink);
+}
+
+@media (prefers-color-scheme: dark) {
+  html,
+  body {
+    background: #071419;
+    color: #edfdf9;
+  }
+}
+
+a {
+  color: var(--modeller-teal);
+}
+
+main {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.card {
+  display: block;
+  border: 1px solid var(--modeller-line);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card:hover {
+  border-color: var(--modeller-teal-bright);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  color: var(--modeller-teal);
+}
+
+pre {
+  background: rgba(16, 35, 42, 0.04);
+  border: 1px solid var(--modeller-line);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  pre {
+    background: rgba(226, 252, 246, 0.05);
+  }
+}
+
+.graph-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.graph-list li {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--modeller-line);
+  border-radius: 0.4rem;
+  margin-bottom: 0.5rem;
+}

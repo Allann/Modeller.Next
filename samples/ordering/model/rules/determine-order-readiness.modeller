@@ -1,0 +1,12 @@
+rml 1.0
+rule Determine order readiness
+  input "Payment is confirmed"
+  when all
+    fact "Payment is confirmed"
+  end
+  conclusion Ready
+  end
+  finding "Payment is confirmed" true order.payment-confirmed
+  finding "Payment is confirmed" missing order.payment-required
+  export
+end

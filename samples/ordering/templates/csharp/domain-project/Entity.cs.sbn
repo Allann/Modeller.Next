@@ -1,0 +1,5 @@
+namespace {{ csharp_namespace }};
+
+public sealed record {{ definition.name }}(
+{{ for property in definition.properties }}    {{ property.type }}{{ if property.nullable }}?{{ end }} {{ property.name }}{{ if !for.last }},{{ end }}
+{{ end }});

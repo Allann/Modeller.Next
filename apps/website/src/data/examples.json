@@ -1,0 +1,18 @@
+[
+  {
+    "slug": "ordering",
+    "workspace": "samples/ordering",
+    "title": "Ordering",
+    "tagline": "A small workflow, understood at a glance.",
+    "description": "A minimal order-to-placement workflow. Start here to see how readable RML declares an entity's lifecycle, a rule, and the behaviour that moves it forward.",
+    "kind": "intro"
+  },
+  {
+    "slug": "child-care",
+    "workspace": "samples/child-care",
+    "title": "Child Care",
+    "tagline": "A full, complex business domain.",
+    "description": "A real childcare-provider capability — an ACCS determination application — grown incrementally as an executable model. Explore this once Ordering feels familiar.",
+    "kind": "deep-dive"
+  }
+]

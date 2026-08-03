@@ -1,0 +1,5 @@
+rml 1.0
+fact Payment is confirmed
+  type truth
+  export
+end

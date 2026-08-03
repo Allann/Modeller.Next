@@ -1,0 +1,15 @@
+rml 1.0
+behaviour Place order
+  for "Order"
+  requires "Determine order readiness"
+  outcome Order placed
+  end
+  outcome Order rejected
+  end
+  transition Order placement
+    lifecycle "Order lifecycle"
+    from "Draft"
+    to "Placed"
+    outcome "Order placed"
+  end
+end

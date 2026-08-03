@@ -1,0 +1,7 @@
+rml 1.0
+entity Order
+  lifecycle Order lifecycle
+    stage Draft
+    stage Placed
+  end
+end

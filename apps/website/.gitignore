@@ -1,0 +1,7 @@
+node_modules
+.next
+*.tsbuildinfo
+
+# build-time generated projection data — regenerated from samples/* by
+# scripts/generate-projections.mjs, never handwritten.
+src/data/generated/

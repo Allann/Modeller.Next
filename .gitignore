@@ -10,6 +10,8 @@ editors/vscode-modeller/server/
 .source
 /samples/child-care/generated/
 /samples/child-care/.modeller/generated*-manifest.json
+/samples/ordering/generated/
+/samples/ordering/.modeller/generated*-manifest.json
 
 # test & build
 /coverage

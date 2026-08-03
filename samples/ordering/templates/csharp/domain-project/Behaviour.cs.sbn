@@ -1,0 +1,17 @@
+namespace {{ csharp_namespace }};
+
+public enum {{ definition.stage_type }}
+{
+{{ for stage in definition.stages }}    {{ stage.name }}{{ if !for.last }},{{ end }}
+{{ end }}}
+
+public static class {{ definition.name }}
+{
+    public static {{ definition.stage_type }} Apply(
+        {{ definition.stage_type }} current,
+        {{ definition.facts_type }} facts) =>
+{{ for t in definition.transitions }}        current == {{ definition.stage_type }}.{{ t.source_stage }} && {{ t.guard }}
+            ? {{ definition.stage_type }}.{{ t.target_stage }}
+            : {{ if for.last }}current;{{ else }}
+{{ end }}{{ end }}
+}

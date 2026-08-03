@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "generationContractVersion": "1.0",
+  "logicalOutputRoot": "generated",
+  "profile": "ordering-csharp",
+  "sources": [
+    "model/context.modeller",
+    "model/entities/order.modeller",
+    "model/facts/payment-confirmation.modeller",
+    "model/rules/determine-order-readiness.modeller",
+    "model/behaviours/place-order.modeller"
+  ],
+  "templatePack": "templates/csharp/domain-project/pack.json",
+  "identityRegistry": ".modeller/identities.json",
+  "parameters": {
+    "projectName": "Ordering",
+    "csharp": { "namespace": "Ordering", "targetFramework": "net10.0" }
+  },
+  "ownershipManifest": ".modeller/generated-manifest.json"
+}
