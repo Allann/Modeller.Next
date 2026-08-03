@@ -14,13 +14,24 @@ editing yet — that lands with the anonymous browser-backed Studio mode
 
 ## Build-time data
 
-`scripts/generate-projections.mjs` runs before `dev`/`build` and shells out
-to the real Modeller CLI (`dotnet run --project src/Modeller.Cli`) against
-each workspace declared in `src/data/examples.json`, writing the Lifecycle
-and Rule/Decision projection graphs plus the RML source into
-`src/data/generated/<slug>.json`. Projection data is always Modeller-produced,
-never handwritten — regenerate it any time the source samples change by
-re-running `npm run build` or `npm run dev`.
+`src/data/generated/<slug>.json` holds the Lifecycle and Rule/Decision
+projection graphs plus the RML source for each example, and is **committed**
+— Vercel builds this app with the .NET SDK unavailable and (correctly)
+without access to files outside `apps/website`, so `next build` alone must
+be enough to produce a working deployment.
+
+That data is never handwritten. Whenever a source sample under
+`samples/<slug>` changes, regenerate it locally (needs `dotnet` on PATH and
+the full repo checkout) and commit the result:
+
+```powershell
+npm run generate
+git add src/data/generated
+```
+
+`scripts/generate-projections.mjs` does the regeneration: it shells out to
+the real Modeller CLI (`dotnet run --project src/Modeller.Cli`) against each
+workspace declared in `src/data/examples.json`.
 
 ## Adding an example
 
@@ -28,4 +39,5 @@ re-running `npm run build` or `npm run dev`.
    and `samples/child-care` for the expected `.modeller/` + `model/` shape).
 2. Add an entry to `src/data/examples.json` with the workspace path and
    narrative copy.
-3. Run `npm run dev` — the new example is generated and routed automatically.
+3. Run `npm run generate`, then `npm run dev` to preview, and commit the
+   regenerated `src/data/generated/<slug>.json`.

@@ -1,0 +1,117 @@
+{
+  "slug": "ordering",
+  "generatedAt": "2026-08-03T11:39:41.198Z",
+  "source": [
+    {
+      "path": "model/context.modeller",
+      "content": "rml 1.0\ncontext Ordering\n  version 1.0.0\nend\n"
+    },
+    {
+      "path": "model/entities/order.modeller",
+      "content": "rml 1.0\nentity Order\n  lifecycle Order lifecycle\n    stage Draft\n    stage Placed\n  end\nend\n"
+    },
+    {
+      "path": "model/facts/payment-confirmation.modeller",
+      "content": "rml 1.0\nfact Payment is confirmed\n  type truth\n  export\nend\n"
+    },
+    {
+      "path": "model/rules/determine-order-readiness.modeller",
+      "content": "rml 1.0\nrule Determine order readiness\n  input \"Payment is confirmed\"\n  when all\n    fact \"Payment is confirmed\"\n  end\n  conclusion Ready\n  end\n  finding \"Payment is confirmed\" true order.payment-confirmed\n  finding \"Payment is confirmed\" missing order.payment-required\n  export\nend\n"
+    },
+    {
+      "path": "model/behaviours/place-order.modeller",
+      "content": "rml 1.0\nbehaviour Place order\n  for \"Order\"\n  requires \"Determine order readiness\"\n  outcome Order placed\n  end\n  outcome Order rejected\n  end\n  transition Order placement\n    lifecycle \"Order lifecycle\"\n    from \"Draft\"\n    to \"Placed\"\n    outcome \"Order placed\"\n  end\nend\n"
+    }
+  ],
+  "views": {
+    "Lifecycle": {
+      "supported": true,
+      "roots": [
+        {
+          "id": "019fc751-bdf3-790d-922e-0e7707f66bab",
+          "name": "Order",
+          "slug": "order"
+        }
+      ],
+      "graph": {
+        "sourceRevision": 4,
+        "kind": "Lifecycle",
+        "nodes": [
+          {
+            "id": "stage:019fc751-bdf3-791e-ad32-55d4fbbdaa9b",
+            "role": "lifecycle-stage",
+            "label": "Draft",
+            "semanticIds": [
+              "019fc751-bdf3-791e-ad32-55d4fbbdaa9b"
+            ]
+          },
+          {
+            "id": "stage:019fc751-bdf3-759e-92de-015bb57eebb2",
+            "role": "lifecycle-stage",
+            "label": "Placed",
+            "semanticIds": [
+              "019fc751-bdf3-759e-92de-015bb57eebb2"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "transition:019fc751-bdf3-7fc3-becd-3f02b9d7538b",
+            "role": "transition",
+            "label": "Order placement",
+            "sourceId": "stage:019fc751-bdf3-791e-ad32-55d4fbbdaa9b",
+            "targetId": "stage:019fc751-bdf3-759e-92de-015bb57eebb2",
+            "semanticIds": [
+              "019fc751-bdf3-7fc3-becd-3f02b9d7538b"
+            ]
+          }
+        ]
+      }
+    },
+    "RuleDecision": {
+      "supported": true,
+      "roots": [
+        {
+          "id": "019fc751-bdf3-7b89-a346-05ed8a8c7452",
+          "name": "Determine order readiness",
+          "slug": "determine-order-readiness"
+        }
+      ],
+      "graph": {
+        "sourceRevision": 4,
+        "kind": "RuleDecision",
+        "nodes": [
+          {
+            "id": "fact:019fc751-bdf3-72a6-b637-95ceb61870e9",
+            "role": "fact",
+            "label": "Payment is confirmed",
+            "semanticIds": [
+              "019fc751-bdf3-72a6-b637-95ceb61870e9"
+            ]
+          },
+          {
+            "id": "conclusion:019fc751-bdf3-700b-8de0-f9c72ca8c2a2",
+            "role": "conclusion",
+            "label": "Ready",
+            "semanticIds": [
+              "019fc751-bdf3-700b-8de0-f9c72ca8c2a2"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "input:019fc751-bdf3-72a6-b637-95ceb61870e9:019fc751-bdf3-700b-8de0-f9c72ca8c2a2",
+            "role": "input",
+            "label": "",
+            "sourceId": "fact:019fc751-bdf3-72a6-b637-95ceb61870e9",
+            "targetId": "conclusion:019fc751-bdf3-700b-8de0-f9c72ca8c2a2",
+            "semanticIds": [
+              "019fc751-bdf3-72a6-b637-95ceb61870e9",
+              "019fc751-bdf3-700b-8de0-f9c72ca8c2a2"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

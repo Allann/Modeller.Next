@@ -4,9 +4,8 @@
   "private": true,
   "description": "Public playground for Modeller — flagship model examples, deployed at modeller.website.",
   "scripts": {
-    "predev": "node scripts/generate-projections.mjs",
+    "generate": "node scripts/generate-projections.mjs",
     "dev": "next dev -p 3200",
-    "prebuild": "node scripts/generate-projections.mjs",
     "build": "next build",
     "start": "next start -p 3200",
     "lint": "eslint .",
