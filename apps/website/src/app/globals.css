@@ -5,11 +5,19 @@
   --modeller-mint: #99f6e4;
   --modeller-paper: #f5f3ed;
   --modeller-line: rgba(16, 35, 42, 0.13);
+  --modeller-surface: #ffffff;
+  --modeller-bg: #fbfaf7;
+  --modeller-fg: var(--modeller-ink);
+  --modeller-muted: #4b6068;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --modeller-line: rgba(226, 252, 246, 0.13);
+    --modeller-line: rgba(226, 252, 246, 0.14);
+    --modeller-surface: #0c1d23;
+    --modeller-bg: #071419;
+    --modeller-fg: #edfdf9;
+    --modeller-muted: #9fc3bd;
   }
 }
 
@@ -21,20 +29,75 @@ html,
 body {
   margin: 0;
   font-family: ui-sans-serif, system-ui, sans-serif;
-  background: #fbfaf7;
-  color: var(--modeller-ink);
-}
-
-@media (prefers-color-scheme: dark) {
-  html,
-  body {
-    background: #071419;
-    color: #edfdf9;
-  }
+  background: var(--modeller-bg);
+  color: var(--modeller-fg);
 }
 
 a {
-  color: var(--modeller-teal);
+  color: var(--modeller-teal-bright);
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.15;
+}
+
+p {
+  color: var(--modeller-muted);
+  line-height: 1.6;
+}
+
+.site-header {
+  border-bottom: 1px solid var(--modeller-line);
+}
+
+.site-header-inner {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1.1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.site-header-brand {
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--modeller-fg);
+}
+
+.site-header-nav a {
+  margin-left: 1.25rem;
+  text-decoration: none;
+  color: var(--modeller-muted);
+  font-size: 0.9rem;
+}
+
+.site-header-nav a:hover {
+  color: var(--modeller-teal-bright);
+}
+
+.site-footer {
+  border-top: 1px solid var(--modeller-line);
+  margin-top: 3rem;
+}
+
+.site-footer-inner {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 2.5rem;
+  font-size: 0.85rem;
+  color: var(--modeller-muted);
+}
+
+.site-footer-inner a {
+  color: var(--modeller-muted);
+  margin-right: 1rem;
+}
+
+.site-footer-inner a:hover {
+  color: var(--modeller-teal-bright);
 }
 
 main {
@@ -43,18 +106,38 @@ main {
   padding: 2.5rem 1.5rem 4rem;
 }
 
+.breadcrumb {
+  font-size: 0.85rem;
+  text-decoration: none;
+  color: var(--modeller-muted);
+}
+
+.breadcrumb:hover {
+  color: var(--modeller-teal-bright);
+}
+
 .card {
   display: block;
+  background: var(--modeller-surface);
   border: 1px solid var(--modeller-line);
   border-radius: 0.75rem;
   padding: 1.25rem 1.5rem;
   margin-bottom: 1rem;
   text-decoration: none;
   color: inherit;
+  transition: border-color 0.15s ease;
 }
 
 .card:hover {
   border-color: var(--modeller-teal-bright);
+}
+
+.card h2 {
+  margin: 0.15rem 0 0.4rem;
+}
+
+.card p {
+  margin: 0;
 }
 
 .eyebrow {
@@ -62,10 +145,15 @@ main {
   letter-spacing: 0.08em;
   font-size: 0.75rem;
   color: var(--modeller-teal);
+  font-weight: 600;
+}
+
+section {
+  margin-top: 2.5rem;
 }
 
 pre {
-  background: rgba(16, 35, 42, 0.04);
+  background: var(--modeller-surface);
   border: 1px solid var(--modeller-line);
   border-radius: 0.5rem;
   padding: 1rem;
@@ -73,21 +161,56 @@ pre {
   font-size: 0.85rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  pre {
-    background: rgba(226, 252, 246, 0.05);
-  }
-}
-
-.graph-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.graph-list li {
-  padding: 0.5rem 0.75rem;
+.diagram {
+  background: var(--modeller-surface);
   border: 1px solid var(--modeller-line);
-  border-radius: 0.4rem;
-  margin-bottom: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  overflow-x: auto;
+}
+
+.graph-node {
+  fill: var(--modeller-surface);
+  stroke: var(--modeller-teal);
+  stroke-width: 1.5;
+}
+
+.graph-node-fact,
+.graph-node-lifecycle-stage {
+  stroke: var(--modeller-teal);
+}
+
+.graph-node-conclusion {
+  stroke: var(--modeller-teal-bright);
+  fill: rgba(20, 184, 166, 0.08);
+}
+
+.graph-node-label {
+  fill: var(--modeller-fg);
+  font-size: 13px;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.graph-edge {
+  fill: none;
+  stroke: var(--modeller-muted);
+  stroke-width: 1.5;
+}
+
+.graph-arrow {
+  fill: var(--modeller-muted);
+}
+
+.graph-edge-label {
+  fill: var(--modeller-muted);
+  font-size: 11px;
+}
+
+.source-doc {
+  margin-bottom: 1.25rem;
+}
+
+.source-doc .eyebrow {
+  margin-bottom: 0.35rem;
+  display: block;
 }
