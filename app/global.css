@@ -82,7 +82,7 @@ html > body[data-scroll-locked] { margin-right: 0 !important; --removed-body-scr
 .download-section > div:nth-child(2) p:last-child { margin-top: .8rem; color: color-mix(in srgb,currentColor 67%,transparent); font-size: .95rem; line-height: 1.65; }
 .coming-soon-badge { display: inline-flex; align-items: center; border-radius: 999px; background: color-mix(in srgb,var(--modeller-mint) 32%,transparent); padding: .18rem .6rem; color: var(--modeller-teal); font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: none; }
 .dark .coming-soon-badge { background: rgba(94,234,212,.14); color: #5eead4; }
-.download-action { display: inline-flex; align-items: center; gap: .6rem; cursor: not-allowed; opacity: .82; }
+.download-action { display: inline-flex; align-items: center; gap: .55rem; border-radius: .65rem; padding: .82rem 1.1rem; font-weight: 750; cursor: not-allowed; opacity: .82; }
 .download-action .coming-soon-badge { background: rgba(255,255,255,.22); color: white; }
 
 .final-cta { display: flex; align-items: center; flex-direction: column; padding: 8rem 1.5rem; background: radial-gradient(circle at 50% 10%,rgba(45,212,191,.16),transparent 25rem),#071419; color: #edfdf9; text-align: center; }
