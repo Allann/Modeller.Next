@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "createdAt": "2026-08-02T23:12:55.3453041+00:00",
+  "updatedAt": "2026-08-02T23:12:55.3473393+00:00",
+  "description": "Initial baseline created by 'slopwatch init' on 2026-08-02 23:12:55 UTC",
+  "entries": [
+    {
+      "hash": "2137c8edc6ca941f",
+      "ruleId": "SW003",
+      "filePath": "tests/Modeller.Conformance.Python.Tests/PythonToolchainTests.cs",
+      "lineNumber": 144,
+      "codeSnippet": "catch (Exception exception) when (exception is System.ComponentModel.Win32Exception or IOException)\n            {\n                // Interpreter not found under this name; try the next candidate.\n            }",
+      "message": "Empty catch block swallows exceptions without handling",
+      "baselinedAt": "2026-08-02T23:12:55.3473237+00:00"
+    }
+  ]
+}
