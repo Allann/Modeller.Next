@@ -71,6 +71,9 @@ export default function HomePage() {
               <Link className="primary-action" href="/docs/getting-started">
                 Start modelling <ArrowRight size={17} />
               </Link>
+              <a className="secondary-action" href="https://modeller.website">
+                Try the playground
+              </a>
               <Link className="secondary-action" href="/docs/concepts">
                 Explore the concepts
               </Link>
