@@ -115,16 +115,72 @@ public sealed class PythonToolchainTests
     {
         var start = new ProcessStartInfo(interpreter) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
         foreach (var argument in arguments) start.ArgumentList.Add(argument);
+        PythonInterpreter.StripInstrumentationEnvironment(start.Environment);
         using var process = Process.Start(start)!;
-        var stdout = await process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stderr = await process.StandardError.ReadToEndAsync(cancellationToken);
-        await process.WaitForExitAsync(cancellationToken);
-        return (process.ExitCode, stdout + stderr);
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+        try
+        {
+            var stdoutTask = process.StandardOutput.ReadToEndAsync(linked.Token);
+            var stderrTask = process.StandardError.ReadToEndAsync(linked.Token);
+            await Task.WhenAll(stdoutTask, stderrTask);
+            await process.WaitForExitAsync(linked.Token);
+            return (process.ExitCode, stdoutTask.Result + stderrTask.Result);
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            TryKillProcessTree(process);
+            throw new TimeoutException(
+                $"'{interpreter} {string.Join(' ', arguments)}' did not exit within 2 minutes and was killed. " +
+                "This usually means a code-coverage collector's instrumentation environment leaked into the child " +
+                "process, or the resolved interpreter is a Windows Store app-execution-alias stub.");
+        }
+    }
+
+    private static void TryKillProcessTree(Process process)
+    {
+        if (process.HasExited) return;
+        try
+        {
+            process.Kill(entireProcessTree: true);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            // Kill() races with the process exiting on its own; only a genuine failure to kill a still-running
+            // process (not the exit race) is worth surfacing, since this runs from a timeout handler that must
+            // not itself throw a misleading secondary error over the real timeout.
+            if (!process.HasExited) throw;
+        }
     }
 }
 
 internal static class PythonInterpreter
 {
+    /// <summary>
+    /// Environment-variable prefixes used by .NET CLR profilers and test-platform data collectors (code coverage,
+    /// blame/hang-dump, IntelliTrace). When a test run is instrumented, these are set on the test-host process and
+    /// are inherited by any child process it spawns by default. A spawned Python interpreter neither needs nor
+    /// understands them, but a leaked profiler hook can make an external data collector wait on this non-.NET
+    /// descendant indefinitely instead of finalizing its session — hanging the whole run. Stripping them keeps the
+    /// child process launch identical to an uninstrumented run regardless of how the test host itself was started.
+    /// </summary>
+    private static readonly string[] InstrumentationEnvironmentPrefixes =
+    [
+        "COR_", "CORECLR_", "VSTEST_", "MicrosoftInstrumentationEngine_", "COVERAGE_"
+    ];
+
+    public static void StripInstrumentationEnvironment(System.Collections.Generic.IDictionary<string, string?> environment)
+    {
+        foreach (var key in environment.Keys.Where(HasInstrumentationPrefix).ToArray())
+        {
+            environment.Remove(key);
+        }
+    }
+
+    private static bool HasInstrumentationPrefix(string key) =>
+        InstrumentationEnvironmentPrefixes.Any(prefix => key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+
     private static readonly Lazy<string?> Resolved = new(Probe);
 
     public static string? Resolve() => Resolved.Value;
@@ -136,6 +192,7 @@ internal static class PythonInterpreter
             try
             {
                 var start = new ProcessStartInfo(candidate, "--version") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+                StripInstrumentationEnvironment(start.Environment);
                 using var process = Process.Start(start);
                 if (process is null) continue;
                 process.WaitForExit(5_000);
