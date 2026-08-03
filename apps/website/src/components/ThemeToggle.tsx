@@ -31,10 +31,16 @@ export function ThemeToggle() {
     <button
       type="button"
       className="theme-toggle"
-      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label="Toggle Theme"
+      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
     >
-      {isDark ? <SunIcon /> : <MoonIcon />}
+      <span className={!isDark ? 'theme-option theme-option-active' : 'theme-option'}>
+        <SunIcon />
+      </span>
+      <span className={isDark ? 'theme-option theme-option-active' : 'theme-option'}>
+        <MoonIcon />
+      </span>
     </button>
   );
 }

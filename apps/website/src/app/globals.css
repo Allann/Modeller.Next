@@ -26,7 +26,7 @@
 html,
 body {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-family: inherit;
   background: var(--modeller-bg);
   color: var(--modeller-fg);
 }
@@ -38,7 +38,11 @@ a {
 h1,
 h2,
 h3 {
-  line-height: 1.15;
+  margin: 0;
+  color: var(--modeller-fg);
+  font-weight: 760;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
 }
 
 p {
@@ -48,6 +52,7 @@ p {
 
 .site-header {
   border-bottom: 1px solid var(--modeller-line);
+  background: var(--modeller-bg);
 }
 
 /* 1400px + 1rem side padding matches fumadocs' --fd-layout-width nav bar on
@@ -65,7 +70,6 @@ p {
 .site-header-brand {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
   font-weight: 600;
   text-decoration: none;
   color: var(--modeller-fg);
@@ -74,17 +78,40 @@ p {
 .site-header-nav {
   display: flex;
   align-items: center;
+  gap: 0.25rem;
+  margin-left: 1.5rem;
 }
 
 .site-header-nav a {
-  margin-left: 1.25rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
   text-decoration: none;
   color: var(--modeller-muted);
   font-size: 0.9rem;
 }
 
 .site-header-nav a:hover {
-  color: var(--modeller-teal-bright);
+  color: var(--modeller-fg);
+  background: color-mix(in srgb, var(--modeller-fg) 6%, transparent);
+}
+
+.site-header-nav a[aria-current="page"] {
+  color: var(--modeller-fg);
+}
+
+.site-header-nav .site-header-cta {
+  margin-left: 0.25rem;
+  border: 1px solid var(--modeller-line);
+  background: color-mix(in srgb, var(--modeller-fg) 7%, transparent);
+  color: var(--modeller-fg);
+  font-weight: 600;
+}
+
+.site-header-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
 }
 
 .wordmark-mark {
@@ -109,23 +136,48 @@ p {
 }
 
 .theme-toggle {
-  margin-left: 1.25rem;
-  width: 1.75rem;
-  height: 1.75rem;
-  display: inline-grid;
-  place-items: center;
+  width: 3.875rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
   border: 1px solid var(--modeller-line);
-  border-radius: 0.5rem;
+  border-radius: 999px;
+  padding: 0.25rem;
   background: transparent;
-  color: var(--modeller-muted);
+  color: var(--modeller-fg);
   cursor: pointer;
-  font-size: 0.95rem;
   line-height: 1;
 }
 
 .theme-toggle:hover {
-  border-color: var(--modeller-teal-bright);
-  color: var(--modeller-teal-bright);
+  background: color-mix(in srgb, var(--modeller-fg) 5%, transparent);
+}
+
+.theme-option {
+  display: grid;
+  width: 1.625rem;
+  height: 1.625rem;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--modeller-muted);
+}
+
+.theme-option-active {
+  background: color-mix(in srgb, var(--modeller-fg) 10%, transparent);
+  color: var(--modeller-fg);
+}
+
+.github-link {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  color: var(--modeller-fg);
+}
+
+.github-link svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .site-footer {
@@ -134,16 +186,29 @@ p {
 }
 
 .site-footer-inner {
+  display: grid;
+  grid-template-columns: 1fr minmax(18rem, 2fr) 1fr;
+  align-items: center;
+  gap: 2rem;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 1.5rem 1rem 2.5rem;
-  font-size: 0.85rem;
+  padding: 2rem 1rem;
+  font-size: 0.78rem;
   color: var(--modeller-muted);
+}
+
+.site-footer-inner p {
+  margin: 0;
+  font-size: inherit;
+}
+
+.site-footer-inner > p:last-child {
+  text-align: right;
 }
 
 .site-footer-inner a {
   color: var(--modeller-muted);
-  margin-right: 1rem;
+  margin-left: 1rem;
 }
 
 .site-footer-inner a:hover {
@@ -155,7 +220,21 @@ p {
 main {
   width: min(1180px, calc(100% - 3rem));
   margin: 0 auto;
-  padding: 2.5rem 0 4rem;
+  padding: 3.25rem 0 4rem;
+}
+
+main > h1 {
+  max-width: 48rem;
+  font-size: clamp(2.25rem, 5vw, 4.4rem);
+  letter-spacing: -0.052em;
+  line-height: 1;
+}
+
+main > h1 + p {
+  max-width: 48rem;
+  margin: 1.25rem 0 2rem;
+  font-size: 1.05rem;
+  line-height: 1.68;
 }
 
 .breadcrumb {
@@ -172,8 +251,8 @@ main {
   display: block;
   background: var(--modeller-surface);
   border: 1px solid var(--modeller-line);
-  border-radius: 0.75rem;
-  padding: 1.25rem 1.5rem;
+  border-radius: 1rem;
+  padding: 2rem;
   margin-bottom: 1rem;
   text-decoration: none;
   color: inherit;
@@ -185,7 +264,10 @@ main {
 }
 
 .card h2 {
-  margin: 0.15rem 0 0.4rem;
+  margin: 0 0 0.65rem;
+  font-size: 1.15rem;
+  letter-spacing: normal;
+  line-height: 1.15;
 }
 
 .card p {
@@ -193,11 +275,20 @@ main {
 }
 
 .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   font-size: 0.75rem;
   color: var(--modeller-teal);
-  font-weight: 600;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.dark .eyebrow {
+  color: #5eead4;
 }
 
 section {
@@ -265,4 +356,42 @@ pre {
 .source-doc .eyebrow {
   margin-bottom: 0.35rem;
   display: block;
+}
+
+@media (max-width: 920px) {
+  .site-header-nav a:not([aria-current="page"]),
+  .github-link {
+    display: none;
+  }
+
+  .site-footer-inner {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .site-footer-brand {
+    justify-content: center;
+  }
+
+  .site-footer-inner > p:last-child {
+    text-align: center;
+  }
+}
+
+@media (max-width: 560px) {
+  .site-header-nav {
+    margin-left: auto;
+  }
+
+  .site-header-nav a[aria-current="page"] {
+    display: none;
+  }
+
+  .site-header-tools {
+    margin-left: 0.5rem;
+  }
+
+  main {
+    width: min(100% - 2rem, 1180px);
+  }
 }

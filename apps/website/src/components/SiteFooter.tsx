@@ -11,9 +11,9 @@ export function SiteFooter() {
           Modeller. Take a model further with:
         </p>
         <p>
-          <a href="https://modeller.wiki/getting-started">the CLI</a>
+          <a href="https://modeller.wiki/docs/getting-started">the CLI</a>
           <a href="https://modeller.wiki">local Studio</a>
-          <a href="https://modeller.wiki/getting-started">VS Code</a>
+          <a href="https://modeller.wiki/docs/getting-started">VS Code</a>
           <a href="https://modeller.wiki">modeller.wiki</a>
         </p>
       </div>

@@ -4,7 +4,7 @@ import { examples } from '@/lib/examples';
 export default function HomePage() {
   return (
     <main>
-      <p className="eyebrow">Modeller Playground</p>
+      <p className="eyebrow">Explore Modeller</p>
       <h1>Explore a real Modeller example</h1>
       <p>
         Open a populated model, read the plain-language source that declares it, and see how
