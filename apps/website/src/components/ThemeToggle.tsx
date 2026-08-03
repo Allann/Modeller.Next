@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 
 function SunIcon() {
@@ -21,10 +22,16 @@ function MoonIcon() {
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  // resolvedTheme is undefined until next-themes resolves the client's actual
-  // preference after mount — render a placeholder rather than guess and flash.
-  if (resolvedTheme === undefined) return <span className="theme-toggle" aria-hidden="true" />;
+  // The server can never know the client's persisted theme preference, but
+  // next-themes can resolve `resolvedTheme` synchronously on the client's very
+  // first render (before hydration completes) — checking `resolvedTheme` itself
+  // is not a reliable "haven't mounted yet" signal and caused a hydration
+  // mismatch. An explicit `mounted` flag, only ever set true after mount, keeps
+  // the first client render identical to the server's placeholder.
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return <span className="theme-toggle" aria-hidden="true" />;
 
   const isDark = resolvedTheme === 'dark';
   return (
