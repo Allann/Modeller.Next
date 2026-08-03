@@ -22,14 +22,23 @@ export interface StudioEditorSession {
   dispose: () => void;
 }
 
-// KNOWN FOLLOW-UP: no MonacoEnvironment.getWorker is configured, so Monaco
-// logs a harmless "Failed to load worker script for label: editorWorkerService"
-// warning and runs its editor services on the main thread instead of a web
-// worker — doesn't break editing/diagnostics, just slightly less isolated.
-// Turbopack didn't resolve the standard `new URL('monaco-editor/.../editor.worker.js',
-// import.meta.url)` worker pattern; fixing this properly is worth a focused
-// follow-up rather than more guessing here.
-//
+// Runs Monaco's editor services (tokenization, diff, etc.) on their own
+// worker thread instead of the main thread. The previous attempt at this used
+// the specifier 'monaco-editor/esm/vs/editor/editor.worker.js', which looked
+// right (it's the real on-disk path) but doesn't match monaco-editor's own
+// package.json "exports" map (`"./*.js": "./esm/vs/*.js"` — the esm/vs prefix
+// is added BY the mapping, not part of the specifier), so it 404s under any
+// exports-map-respecting resolver, Turbopack included. Dropping the redundant
+// prefix resolves correctly. This app only uses the base editor services plus
+// custom TextMate-backed languages (see monaco-languages.ts), not any of
+// Monaco's built-in per-language workers (TS/JSON/CSS/HTML), so a single
+// worker for every label is sufficient — no per-label dispatch needed.
+self.MonacoEnvironment = {
+  getWorker() {
+    return new Worker(new URL('monaco-editor/editor/editor.worker.js', import.meta.url), { type: 'module' });
+  },
+};
+
 // React's dev-mode Strict Mode double-invokes effects (mount -> cleanup ->
 // mount, synchronously before any of this function's awaits resolve), so
 // `isCancelled` is checked immediately after every await, before touching the
