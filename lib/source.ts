@@ -7,12 +7,14 @@ import { metaSchema, pageSchema } from 'fumadocs-core/source/schema';
 const docs = defineDocs({
   dir: 'docs',
   docs: {
+    files: ['**/*.{mdx,md}', '!agents/**'],
     schema: pageSchema,
     postprocess: {
       includeProcessedMarkdown: true,
     },
   },
   meta: {
+    files: ['**/*.{json,yaml}', '!agents/**'],
     schema: metaSchema,
   },
 });
