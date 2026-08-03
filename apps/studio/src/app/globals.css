@@ -1,0 +1,41 @@
+:root {
+  --modeller-ink: #10232a;
+  --modeller-teal: #0f766e;
+  --modeller-teal-bright: #14b8a6;
+  --modeller-mint: #99f6e4;
+  --modeller-paper: #f5f3ed;
+  --modeller-line: rgba(16, 35, 42, 0.13);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --modeller-line: rgba(226, 252, 246, 0.13);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  background: #fbfaf7;
+  color: var(--modeller-ink);
+}
+
+@media (prefers-color-scheme: dark) {
+  html,
+  body {
+    background: #071419;
+    color: #edfdf9;
+  }
+}
+
+#__next,
+main {
+  height: 100%;
+}

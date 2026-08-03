@@ -85,6 +85,39 @@
         "problemMatcher": ["$tsc"]
       },
       {
+        "label": "studio: dev",
+        "type": "process",
+        "command": "npm.cmd",
+        "args": ["run", "dev"],
+        "options": { "cwd": "${workspaceFolder}/apps/studio" },
+        "isBackground": true,
+        "problemMatcher": {
+          "owner": "modeller-studio",
+          "pattern": {
+            "regexp": "^(.*)$",
+            "message": 1
+          },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": ".*Starting.*",
+            "endsPattern": ".*ready.*"
+          }
+        },
+        "presentation": {
+          "group": "development",
+          "reveal": "always",
+          "panel": "dedicated"
+        }
+      },
+      {
+        "label": "studio: build lsp",
+        "type": "process",
+        "command": "npm.cmd",
+        "args": ["run", "server:build"],
+        "options": { "cwd": "${workspaceFolder}/apps/studio" },
+        "problemMatcher": "$msCompile"
+      },
+      {
         "label": "model: test",
         "type": "process",
         "command": "dotnet",
@@ -116,6 +149,21 @@
         "request": "launch",
         "command": "npm run dev",
         "cwd": "${workspaceFolder}"
+      },
+      {
+        "name": "Modeller Studio",
+        "type": "pwa-chrome",
+        "request": "launch",
+        "url": "http://localhost:3100",
+        "webRoot": "${workspaceFolder}/apps/studio",
+        "preLaunchTask": "studio: dev"
+      },
+      {
+        "name": "Modeller Studio: server",
+        "type": "node-terminal",
+        "request": "launch",
+        "command": "npm run dev",
+        "cwd": "${workspaceFolder}/apps/studio"
       }
     ]
   }

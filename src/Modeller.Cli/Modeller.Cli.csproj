@@ -11,6 +11,6 @@
     <RepositoryUrl>https://github.com/Allann/Modeller.Next</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
-  <ItemGroup><ProjectReference Include="../Modeller.Parsing/Modeller.Parsing.csproj" /><ProjectReference Include="../Modeller.Generation/Modeller.Generation.csproj" /><ProjectReference Include="../Modeller.Rendering/Modeller.Rendering.csproj" /><ProjectReference Include="../Modeller.Output/Modeller.Output.csproj" /><ProjectReference Include="../Modeller.Configuration/Modeller.Configuration.csproj" /><ProjectReference Include="../Modeller.GenerationWorkflow/Modeller.GenerationWorkflow.csproj" /><ProjectReference Include="../Modeller.Templates/Modeller.Templates.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../Modeller.Parsing/Modeller.Parsing.csproj" /><ProjectReference Include="../Modeller.Generation/Modeller.Generation.csproj" /><ProjectReference Include="../Modeller.Rendering/Modeller.Rendering.csproj" /><ProjectReference Include="../Modeller.Output/Modeller.Output.csproj" /><ProjectReference Include="../Modeller.Configuration/Modeller.Configuration.csproj" /><ProjectReference Include="../Modeller.GenerationWorkflow/Modeller.GenerationWorkflow.csproj" /><ProjectReference Include="../Modeller.Templates/Modeller.Templates.csproj" /><ProjectReference Include="../Modeller.Projections/Modeller.Projections.csproj" /></ItemGroup>
   <ItemGroup><PackageReference Include="System.CommandLine" /></ItemGroup>
 </Project>

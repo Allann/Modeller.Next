@@ -1,0 +1,7 @@
+node_modules
+.next
+server-bin
+public/grammars
+*.tsbuildinfo
+test-results
+playwright-report

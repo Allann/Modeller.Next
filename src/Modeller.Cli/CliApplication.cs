@@ -62,7 +62,22 @@ public static class CliApplication
         root.Subcommands.Add(WorkflowCommand("plan", "Create a deterministic generation plan without writing files.", host, Plan));
         root.Subcommands.Add(GenerateCommand(host));
         root.Subcommands.Add(InitCommand(host));
+        root.Subcommands.Add(ProjectCommand(host));
         return root;
+    }
+
+    private static Command ProjectCommand(ICliHost host)
+    {
+        var workspace = new Option<string>("--workspace") { Description = "Workspace containing a declared .modeller/config.json.", Required = true };
+        var view = new Option<string>("--view") { Description = "Diagram view kind (e.g. Lifecycle, RuleDecision).", Required = true };
+        var rootOption = new Option<string?>("--root") { Description = "Semantic id to root the projection at. Omit to list available roots for --view." };
+        var format = FormatOption();
+        var command = new Command("project", "List projection roots, or project a diagram for one, from a workspace's canonical model.");
+        command.Options.Add(workspace); command.Options.Add(view); command.Options.Add(rootOption); command.Options.Add(format);
+        command.SetAction(async (parse, cancellation) => (int)await WorkspaceProjection.ExecuteAsync(
+            parse.GetRequiredValue(workspace), parse.GetRequiredValue(view), parse.GetValue(rootOption),
+            parse.GetValue(format) == "json", host, cancellation));
+        return command;
     }
 
     private static Command GenerateCommand(ICliHost host)

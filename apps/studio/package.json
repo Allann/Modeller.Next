@@ -1,0 +1,43 @@
+{
+  "name": "modeller-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local definition design tool for Modeller — workspace explorer, readable-source editor with live LSP diagnostics.",
+  "scripts": {
+    "predev": "node scripts/copy-grammars.mjs",
+    "dev": "tsx server.ts",
+    "prebuild": "node scripts/copy-grammars.mjs",
+    "build": "next build",
+    "start": "cross-env NODE_ENV=production tsx server.ts",
+    "lint": "eslint .",
+    "types:check": "tsc --noEmit",
+    "server:build": "dotnet publish ../../src/Modeller.LanguageServer/Modeller.LanguageServer.csproj -c Release -o server-bin && dotnet publish ../../src/Modeller.Cli/Modeller.Cli.csproj -c Release -o server-bin",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@dagrejs/dagre": "^3.1.0",
+    "@xyflow/react": "^12.11.2",
+    "monaco-editor": "0.56.0",
+    "monaco-editor-textmate": "^4.0.0",
+    "monaco-textmate": "^3.0.1",
+    "next": "16.2.12",
+    "onigasm": "^2.2.5",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-resizable-panels": "^4.12.2",
+    "ws": "^8.21.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@types/ws": "^8.5.13",
+    "cross-env": "^7.0.3",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "16.2.12",
+    "tsx": "^4.23.5",
+    "typescript": "^5.7.0"
+  }
+}

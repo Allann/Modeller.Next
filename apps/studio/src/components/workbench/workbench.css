@@ -1,0 +1,249 @@
+.shell {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--modeller-line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 800;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 0.5rem;
+  background: var(--modeller-teal);
+  color: white;
+  font-size: 0.8rem;
+}
+
+.panel-group {
+  height: 100%;
+}
+
+.resize-handle {
+  width: 4px;
+  background: var(--modeller-line);
+  cursor: col-resize;
+}
+.resize-handle:hover,
+.resize-handle[data-resize-handle-active] {
+  background: var(--modeller-teal);
+}
+
+.explorer {
+  height: 100%;
+  overflow: auto;
+  padding: 0.8rem;
+  border-right: 1px solid var(--modeller-line);
+}
+
+.explorer-folder {
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin: 0.7rem 0 0.25rem;
+  padding-left: calc(var(--depth, 0) * 0.75rem);
+}
+
+.explorer-doc {
+  padding: 0.3rem 0.5rem;
+  padding-left: calc(0.5rem + var(--depth, 0) * 0.75rem);
+  border-radius: 0.35rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.explorer-doc:hover {
+  background: color-mix(in srgb, var(--modeller-mint) 20%, transparent);
+}
+.explorer-doc.active {
+  background: color-mix(in srgb, var(--modeller-mint) 28%, transparent);
+  color: var(--modeller-teal);
+  font-weight: 700;
+}
+
+.center {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tabbar {
+  display: flex;
+  border-bottom: 1px solid var(--modeller-line);
+  overflow-x: auto;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.8rem;
+  border-right: 1px solid var(--modeller-line);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab.active {
+  background: color-mix(in srgb, var(--modeller-mint) 16%, transparent);
+  font-weight: 700;
+}
+.tab button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.editor-container {
+  flex: 1;
+  min-height: 0;
+}
+
+.problems {
+  border-top: 1px solid var(--modeller-line);
+  max-height: 9rem;
+  overflow: auto;
+  font-size: 0.78rem;
+}
+
+.problems-empty {
+  padding: 0.6rem 0.9rem;
+  opacity: 0.6;
+}
+
+.problem-row {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+}
+.problem-row:hover {
+  background: color-mix(in srgb, var(--modeller-mint) 16%, transparent);
+}
+
+.diagram-placeholder {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, currentColor 45%, transparent);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.diagram-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.diagram-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--modeller-line);
+}
+
+.diagram-toolbar select {
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--modeller-line);
+  background: transparent;
+  color: inherit;
+  font-size: 0.8rem;
+  /* Native <option> popups render with system/browser colors unless
+     color-scheme tells the browser which palette to pick from — without
+     this the closed <select> can look dark-themed while its open dropdown
+     list still renders light (or vice versa). */
+  color-scheme: light;
+}
+.diagram-toolbar select option {
+  background: #fbfaf7;
+  color: var(--modeller-ink);
+}
+
+@media (prefers-color-scheme: dark) {
+  .diagram-toolbar select {
+    color-scheme: dark;
+  }
+  .diagram-toolbar select option {
+    background: #0b1d22;
+    color: #edfdf9;
+  }
+}
+
+.diagram-error {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.78rem;
+  color: #d97706;
+}
+
+/* React Flow's default node/edge styles are plain white/black — override to
+   match the app palette in both themes rather than leaving the library
+   defaults, which read as unthemed against the dark workbench chrome. */
+.diagram-pane .react-flow__node {
+  background: #fbfaf7;
+  color: var(--modeller-ink);
+  border: 1px solid var(--modeller-line);
+  border-radius: 0.5rem;
+  font-size: 0.78rem;
+  padding: 0.5rem 0.7rem;
+}
+.diagram-pane .react-flow__handle {
+  background: var(--modeller-teal);
+  border-color: var(--modeller-teal);
+}
+.diagram-pane .react-flow__edge-path {
+  stroke: color-mix(in srgb, currentColor 45%, transparent);
+}
+.diagram-pane .react-flow__edge-text {
+  fill: currentColor;
+}
+.diagram-pane .react-flow__edge-textbg {
+  fill: #fbfaf7;
+}
+.diagram-pane .react-flow__attribution {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .diagram-pane .react-flow__node {
+    background: #0b1d22;
+    color: #edfdf9;
+  }
+  .diagram-pane .react-flow__edge-textbg {
+    fill: #0b1d22;
+  }
+}
+
+.diagram-pane .react-flow {
+  flex: 1;
+}
+
+.empty-editor {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, currentColor 45%, transparent);
+  font-size: 0.85rem;
+}
