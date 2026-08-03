@@ -11,14 +11,12 @@
   --modeller-muted: #4b6068;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --modeller-line: rgba(226, 252, 246, 0.14);
-    --modeller-surface: #0c1d23;
-    --modeller-bg: #071419;
-    --modeller-fg: #edfdf9;
-    --modeller-muted: #9fc3bd;
-  }
+.dark {
+  --modeller-line: rgba(226, 252, 246, 0.14);
+  --modeller-surface: #0c1d23;
+  --modeller-bg: #071419;
+  --modeller-fg: #edfdf9;
+  --modeller-muted: #9fc3bd;
 }
 
 * {
@@ -62,9 +60,17 @@ p {
 }
 
 .site-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   font-weight: 600;
   text-decoration: none;
   color: var(--modeller-fg);
+}
+
+.site-header-nav {
+  display: flex;
+  align-items: center;
 }
 
 .site-header-nav a {
@@ -75,6 +81,47 @@ p {
 }
 
 .site-header-nav a:hover {
+  color: var(--modeller-teal-bright);
+}
+
+.wordmark-mark {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: 0.55rem;
+  background: var(--modeller-teal);
+  color: white;
+  font-weight: 850;
+  font-size: 0.9rem;
+}
+
+.site-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+  color: var(--modeller-fg);
+}
+
+.theme-toggle {
+  margin-left: 1.25rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--modeller-line);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--modeller-muted);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.theme-toggle:hover {
+  border-color: var(--modeller-teal-bright);
   color: var(--modeller-teal-bright);
 }
 
