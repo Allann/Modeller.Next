@@ -96,6 +96,68 @@ public sealed class TemplatePackLoaderTests
         Assert.Equal("template-pack.output.duplicate", Assert.Single(result.Diagnostics).Code);
     }
 
+    [Fact]
+    public void Load_throws_when_request_is_null()
+    {
+        Assert.Throws<ArgumentNullException>(() => TemplatePackLoader.Load(null!, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public void Load_returns_cancelled_diagnostic_when_the_token_is_already_cancelled()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var result = TemplatePackLoader.Load(new PackLoadRequest(Source(Manifest(false)), ["1.0"], [new RendererIdentity("scriban", "1.0")]), cts.Token);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("template-pack.cancelled", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void Manifest_that_deserializes_to_null_is_rejected()
+    {
+        var result = TemplatePackLoader.Load(new PackLoadRequest(Source("null"), ["1.0"], [new RendererIdentity("scriban", "1.0")]), TestContext.Current.CancellationToken);
+        Assert.False(result.IsSuccess);
+        Assert.Equal("template-pack.identity.required", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void Manifest_with_a_blank_pack_version_is_rejected()
+    {
+        var manifest = """{"id":"csharp-domain-project","version":"1.0","packVersion":"","generationContractVersion":"1.0","rendererId":"scriban","rendererVersion":"1.0","language":"csharp","outputs":[]}""";
+        var result = TemplatePackLoader.Load(new PackLoadRequest(Source(manifest), ["1.0"], [new RendererIdentity("scriban", "1.0")]), TestContext.Current.CancellationToken);
+        Assert.False(result.IsSuccess);
+        Assert.Equal("template-pack.identity.required", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void Manifest_with_no_outputs_field_succeeds_with_an_empty_output_set()
+    {
+        var manifest = """{"id":"csharp-domain-project","version":"1.0","packVersion":"1.0.0","generationContractVersion":"1.0","rendererId":"scriban","rendererVersion":"1.0","language":"csharp"}""";
+        var result = TemplatePackLoader.Load(new PackLoadRequest(Source(manifest), ["1.0"], [new RendererIdentity("scriban", "1.0")]), TestContext.Current.CancellationToken);
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Pack!.Outputs);
+    }
+
+    [Fact]
+    public void Output_with_an_unsafe_logical_path_is_rejected()
+    {
+        var manifest = """{"id":"csharp-domain-project","version":"1.0","packVersion":"1.0.0","generationContractVersion":"1.0","rendererId":"scriban","rendererVersion":"1.0","language":"csharp","outputs":[{"id":"rule","scope":"rule","logicalPath":"../escape.cs","owner":"csharp-domain-project","templateId":"rule.cs"}]}""";
+        var result = TemplatePackLoader.Load(new PackLoadRequest(Source(manifest), ["1.0"], [new RendererIdentity("scriban", "1.0")]), TestContext.Current.CancellationToken);
+        Assert.False(result.IsSuccess);
+        Assert.Equal("template-pack.output.invalid", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void Output_with_an_unsafe_template_id_is_rejected()
+    {
+        var manifest = """{"id":"csharp-domain-project","version":"1.0","packVersion":"1.0.0","generationContractVersion":"1.0","rendererId":"scriban","rendererVersion":"1.0","language":"csharp","outputs":[{"id":"rule","scope":"rule","logicalPath":"Rules/{definitionName}.cs","owner":"csharp-domain-project","templateId":"../rule.cs"}]}""";
+        var result = TemplatePackLoader.Load(new PackLoadRequest(Source(manifest), ["1.0"], [new RendererIdentity("scriban", "1.0")]), TestContext.Current.CancellationToken);
+        Assert.False(result.IsSuccess);
+        Assert.Equal("template-pack.output.invalid", Assert.Single(result.Diagnostics).Code);
+    }
+
     private static PackSource Source(string manifest) => new("child-care-pack", manifest,
         ImmutableDictionary<string, string>.Empty.Add("rule.cs", "public static class Eligibility;"));
     private static string Manifest(bool reordered) => reordered ?
