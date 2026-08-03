@@ -200,7 +200,8 @@ internal static class PythonInterpreter
             }
             catch (Exception exception) when (exception is System.ComponentModel.Win32Exception or IOException)
             {
-                // Interpreter not found under this name; try the next candidate.
+                // The candidate name isn't a runnable executable on this PATH; try the next one.
+                continue;
             }
         }
         return null;
