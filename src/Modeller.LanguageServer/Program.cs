@@ -4,6 +4,8 @@ using System.Text.Json;
 using Modeller.Editor;
 using Modeller.Parsing;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Modeller.LanguageServer.Tests")]
+
 var server = new RmlLspServer(Console.OpenStandardInput(), Console.OpenStandardOutput());
 await server.RunAsync();
 
