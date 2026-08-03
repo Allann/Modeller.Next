@@ -1,10 +1,11 @@
 // Wires an LspConnection to plain monaco-editor's own provider APIs — the
 // same "IntelliSense" surface any Monaco-based tool uses (TypeScript
-// Playground, etc.), no VS Code workbench involved. Only registers providers
-// for the LSP methods Modeller.LanguageServer actually implements: hover,
-// completion, definition, references, rename, document symbols, diagnostics.
-// Semantic tokens are a known follow-up (delta encoding adds real complexity,
-// and TextMate grammar coloring already covers basic highlighting).
+// Playground, etc.), no VS Code workbench involved. Registers providers for
+// every LSP method Modeller.LanguageServer implements: hover, completion,
+// definition, references, rename, document symbols, diagnostics, and
+// semantic tokens (full only — the server only implements
+// textDocument/semanticTokens/full, not the delta variant, so there's no
+// delta complexity to handle client-side either).
 import type * as Monaco from 'monaco-editor';
 import { LspConnection } from './protocol';
 
@@ -19,7 +20,9 @@ interface AttachOptions {
 export async function attachLanguageServer({ monaco, connection, languageId, uri, model }: AttachOptions): Promise<{ dispose: () => void }> {
   await connection.whenReady();
 
-  await connection.request('initialize', {
+  const initializeResult = await connection.request<{
+    capabilities?: { semanticTokensProvider?: { legend?: Monaco.languages.SemanticTokensLegend } };
+  }>('initialize', {
     processId: null,
     rootUri: null,
     capabilities: {
@@ -28,6 +31,7 @@ export async function attachLanguageServer({ monaco, connection, languageId, uri
         hover: { contentFormat: ['plaintext', 'markdown'] },
         completion: { completionItem: { snippetSupport: false } },
         publishDiagnostics: {},
+        semanticTokens: { requests: { full: true } },
       },
     },
   });
@@ -59,6 +63,11 @@ export async function attachLanguageServer({ monaco, connection, languageId, uri
     );
   });
 
+  // Monaco only re-invokes provideDocumentSemanticTokens when this fires — it
+  // has no other way to learn that an edit made the previous tokens stale.
+  const semanticTokensChanged = new monaco.Emitter<void>();
+  disposables.push(semanticTokensChanged);
+
   let version = 1;
   disposables.push(
     model.onDidChangeContent(() => {
@@ -67,6 +76,7 @@ export async function attachLanguageServer({ monaco, connection, languageId, uri
         textDocument: { uri, version },
         contentChanges: [{ text: model.getValue() }],
       });
+      semanticTokensChanged.fire();
     }),
   );
 
@@ -164,6 +174,24 @@ export async function attachLanguageServer({ monaco, connection, languageId, uri
       },
     }),
   );
+
+  const legend = initializeResult.capabilities?.semanticTokensProvider?.legend;
+  if (legend) {
+    disposables.push(
+      monaco.languages.registerDocumentSemanticTokensProvider(languageId, {
+        onDidChange: semanticTokensChanged.event,
+        getLegend: () => legend,
+        provideDocumentSemanticTokens: async () => {
+          const result = await connection.request<{ data: number[] } | null>('textDocument/semanticTokens/full', {
+            textDocument: { uri },
+          });
+          if (!result) return null;
+          return { data: Uint32Array.from(result.data), resultId: undefined };
+        },
+        releaseDocumentSemanticTokens: () => {},
+      }),
+    );
+  }
 
   return {
     dispose: () => {
