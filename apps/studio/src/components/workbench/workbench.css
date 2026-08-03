@@ -81,10 +81,54 @@
   min-width: 0;
 }
 
+.tabbar-wrap {
+  position: relative;
+  min-width: 0;
+}
+
 .tabbar {
   display: flex;
   border-bottom: 1px solid var(--modeller-line);
   overflow-x: auto;
+  /* Without an explicit width constraint, a flex item's default min-width:
+     auto keeps it sized to its content's intrinsic (min-content) width —
+     here, the sum of every nowrap-ed tab — so it grows past the pane's
+     available width and spills into the neighboring diagram pane instead of
+     triggering its own overflow-x scrollbar. width: 100% + min-width: 0 pins
+     it to the pane's actual width so the browser scrolls within it instead. */
+  width: 100%;
+  min-width: 0;
+  scrollbar-width: thin;
+}
+
+.tabbar-scroll-btn {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1.6rem;
+  display: grid;
+  place-items: center;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font-size: 0.9rem;
+  z-index: 1;
+}
+.tabbar-scroll-btn.left {
+  left: 0;
+  background: linear-gradient(to right, #fbfaf7 55%, transparent);
+}
+.tabbar-scroll-btn.right {
+  right: 0;
+  background: linear-gradient(to left, #fbfaf7 55%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  .tabbar-scroll-btn.left {
+    background: linear-gradient(to right, #071419 55%, transparent);
+  }
+  .tabbar-scroll-btn.right {
+    background: linear-gradient(to left, #071419 55%, transparent);
+  }
 }
 
 .tab {
