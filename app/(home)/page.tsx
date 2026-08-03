@@ -6,6 +6,7 @@ import {
   Braces,
   Check,
   Code2,
+  Download,
   Layers3,
   RefreshCw,
   Route,
@@ -142,6 +143,21 @@ export default function HomePage() {
           </p>
         </div>
         <ShieldCheck className="ai-shield" size={72} aria-hidden="true" />
+      </section>
+
+      <section className="download-section">
+        <div className="download-icon"><Download size={30} /></div>
+        <div>
+          <p className="eyebrow">Get Modeller <span className="coming-soon-badge">Coming soon</span></p>
+          <h2>A desktop app for the whole workflow.</h2>
+          <p>
+            Model, generate, and review projects without leaving your machine. The
+            Modeller desktop app for macOS, Windows, and Linux is on its way.
+          </p>
+        </div>
+        <span className="primary-action download-action" aria-disabled="true">
+          Download <span className="coming-soon-badge">Coming soon</span>
+        </span>
       </section>
 
       <section className="final-cta">
