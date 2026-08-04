@@ -161,10 +161,15 @@ scale-to-zero) or **Google Cloud Run** (equally mature, cloud-neutral). Do not r
 into Azure Functions or AWS Lambda to fit a host — #71 already asks for a portable container, and
 ordinary serverless container platforms preserve that design; Lambda/Functions would not.
 
-`src/Modeller.Api/Dockerfile` is the canonical image definition;
-`src/Modeller.Api/Dockerfile.vercel` is presently an intentional duplicate (Vercel requires that
-exact filename) kept in sync by hand until the spike settles exact placement/`vercel.json` wiring
-— collapse the duplication with a small build script if the two start to diverge.
+`src/Modeller.Api/Dockerfile` is the canonical image definition, built with the repo root as
+context (`docker build -f src/Modeller.Api/Dockerfile .`). `Dockerfile.vercel` at the **repo
+root** — not next to it under `src/Modeller.Api/` — is an intentional duplicate kept in sync by
+hand: Vercel's single-service container support requires the file to be named exactly
+`Dockerfile.vercel` and to sit at the project's configured Root Directory, and that Root Directory
+must be the repo root for the build to reach the sibling projects and root-level files the
+Dockerfile copies. Configure the Vercel project's Root Directory as the repo root (no `vercel.json`
+"services" block is needed for this single container); collapse the duplication with a small build
+script if the two Dockerfiles start to diverge.
 
 ## Deployment and rollback
 

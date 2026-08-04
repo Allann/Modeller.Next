@@ -1,14 +1,17 @@
-# Identical to ./Dockerfile — duplicated (not symlinked) because Vercel's container-Function
-# support requires the file to be named exactly "Dockerfile.vercel" (or "Containerfile.vercel").
-# See docs/architecture/decisions/hosted-workspace-api.mdx and docs/research/issue-71-hosting-options.md
-# for the deployment-spike questions to answer before relying on this file in production:
-# .NET 10 boot time/memory within the selected plan's limits, cancellation on disconnect/
-# termination, health checks, OTLP export, and cold-start latency after scale-to-zero.
-#
-# Exact placement (repo root vs. this project directory) and any vercel.json wiring depend on how
-# the Vercel project is configured during that spike — kept here, next to the canonical Dockerfile,
-# until that's settled. If the two ever need to diverge, collapse the duplication with a small
-# build script instead of hand-maintaining two Dockerfiles.
+# Nearly identical to src/Modeller.Api/Dockerfile — duplicated (not symlinked) because Vercel's
+# container-Function support requires the file to be named exactly "Dockerfile.vercel" (or
+# "Containerfile.vercel") AND to sit at the project's Root Directory. For a single-service Vercel
+# project (no vercel.json "services" block), that root directory must be THIS repo's root — not
+# src/Modeller.Api — because every COPY below reaches sibling projects (Modeller.Workspace,
+# Modeller.Parsing, ...) and root-level files (Directory.Build.props, Modeller.slnx) that a
+# src/Modeller.Api-scoped build context could not see. Configure the Vercel project's Root
+# Directory as the repo root; there is no need for a vercel.json "services" entry for this single
+# container. See docs/architecture/decisions/hosted-workspace-api.mdx and
+# docs/research/issue-71-hosting-options.md for the deployment-spike questions to answer before
+# relying on this file in production: .NET 10 boot time/memory within the selected plan's limits,
+# cancellation on disconnect/termination, health checks, OTLP export, and cold-start latency after
+# scale-to-zero. If this file and src/Modeller.Api/Dockerfile ever need to diverge, collapse the
+# duplication with a small build script instead of hand-maintaining two Dockerfiles.
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
