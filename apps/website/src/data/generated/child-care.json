@@ -1,0 +1,160 @@
+{
+  "slug": "child-care",
+  "generatedAt": "2026-08-03T11:39:49.876Z",
+  "source": [
+    {
+      "path": "model/context.modeller",
+      "content": "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n"
+    },
+    {
+      "path": "model/entities/accs-determination-application.modeller",
+      "content": "rml 1.0\nentity ACCS determination application\n  lifecycle ACCS determination application lifecycle\n    stage Draft\n    stage Submitted\n  end\nend\n"
+    },
+    {
+      "path": "model/entities/booking.modeller",
+      "content": "rml 1.0\r\n# A Booking of attendance for a child at a centre for a session.\r\nentity Booking\r\n  field Booking date\r\n    type date\r\n  end\r\n  field Minutes early\r\n    type int32\r\n  end\r\n  field Minutes late\r\n    type int32\r\n  end\r\n  field Session start time\r\n    type time\r\n  end\r\n  field Session end time\r\n    type time\r\n  end\r\n  field Adjusted start time\r\n    type time\r\n    optional\r\n  end\r\n  field Adjusted end time\r\n    type time\r\n    optional\r\n  end\r\n  field Adjusted hours\r\n    type decimal(12,2)\r\n    optional\r\n  end\r\n  field Absence is chargeable\r\n    type boolean\r\n    optional\r\n  end\r\n  field Attending preschool program\r\n    type boolean\r\n    optional\r\n  end\r\n  field Absence document is held\r\n    type boolean\r\n    optional\r\n  end\r\n  field Grace period in minutes\r\n    type int32\r\n  end\r\n  field Booking status\r\n    type enumeration \"Booking status\"\r\n  end\r\n  field Adjusted reason\r\n    type enumeration \"Booking adjusted reason\"\r\n  end\r\n  field Arrangement type\r\n    type enumeration \"Arrangement type\"\r\n  end\r\n  field Booking summary state\r\n    type enumeration \"Booking summary state\"\r\n  end\r\n  relationship Routine booking session\r\n    target \"Routine booking session\"\r\n    cardinality one\r\n  end\r\n  relationship Casual booking session\r\n    target \"Casual booking session\"\r\n    cardinality one\r\n  end\r\n  relationship Arrangement\r\n    target \"Arrangement\"\r\n    cardinality one\r\n  end\r\n  relationship Absence\r\n    target \"Absence\"\r\n    cardinality one\r\n    optional\r\n  end\r\n  relationship Session\r\n    target \"Session\"\r\n    cardinality one\r\n  end\r\n  relationship Room\r\n    target \"Room\"\r\n    cardinality one\r\n  end\r\n  relationship Room session fee\r\n    target \"Room session fee\"\r\n    cardinality one\r\n  end\r\n  relationship Child\r\n    target \"Child\"\r\n    cardinality one\r\n  end\r\n  relationship Absence reason\r\n    target \"Absence reason\"\r\n    cardinality one\r\n    optional\r\n  end\r\n  relationship Attendances\r\n    target \"Attendance\"\r\n    cardinality many\r\n  end\r\nend\r\n"
+    },
+    {
+      "path": "model/entities/booking-relationship-targets.modeller",
+      "content": "rml 1.0\n# Identity-only declarations; their structure belongs to later migration slices.\nentity Routine booking session\nend\nentity Casual booking session\nend\nentity Arrangement\nend\nentity Absence\nend\nentity Session\nend\nentity Room\nend\nentity Room session fee\nend\nentity Child\nend\nentity Absence reason\nend\nentity Attendance\nend\n"
+    },
+    {
+      "path": "model/enumerations/arrangement-type.modeller",
+      "content": "rml 1.0\nenumeration Arrangement type\n  member CWA\n    value 1\n  end\n  member OA\n    value 2\n  end\n  member RA\n    value 3\n  end\n  member ACCS\n    value 4\n  end\nend\n"
+    },
+    {
+      "path": "model/enumerations/booking-adjusted-reason.modeller",
+      "content": "rml 1.0\nenumeration Booking adjusted reason\n  member Not adjusted\n    value 1\n  end\n  member Partial public holiday\n    value 2\n  end\n  member Partial room closure\n    value 3\n  end\nend\n"
+    },
+    {
+      "path": "model/enumerations/booking-status.modeller",
+      "content": "rml 1.0\nenumeration Booking status\n  member Planned\n    value 1\n  end\n  member Missed sign in\n    value 2\n  end\n  member Attending\n    value 3\n  end\n  member Missed sign out\n    value 4\n  end\n  member Attended\n    value 5\n  end\n  member Absence\n    value 6\n  end\n  member Planned holiday\n    value 7\n  end\n  member Public holiday\n    value 8\n  end\n  member Room closure\n    value 9\n  end\n  member Removed\n    value 10\n  end\n  member Conflict\n    value 11\n  end\n  member Absence void\n    value 12\n  end\nend\n"
+    },
+    {
+      "path": "model/enumerations/booking-summary-state.modeller",
+      "content": "rml 1.0\nenumeration Booking summary state\n  member Planned\n    value 1\n  end\n  member Absent\n    value 2\n  end\n  member Attended\n    value 3\n  end\n  member Error\n    value 4\n  end\n  member Void\n    value 5\n  end\n  member Removed\n    value 6\n  end\nend\n"
+    },
+    {
+      "path": "model/facts/accs-eligibility.modeller",
+      "content": "rml 1.0\nfact Active enrolment exists\n  type truth\n  export\nend\nfact Supporting evidence is held\n  type truth\n  export\nend\n"
+    },
+    {
+      "path": "model/rules/determine-accs-eligibility.modeller",
+      "content": "rml 1.0\nrule Determine ACCS eligibility\n  input \"Active enrolment exists\"\n  input \"Supporting evidence is held\"\n  when all\n    fact \"Active enrolment exists\"\n    fact \"Supporting evidence is held\"\n  end\n  conclusion Eligible\n  end\n  finding \"Active enrolment exists\" true accs.active-enrolment-confirmed\n  finding \"Supporting evidence is held\" true accs.supporting-evidence-confirmed\n  finding \"Active enrolment exists\" missing accs.active-enrolment-required\n  finding \"Supporting evidence is held\" missing accs.supporting-evidence-required\n  export\nend\n"
+    },
+    {
+      "path": "model/behaviours/submit-accs-determination-application.modeller",
+      "content": "rml 1.0\nbehaviour Submit ACCS determination application\n  for \"ACCS determination application\"\n  requires \"Determine ACCS eligibility\"\n  outcome Application submitted\n  end\n  outcome Application rejected\n  end\n  transition Submit application\n    lifecycle \"ACCS determination application lifecycle\"\n    from \"Draft\"\n    to \"Submitted\"\n    outcome \"Application submitted\"\n  end\nend\n"
+    }
+  ],
+  "views": {
+    "Lifecycle": {
+      "supported": true,
+      "roots": [
+        {
+          "id": "0191f6d4-4ea0-7000-8000-000000000002",
+          "name": "ACCS determination application",
+          "slug": "accs-determination-application"
+        }
+      ],
+      "graph": {
+        "sourceRevision": 20,
+        "kind": "Lifecycle",
+        "nodes": [
+          {
+            "id": "stage:0191f6d4-4ea0-7000-8000-000000000004",
+            "role": "lifecycle-stage",
+            "label": "Draft",
+            "semanticIds": [
+              "0191f6d4-4ea0-7000-8000-000000000004"
+            ]
+          },
+          {
+            "id": "stage:0191f6d4-4ea0-7000-8000-000000000005",
+            "role": "lifecycle-stage",
+            "label": "Submitted",
+            "semanticIds": [
+              "0191f6d4-4ea0-7000-8000-000000000005"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "transition:0191f6d4-4ea0-7000-8000-00000000000d",
+            "role": "transition",
+            "label": "Submit application",
+            "sourceId": "stage:0191f6d4-4ea0-7000-8000-000000000004",
+            "targetId": "stage:0191f6d4-4ea0-7000-8000-000000000005",
+            "semanticIds": [
+              "0191f6d4-4ea0-7000-8000-00000000000d"
+            ]
+          }
+        ]
+      }
+    },
+    "RuleDecision": {
+      "supported": true,
+      "roots": [
+        {
+          "id": "0191f6d4-4ea0-7000-8000-000000000008",
+          "name": "Determine ACCS eligibility",
+          "slug": "determine-accs-eligibility"
+        }
+      ],
+      "graph": {
+        "sourceRevision": 20,
+        "kind": "RuleDecision",
+        "nodes": [
+          {
+            "id": "fact:0191f6d4-4ea0-7000-8000-000000000006",
+            "role": "fact",
+            "label": "Active enrolment exists",
+            "semanticIds": [
+              "0191f6d4-4ea0-7000-8000-000000000006"
+            ]
+          },
+          {
+            "id": "fact:0191f6d4-4ea0-7000-8000-000000000007",
+            "role": "fact",
+            "label": "Supporting evidence is held",
+            "semanticIds": [
+              "0191f6d4-4ea0-7000-8000-000000000007"
+            ]
+          },
+          {
+            "id": "conclusion:0191f6d4-4ea0-7000-8000-000000000009",
+            "role": "conclusion",
+            "label": "Eligible",
+            "semanticIds": [
+              "0191f6d4-4ea0-7000-8000-000000000009"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "input:0191f6d4-4ea0-7000-8000-000000000006:0191f6d4-4ea0-7000-8000-000000000009",
+            "role": "input",
+            "label": "",
+            "sourceId": "fact:0191f6d4-4ea0-7000-8000-000000000006",
+            "targetId": "conclusion:0191f6d4-4ea0-7000-8000-000000000009",
+            "semanticIds": [
+              "0191f6d4-4ea0-7000-8000-000000000006",
+              "0191f6d4-4ea0-7000-8000-000000000009"
+            ]
+          },
+          {
+            "id": "input:0191f6d4-4ea0-7000-8000-000000000007:0191f6d4-4ea0-7000-8000-000000000009",
+            "role": "input",
+            "label": "",
+            "sourceId": "fact:0191f6d4-4ea0-7000-8000-000000000007",
+            "targetId": "conclusion:0191f6d4-4ea0-7000-8000-000000000009",
+            "semanticIds": [
+              "0191f6d4-4ea0-7000-8000-000000000007",
+              "0191f6d4-4ea0-7000-8000-000000000009"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

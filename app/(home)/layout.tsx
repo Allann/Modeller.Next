@@ -10,6 +10,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
         { text: 'Why Modeller', url: '/#why-modeller' },
         { text: 'How it works', url: '/#how-it-works' },
         { text: 'Docs', url: '/docs' },
+        { text: 'Playground', url: 'https://modeller.website' },
         { type: 'button', text: 'Get started', url: '/docs/getting-started' },
       ]}
     >
