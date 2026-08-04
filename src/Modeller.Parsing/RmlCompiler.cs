@@ -60,13 +60,14 @@ public static partial class RmlCompiler
         return new(source, updated, !string.Equals(source, updated, StringComparison.Ordinal));
     }
 
-    public static RmlSourceEdit EnsureIdentities(string source)
+    public static RmlSourceEdit EnsureIdentities(string source, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(source);
         var lines = source.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
         var output = new List<string>(lines.Length);
         for (var index = 0; index < lines.Length; index++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var line = lines[index]; var trimmed = line.TrimStart();
             var separator = trimmed.IndexOf(' '); var keyword = separator < 0 ? trimmed : trimmed[..separator];
             var value = separator < 0 ? string.Empty : trimmed[(separator + 1)..].TrimStart();
@@ -83,7 +84,7 @@ public static partial class RmlCompiler
         return new(source, updated, !string.Equals(source, updated, StringComparison.Ordinal));
     }
 
-    public static RmlSourceEdit ApplyIdentities(string source, IReadOnlyList<string> identities)
+    public static RmlSourceEdit ApplyIdentities(string source, IReadOnlyList<string> identities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(identities);
@@ -92,6 +93,7 @@ public static partial class RmlCompiler
         var identityIndex = 0;
         foreach (var line in lines)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var trimmed = line.TrimStart();
             var separator = trimmed.IndexOf(' ');
             var keyword = separator < 0 ? trimmed : trimmed[..separator];

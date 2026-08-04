@@ -197,8 +197,8 @@ public sealed class DefinitionParserTests
     {
         const string source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n";
 
-        var first = RmlCompiler.EnsureIdentities(source);
-        var second = RmlCompiler.EnsureIdentities(first.Updated);
+        var first = RmlCompiler.EnsureIdentities(source, TestContext.Current.CancellationToken);
+        var second = RmlCompiler.EnsureIdentities(first.Updated, TestContext.Current.CancellationToken);
 
         Assert.True(first.Changed);
         Assert.Contains("# @id=", first.Updated);

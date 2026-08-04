@@ -46,13 +46,15 @@ public static class ModellerWorkspace
         var identified = ImmutableArray.CreateBuilder<WorkspaceDocument>(input.Documents.Length);
         foreach (var document in input.Documents)
         {
-            switch (ApplyIdentity(document, input.Identity))
+            switch (ApplyIdentity(document, input.Identity, cancellationToken))
             {
                 case WorkspaceOutcome<WorkspaceDocument>.Success success:
                     identified.Add(success.Value);
                     break;
                 case WorkspaceOutcome<WorkspaceDocument>.Failed failed:
                     return WorkspaceOutcome.Failed<AnalyzedWorkspace>(failed.Diagnostics);
+                case WorkspaceOutcome<WorkspaceDocument>.Cancelled:
+                    return WorkspaceOutcome.Cancelled<AnalyzedWorkspace>();
             }
         }
 
@@ -70,11 +72,22 @@ public static class ModellerWorkspace
     /// <summary>Applies one document's identity per <paramref name="strategy"/> — minting via
     /// <see cref="RmlCompiler.EnsureIdentities"/> for <see cref="IdentityStrategy.Ephemeral"/>, or
     /// applying a durable registry's ordered identities via <see cref="RmlCompiler.ApplyIdentities"/>,
-    /// surfacing registry coverage/mismatch as a diagnostic rather than a silent repair.</summary>
-    private static WorkspaceOutcome<WorkspaceDocument> ApplyIdentity(WorkspaceDocument document, IdentityStrategy strategy)
+    /// surfacing registry coverage/mismatch as a diagnostic rather than a silent repair. Both
+    /// transforms check <paramref name="cancellationToken"/> per source line, so a deadline
+    /// expiring mid-document is observed promptly rather than only between documents.</summary>
+    private static WorkspaceOutcome<WorkspaceDocument> ApplyIdentity(WorkspaceDocument document, IdentityStrategy strategy, CancellationToken cancellationToken)
     {
         if (strategy is IdentityStrategy.Ephemeral)
-            return WorkspaceOutcome.Success(document with { Content = RmlCompiler.EnsureIdentities(document.Content).Updated });
+        {
+            try
+            {
+                return WorkspaceOutcome.Success(document with { Content = RmlCompiler.EnsureIdentities(document.Content, cancellationToken).Updated });
+            }
+            catch (OperationCanceledException)
+            {
+                return WorkspaceOutcome.Cancelled<WorkspaceDocument>();
+            }
+        }
 
         var durable = (IdentityStrategy.Durable)strategy;
         if (!durable.Registry.Documents.TryGetValue(document.Path, out var identities))
@@ -82,7 +95,11 @@ public static class ModellerWorkspace
                 "workspace.identity-registry.document-missing", $"The identity registry does not cover '{document.Path.Value}'.");
         try
         {
-            return WorkspaceOutcome.Success(document with { Content = RmlCompiler.ApplyIdentities(document.Content, identities).Updated });
+            return WorkspaceOutcome.Success(document with { Content = RmlCompiler.ApplyIdentities(document.Content, identities, cancellationToken).Updated });
+        }
+        catch (OperationCanceledException)
+        {
+            return WorkspaceOutcome.Cancelled<WorkspaceDocument>();
         }
         catch (ArgumentException)
         {

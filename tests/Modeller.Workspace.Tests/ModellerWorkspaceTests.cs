@@ -129,16 +129,15 @@ public sealed class ModellerWorkspaceTests
     [Fact]
     public void Analyze_returns_failed_when_configuration_resolution_fails()
     {
-        var unsupportedVersionSource = new ConfigurationSource("bad", "2.0", ConfigurationSourceKind.Base, null, ImmutableDictionary<string, ConfigurationValue>.Empty);
         var input = new WorkspaceInput(
             [new(LogicalPath.Create("model/context.rml"), ContextAndEntityDocument)],
             IdentityStrategy.Ephemeral.Instance,
-            new WorkspaceConfigurationInput("1.0", "generated/", null, [unsupportedVersionSource]));
+            new WorkspaceConfigurationInput("${undefined-variable}", "generated/"));
 
         var outcome = ModellerWorkspace.Analyze(input, TestContext.Current.CancellationToken);
 
         var failed = Assert.IsType<WorkspaceOutcome<AnalyzedWorkspace>.Failed>(outcome);
-        Assert.Equal("configuration.version.unsupported", Assert.Single(failed.Diagnostics).Code);
+        Assert.Equal("configuration.variable.unresolved", Assert.Single(failed.Diagnostics).Code);
     }
 
     [Fact]

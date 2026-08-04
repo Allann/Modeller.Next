@@ -1,0 +1,191 @@
+---
+title: Hosted workspace API for the playground
+description: Expose ModellerWorkspace behind a stateless, bounded HTTP API rather than a CLI subprocess or a per-user language-server process.
+---
+
+Status: **Accepted**
+
+## Canonical terms
+
+[Workspace](/docs/concepts/ubiquitous-language#workspace) ·
+[Identity registry](/docs/concepts/ubiquitous-language#identity-registry) ·
+[Diagram projection](/docs/concepts/ubiquitous-language#diagram-projection)
+
+## Context
+
+The anonymous `modeller.website` playground (#68) needs to parse, validate, and project a
+visitor's RML with no host filesystem, no installed .NET toolchain, and no CLI process. Issue
+#70 built the transport-neutral seam (`Modeller.Workspace`/`ModellerWorkspace`) that makes this
+possible in-process; issue #71 hosts that seam behind an HTTP API. Before this decision, there
+was no ASP.NET Core project, Dockerfile, or deploy pipeline anywhere in the repository, and the
+two existing "run Modeller functionality as a long-lived process" precedents —
+`Modeller.LanguageServer` (stdio, stateful, spawned per browser tab by `apps/studio`) and
+`apps/studio`'s per-request CLI subprocess shell-out — are both explicitly *not* the model to
+follow here (see workspace-application-service.mdx's Non-goals).
+
+## Decision
+
+`Modeller.Api` is a new, ordinary stateless ASP.NET Core minimal API calling `ModellerWorkspace`
+directly — no subprocess, no per-user process, no session state. It depends only on
+`Modeller.Workspace`.
+
+**One endpoint, one round trip.** `POST /v1/workspace/analyze` accepts a full workspace
+(documents, identity, configuration) plus zero or more projection requests, and returns
+diagnostics, discoverable projection roots, and a projection result per requested view — all in
+one response. A second call cannot reuse an `AnalyzedWorkspace` from a first call (nothing is
+kept between requests), and for an `Ephemeral` identity strategy specifically, a second call
+would mint different random identities anyway — so analysis and projection must happen
+together, in the same call, against the same in-memory `AnalyzedWorkspace`. `GET
+/v1/workspace/supported-views` exposes `ModellerWorkspace.SupportedViewKinds` so a client doesn't
+have to hardcode the issue #64 allowlist.
+
+**Response shape distinguishes three cases**, matching the acceptance criteria's "stable, bounded
+responses" requirement:
+- Malformed/over-limit request shape (bad JSON, too many documents, an escaping path, too many
+  projection requests) → `400`, structured `api.*` diagnostics, never an unhandled exception.
+- Structurally valid request whose workspace fails to parse/validate → `200` with diagnostics
+  populated and no projections — this is expected user-input feedback, not a protocol error.
+- Cancellation (client disconnect, or the server-side deadline below) → `503`.
+
+**Request-shape limits** (`RequestLimits.cs`) sit in front of `ModellerWorkspace.Analyze`, because
+nothing below the API bounds document *count*, per-document size, or path depth today —
+`ParseOptions`/`ValidationProfile` only cap aggregate characters/tokens/statements/diagnostics,
+identically for the CLI's local-trust callers and anonymous public traffic. This is the layer
+where public-traffic ceilings belong: ≤50 documents, ≤200 KB/document, ≤8 path segments, ≤10
+projection requests, ≤50 roots per projection request, ≤5,000 definitions in an analyzed
+workspace, ≤2,000 elements (nodes+edges) in any one projected graph, and ≤5,000 elements combined
+across every projection in one response — tunable, not load-bearing on the design.
+
+Two of these bounds work together rather than independently, and are easy to get subtly wrong:
+the aggregate response bound must compare the running total *plus* each candidate projection's own
+count, not the running total alone — checking only the total accumulated so far still lets one
+large graph push the combined response past the ceiling (e.g. 4,500 already accumulated plus a
+1,000-element graph would otherwise return 5,500 uncaught); and the definition-count bound is
+checked once, before any projection runs at all, specifically because `DiagramProjector.Project`
+(`Modeller.Projections`) accepts neither a cancellation token nor a size budget of its own — a
+per-graph or aggregate cap alone only rejects a projection *after* it has already been computed,
+which does nothing to stop an adversarially large revision from making that computation itself
+slow or memory-heavy. Bounding the input a projection is ever asked to run against is the layer
+this API actually controls; instrumenting `DiagramProjector` internally would require changing a
+library this issue does not otherwise touch. `ExceedsAggregateGraphElementLimit`,
+`ExceedsDefinitionLimit`, and their paired response-builder helpers are small pure functions in
+`WorkspaceContractMappings` specifically so each bound's logic — not just its wiring — has a
+direct unit test.
+
+Every request-shape check is also a null-safety guard: `Nullable` annotations on
+the request DTOs are not runtime-enforced for a JSON payload that nulls out or omits a "required"
+field, so `RequestLimits.Validate` catches that as a diagnostic rather than letting it reach a
+null-dereference deeper in the pipeline; `RespectNullableAnnotations` on the JSON options closes
+the same gap for explicit nulls one layer earlier, at deserialization. A request whose JSON body
+cannot be parsed at all (or fails deserialization for a reason `RequestLimits` never sees, such as
+an explicit null for a top-level required property) still returns the same structured
+`WorkspaceAnalyzeResponse` envelope — with a generic `api.request.malformed` diagnostic — rather
+than the framework's default empty-bodied `400`, so a client can parse every `400` response the
+same way regardless of which layer rejected it.
+
+**Timeout, concurrency, CORS**: each request is bounded by a 5-second server-side deadline (a
+linked `CancellationTokenSource` combining the client's own cancellation with a fixed timer),
+shorter than any platform-level function duration limit; `WorkspaceOutcome<T>.Cancelled` (already
+a first-class case from #70) maps directly to `503`. The identity-application transforms
+(`RmlCompiler.EnsureIdentities`/`ApplyIdentities`) check that deadline per source line, not only
+between documents, so a large single document can't hold a deadline open past its own budget. A
+global concurrency-limiter (`AddRateLimiter`, in-box since .NET 7) caps simultaneous in-flight
+analyses, returning `429` past the limit. CORS is a named, configurable-origin policy
+(`Cors:AllowedOrigins`) — empty by default, so nothing is cross-origin-accessible until a specific
+origin is configured for the actual playground frontend — and explicitly allows the `Content-Type`
+header (`WithHeaders("Content-Type")`), without which a browser's preflight for a JSON `POST`
+would reject the follow-up request even with the origin itself permitted.
+
+**No-source-logging**: structured logs carry only request metadata (document/projection counts,
+outcome, elapsed time, diagnostic codes) — never document content or identity registries. This is
+enforced as a code-level rule (verified by `NoSourceLoggingTests`, which submits a unique marker
+string and asserts it never appears in captured log output, including on a failed analysis).
+
+## Observability
+
+Per docs/coding-standards/web-apis-and-services/seq-tracing.md, the service unconditionally
+registers Serilog (configured from `IConfiguration`, `UseSerilogRequestLogging()` for per-request
+HTTP logs) and OpenTelemetry tracing/metrics instrumenting both ASP.NET Core and outbound
+`HttpClient` calls (`AddAspNetCoreInstrumentation()`, `AddHttpClientInstrumentation()`), exported
+via `AddOtlpExporter()`. The exporter is registered unconditionally rather than gated on a
+configured endpoint — `AddOtlpExporter()` already honors the standard
+`OTEL_EXPORTER_OTLP_ENDPOINT`/`OTEL_EXPORTER_OTLP_*` environment variables itself (defaulting to
+`http://localhost:4317`) and fails soft (retries in the background) when no collector is
+reachable, so there is nothing this service needs to gate. **No document content or identity
+registry ever appears in a log, span, or metric** — logged fields are limited to document/
+projection counts, byte sizes, outcome, elapsed time, and diagnostic *codes*; see
+`NoSourceLoggingTests`.
+
+**Retention**: this service holds no state between requests and writes nothing to durable storage
+of its own — retention is entirely a property of wherever logs/traces/metrics are shipped (the
+OTLP collector and its backend), not of `Modeller.Api` itself. Since no collector is provisioned
+in this pass, there is no retention window to declare yet; whichever collector is chosen when a
+platform is selected (see Hosting, below) should apply its operator's standard retention policy
+for HTTP access logs and traces, with no exception carved out for this service (there is nothing
+sensitive to retain longer or purge sooner than usual, precisely because source text is never
+logged in the first place).
+
+## Version compatibility
+
+The `/v1/` prefix is the compatibility contract: a breaking change to the request or response
+shape ships as `/v2/`, with `/v1/` continuing to serve unchanged for existing callers rather than
+being mutated in place. Additive, backward-compatible changes (a new optional request field, a
+new response field, a new diagnostic code) do not require a version bump — clients must already
+tolerate unknown response fields and unrecognized diagnostic codes. `WorkspaceAnalyzeResponse`
+and `SupportedViewsResponse` both carry their own `ApiVersion` field ("1.0" today) as a
+finer-grained payload-shape marker independent of the URL version segment, for a client that wants
+to detect a payload-shape change without relying on the route. There is no deployed consumer of
+this API yet (the website frontend integration is #68/#72/#73's work), so no compatibility window
+has been exercised in practice — this section states the policy the first breaking change must
+follow, not a retrofit of an existing one.
+
+## Hosting: container-first, platform-undetermined
+
+Per `docs/research/issue-71-hosting-options.md`: build a plain, portable OCI container (ordinary
+Kestrel, binds `$PORT`) so it runs unmodified across candidate hosts — "independently of the
+Vercel frontend" means an independently deployable container, not necessarily a different
+provider. Vercel added container-Function support on 2026-06-30, making it the lowest-friction
+option since the frontend already lives there, but it is weeks old at the time of this decision
+and must be validated with a deployment spike before being relied on:
+
+1. Does the .NET 10 image boot and stay within the selected plan's memory/CPU limits?
+2. Can the API's application-level timeout (above) be enforced well inside Vercel's platform
+   duration limit, with cancellation reliably observed?
+3. Do health checks, metadata-only structured logs, OTLP export, preview deploys, and rollback
+   behave as this document requires?
+4. Is cold-start latency (scale-to-zero) acceptable for the playground?
+
+If the spike fails any of these, or if avoiding a brand-new hosting feature outweighs
+one-platform convenience, fall back to **Azure Container Apps** (mature, revision-based rollback,
+scale-to-zero) or **Google Cloud Run** (equally mature, cloud-neutral). Do not reshape the service
+into Azure Functions or AWS Lambda to fit a host — #71 already asks for a portable container, and
+ordinary serverless container platforms preserve that design; Lambda/Functions would not.
+
+`src/Modeller.Api/Dockerfile` is the canonical image definition;
+`src/Modeller.Api/Dockerfile.vercel` is presently an intentional duplicate (Vercel requires that
+exact filename) kept in sync by hand until the spike settles exact placement/`vercel.json` wiring
+— collapse the duplication with a small build script if the two start to diverge.
+
+## Deployment and rollback
+
+Generic across every candidate platform above, since no specific account is provisioned in this
+pass (no deployment credentials were available): build the image → tag it with the commit SHA →
+push to the chosen registry → deploy as a new revision → **rollback by redeploying the previous
+tag** (Vercel, Azure Container Apps, and Cloud Run all support revision-based rollback natively).
+`.github/workflows/api-container.yml` builds and smoke-tests the image on every change to
+`Modeller.Api` and its dependencies; it does not push or deploy anywhere, since no registry
+credentials are configured — that wiring is explicit future work once a platform is chosen.
+
+## Consequences
+
+- `WorkspaceAnalyzeResponse.Roots` (root id/kind/name/slug for every entity-with-lifecycle and
+  rule) is a small, deliberate addition beyond the issue's literal wording, mirroring the CLI's
+  `project --view <kind>` (no root) root-listing behavior — without it, a client has no way to
+  discover a valid projection root without already knowing the semantic id in advance.
+- Actually provisioning a cloud account, wiring the website frontend to call this API, and
+  exposing `Export`/generation over HTTP are explicit non-goals of this decision; see
+  workspace-application-service.mdx and the open items above.
+- `RmlCompiler.EnsureIdentities`/`ApplyIdentities` gained an optional `CancellationToken`
+  parameter (defaulting to `CancellationToken.None`, so every existing caller is source- and
+  binary-compatible) so the hosted API's per-request deadline is observed during identity
+  application, not only between documents in a batch.

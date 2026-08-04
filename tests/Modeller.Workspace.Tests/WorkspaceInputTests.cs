@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Modeller.Configuration;
 using Modeller.Workspace;
 using Xunit;
@@ -24,19 +23,6 @@ public sealed class WorkspaceInputTests
         Assert.True(resolved.IsSuccess);
         Assert.Equal("1.0", resolved.Configuration!.GenerationContractVersion);
         Assert.Equal("generated/", resolved.Configuration.LogicalOutputRoot);
-    }
-
-    [Fact]
-    public void WorkspaceConfigurationInput_ToRequest_layers_additional_sources_for_profiles()
-    {
-        var profileSource = new ConfigurationSource("profile-staging", "1.0", ConfigurationSourceKind.Profile, "staging",
-            new Dictionary<string, ConfigurationValue> { ["logicalOutputRoot"] = new("generated/staging/") }.ToImmutableDictionary());
-        var input = new WorkspaceConfigurationInput("1.0", "generated/", "staging", [profileSource]);
-
-        var resolved = ConfigurationResolver.Resolve(input.ToRequest(), TestContext.Current.CancellationToken);
-
-        Assert.True(resolved.IsSuccess);
-        Assert.Equal("generated/staging/", resolved.Configuration!.LogicalOutputRoot);
     }
 
     [Fact]

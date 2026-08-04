@@ -1,0 +1,73 @@
+name: Modeller.Api container
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/Modeller.Api/**"
+      - "src/Modeller.Workspace/**"
+      - "src/Modeller.Parsing/**"
+      - "src/Modeller.Configuration/**"
+      - "src/Modeller.Projections/**"
+      - "src/Modeller.Contexts/**"
+      - "src/Modeller.Validation/**"
+      - "src/Modeller.Model/**"
+      - "tests/Modeller.Api.Tests/**"
+      - "Directory.Build.props"
+      - "Directory.Packages.props"
+      - "Modeller.slnx"
+  pull_request:
+    paths:
+      - "src/Modeller.Api/**"
+      - "src/Modeller.Workspace/**"
+      - "src/Modeller.Parsing/**"
+      - "src/Modeller.Configuration/**"
+      - "src/Modeller.Projections/**"
+      - "src/Modeller.Contexts/**"
+      - "src/Modeller.Validation/**"
+      - "src/Modeller.Model/**"
+      - "tests/Modeller.Api.Tests/**"
+      - "Directory.Build.props"
+      - "Directory.Packages.props"
+      - "Modeller.slnx"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore Modeller.slnx
+
+      - name: Build Modeller.Api
+        run: dotnet build src/Modeller.Api/Modeller.Api.csproj --no-restore
+
+      - name: Test Modeller.Api
+        run: dotnet test tests/Modeller.Api.Tests/Modeller.Api.Tests.csproj --no-restore
+
+  # Builds the image as a smoke check only — no registry credentials are configured, so nothing
+  # is pushed. See docs/architecture/decisions/hosted-workspace-api.mdx for the deployment story.
+  container:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build container image
+        run: docker build -f src/Modeller.Api/Dockerfile -t modeller-api:ci .
+
+      - name: Smoke-test the container
+        run: |
+          docker run -d --rm -p 8080:8080 -e PORT=8080 --name modeller-api-ci modeller-api:ci
+          for attempt in $(seq 1 10); do
+            if curl -sf http://localhost:8080/healthz/live; then break; fi
+            sleep 1
+          done
+          curl -sf http://localhost:8080/healthz/live
+          curl -sf http://localhost:8080/v1/workspace/supported-views
+          docker stop modeller-api-ci

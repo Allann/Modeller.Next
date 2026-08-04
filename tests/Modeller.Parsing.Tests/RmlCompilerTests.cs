@@ -122,7 +122,7 @@ public sealed class RmlCompilerTests
     {
         var source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n";
 
-        var edit = RmlCompiler.EnsureIdentities(source);
+        var edit = RmlCompiler.EnsureIdentities(source, TestContext.Current.CancellationToken);
 
         Assert.True(edit.Changed);
         var lines = edit.Updated.Split('\n');
@@ -135,7 +135,7 @@ public sealed class RmlCompilerTests
     {
         var source = "rml 1.0\n# @id=0191f6d4-4ea0-7000-8000-000000000001\ncontext Child Care\n  version 1.0.0\nend\n";
 
-        var edit = RmlCompiler.EnsureIdentities(source);
+        var edit = RmlCompiler.EnsureIdentities(source, TestContext.Current.CancellationToken);
 
         Assert.False(edit.Changed);
         Assert.Equal(source, edit.Updated);
@@ -146,7 +146,7 @@ public sealed class RmlCompilerTests
     {
         var source = "rule \"Quoted Value\"\nend\n";
 
-        var edit = RmlCompiler.EnsureIdentities(source);
+        var edit = RmlCompiler.EnsureIdentities(source, TestContext.Current.CancellationToken);
 
         Assert.False(edit.Changed);
         Assert.Equal(source, edit.Updated);
@@ -158,7 +158,7 @@ public sealed class RmlCompilerTests
         var source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n";
         var identity = "0191f6d4-4ea0-7000-8000-000000000001";
 
-        var edit = RmlCompiler.ApplyIdentities(source, [identity]);
+        var edit = RmlCompiler.ApplyIdentities(source, [identity], TestContext.Current.CancellationToken);
 
         Assert.True(edit.Changed);
         Assert.Contains($"# @id={identity}", edit.Updated);
@@ -169,7 +169,7 @@ public sealed class RmlCompilerTests
     {
         var source = "rml 1.0\n# @id=0191f6d4-4ea0-7000-8000-000000000001\ncontext Child Care\n  version 1.0.0\nend\n";
 
-        var edit = RmlCompiler.ApplyIdentities(source, ["0191f6d4-4ea0-7000-8000-000000000002"]);
+        var edit = RmlCompiler.ApplyIdentities(source, ["0191f6d4-4ea0-7000-8000-000000000002"], TestContext.Current.CancellationToken);
 
         Assert.False(edit.Changed);
         Assert.Equal(source, edit.Updated);
@@ -180,7 +180,7 @@ public sealed class RmlCompilerTests
     {
         var source = "# just a comment\n";
 
-        var edit = RmlCompiler.ApplyIdentities(source, []);
+        var edit = RmlCompiler.ApplyIdentities(source, [], TestContext.Current.CancellationToken);
 
         Assert.False(edit.Changed);
         Assert.Equal(source, edit.Updated);
@@ -191,7 +191,7 @@ public sealed class RmlCompilerTests
     {
         var source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n";
 
-        var exception = Assert.Throws<ArgumentException>(() => RmlCompiler.ApplyIdentities(source, []));
+        var exception = Assert.Throws<ArgumentException>(() => RmlCompiler.ApplyIdentities(source, [], TestContext.Current.CancellationToken));
         Assert.Equal("identities", exception.ParamName);
     }
 
@@ -200,7 +200,7 @@ public sealed class RmlCompilerTests
     {
         var source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n";
 
-        var exception = Assert.Throws<ArgumentException>(() => RmlCompiler.ApplyIdentities(source, ["not-a-guid"]));
+        var exception = Assert.Throws<ArgumentException>(() => RmlCompiler.ApplyIdentities(source, ["not-a-guid"], TestContext.Current.CancellationToken));
         Assert.Equal("identities", exception.ParamName);
     }
 
@@ -210,7 +210,7 @@ public sealed class RmlCompilerTests
         var source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n";
         var guidV4 = Guid.NewGuid().ToString();
 
-        var exception = Assert.Throws<ArgumentException>(() => RmlCompiler.ApplyIdentities(source, [guidV4]));
+        var exception = Assert.Throws<ArgumentException>(() => RmlCompiler.ApplyIdentities(source, [guidV4], TestContext.Current.CancellationToken));
         Assert.Equal("identities", exception.ParamName);
     }
 
@@ -221,22 +221,22 @@ public sealed class RmlCompilerTests
 
         var exception = Assert.Throws<ArgumentException>(() => RmlCompiler.ApplyIdentities(
             source,
-            ["0191f6d4-4ea0-7000-8000-000000000001", "0191f6d4-4ea0-7000-8000-000000000002"]));
+            ["0191f6d4-4ea0-7000-8000-000000000001", "0191f6d4-4ea0-7000-8000-000000000002"], TestContext.Current.CancellationToken));
         Assert.Equal("identities", exception.ParamName);
     }
 
     [Fact]
     public void ApplyIdentities_throws_for_null_source_or_identities()
     {
-        Assert.Throws<ArgumentNullException>(() => RmlCompiler.ApplyIdentities(null!, []));
-        Assert.Throws<ArgumentNullException>(() => RmlCompiler.ApplyIdentities("rml 1.0\n", null!));
+        Assert.Throws<ArgumentNullException>(() => RmlCompiler.ApplyIdentities(null!, [], TestContext.Current.CancellationToken));
+        Assert.Throws<ArgumentNullException>(() => RmlCompiler.ApplyIdentities("rml 1.0\n", null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public void HarvestIdentities_reads_back_the_ordered_identities_ensure_identities_minted()
     {
         var source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n";
-        var minted = RmlCompiler.EnsureIdentities(source).Updated;
+        var minted = RmlCompiler.EnsureIdentities(source, TestContext.Current.CancellationToken).Updated;
 
         var harvested = RmlCompiler.HarvestIdentities(minted);
 
@@ -248,10 +248,10 @@ public sealed class RmlCompilerTests
     public void HarvestIdentities_round_trips_through_apply_identities()
     {
         var source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n";
-        var minted = RmlCompiler.EnsureIdentities(source).Updated;
+        var minted = RmlCompiler.EnsureIdentities(source, TestContext.Current.CancellationToken).Updated;
         var harvested = RmlCompiler.HarvestIdentities(minted);
 
-        var reapplied = RmlCompiler.ApplyIdentities(source, harvested).Updated;
+        var reapplied = RmlCompiler.ApplyIdentities(source, harvested, TestContext.Current.CancellationToken).Updated;
 
         Assert.Equal(minted, reapplied);
     }
@@ -260,7 +260,7 @@ public sealed class RmlCompilerTests
     public void HarvestIdentities_returns_identities_in_declaration_order_for_multiple_declarations()
     {
         var source = "rml 1.0\ncontext Child Care\n  version 1.0.0\n  fact Age\n    type integer\n  end\nend\n";
-        var minted = RmlCompiler.EnsureIdentities(source).Updated;
+        var minted = RmlCompiler.EnsureIdentities(source, TestContext.Current.CancellationToken).Updated;
 
         var harvested = RmlCompiler.HarvestIdentities(minted);
 
@@ -307,5 +307,23 @@ public sealed class RmlCompilerTests
     public void HarvestIdentities_throws_for_null_source()
     {
         Assert.Throws<ArgumentNullException>(() => RmlCompiler.HarvestIdentities(null!));
+    }
+
+    [Fact]
+    public void EnsureIdentities_throws_when_cancelled()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        Assert.Throws<OperationCanceledException>(() => RmlCompiler.EnsureIdentities("rml 1.0\ncontext Child Care\nend\n", cts.Token));
+    }
+
+    [Fact]
+    public void ApplyIdentities_throws_when_cancelled()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        Assert.Throws<OperationCanceledException>(() => RmlCompiler.ApplyIdentities("rml 1.0\ncontext Child Care\nend\n", [], cts.Token));
     }
 }

@@ -45,14 +45,9 @@ public abstract record IdentityStrategy
 /// <summary>
 /// A validated, minimal workspace configuration that guarantees the two fields
 /// <see cref="Modeller.Configuration.ConfigurationResolver.Resolve"/> requires exist as a matter of
-/// type, plus room for additional layered <see cref="ConfigurationSource"/>s (e.g. profile files) —
-/// a case no current caller exercises yet, but the shape does not foreclose it.
+/// type.
 /// </summary>
-public sealed record WorkspaceConfigurationInput(
-    string GenerationContractVersion,
-    string LogicalOutputRoot,
-    string? Profile = null,
-    ImmutableArray<ConfigurationSource> AdditionalSources = default)
+public sealed record WorkspaceConfigurationInput(string GenerationContractVersion, string LogicalOutputRoot, string? Profile = null)
 {
     public ConfigurationRequest ToRequest()
     {
@@ -62,8 +57,7 @@ public sealed record WorkspaceConfigurationInput(
                 ["generationContractVersion"] = new(GenerationContractVersion),
                 ["logicalOutputRoot"] = new(LogicalOutputRoot),
             }.ToImmutableDictionary(StringComparer.Ordinal));
-        var additional = AdditionalSources.IsDefault ? ImmutableArray<ConfigurationSource>.Empty : AdditionalSources;
-        return new ConfigurationRequest([baseSource, .. additional], Profile);
+        return new ConfigurationRequest([baseSource], Profile);
     }
 }
 
