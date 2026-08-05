@@ -96,6 +96,26 @@ test('reset discards edits and restores the pristine example', async ({ page }) 
   await expect(page.locator('.view-lines')).toContainText('context Ordering');
 });
 
+test('a refresh restores the in-progress draft from sessionStorage, not the pristine example', async ({ page }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, cleanResponse);
+
+  await page.goto('/');
+  await page.getByText('order.modeller', { exact: true }).click();
+  const editor = page.locator('.monaco-editor');
+  await editor.click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type('entity Something Else');
+  await expect(page.locator('.view-lines')).toContainText('Something Else');
+  // The debounced analyze call (500ms) also persists the draft to sessionStorage — give it a beat.
+  await page.waitForTimeout(600);
+
+  await page.reload();
+  await page.getByText('order.modeller', { exact: true }).click();
+
+  await expect(page.locator('.view-lines')).toContainText('Something Else');
+});
+
 test('an analysis-service failure surfaces a status banner without crashing the app', async ({ page }) => {
   await mockSupportedViews(page);
   await page.route('**/v1/workspace/analyze', (route) => route.fulfill({ status: 503, json: { apiVersion: '1.0', diagnostics: [], roots: [], projections: [] } }));
