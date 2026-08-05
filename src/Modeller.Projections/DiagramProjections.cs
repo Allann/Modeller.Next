@@ -27,32 +27,38 @@ public sealed record ProjectionResult(ProjectionGraph? Graph, ImmutableArray<Pro
 
 public static class DiagramProjector
 {
-    public static ProjectionResult Project(AuthoredContextRevision revision, ViewDefinition view, LayoutState? layout = null)
+    /// <summary>Cancellation is observed between each definition walked while building nodes/edges
+    /// — not just once on entry — so a caller can abort a projection already in progress against a
+    /// large revision, not merely refuse to start one.</summary>
+    public static ProjectionResult Project(AuthoredContextRevision revision, ViewDefinition view, LayoutState? layout = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(revision);
         ArgumentNullException.ThrowIfNull(view);
+        cancellationToken.ThrowIfCancellationRequested();
         if (view.Version != 1)
             return new(null, [new("projection.view-version.unsupported", $"View version '{view.Version}' is not supported.")]);
 
         return view.Kind switch
         {
-            ViewKind.Lifecycle => Lifecycle(revision, view),
-            ViewKind.RuleDecision => RuleDecision(revision, view),
+            ViewKind.Lifecycle => Lifecycle(revision, view, cancellationToken),
+            ViewKind.RuleDecision => RuleDecision(revision, view, cancellationToken),
             _ => new(new(revision.Revision, view.Kind, [], []), [])
         };
     }
 
-    private static ProjectionResult RuleDecision(AuthoredContextRevision revision, ViewDefinition view)
+    private static ProjectionResult RuleDecision(AuthoredContextRevision revision, ViewDefinition view, CancellationToken cancellationToken)
     {
         var rule = revision.Definitions.OfType<RuleDefinition>().FirstOrDefault(item => view.Roots.Contains(item.Id));
         if (rule is null)
             return new(new(revision.Revision, view.Kind, [], []), []);
 
         var facts = revision.Definitions.OfType<FactDefinition>().ToDictionary(item => item.Id);
+        cancellationToken.ThrowIfCancellationRequested();
         var nodes = rule.InputFacts.Select(reference => facts.GetValueOrDefault(reference.TargetId))
             .Where(fact => fact is not null).Select(fact => new ProjectionNode(ElementId("fact", fact!.Id), "fact", fact.Name.Value, [fact.Id]))
             .Concat(rule.Conclusions.Select(conclusion => new ProjectionNode(ElementId("conclusion", conclusion.Id), "conclusion", conclusion.Name.Value, [conclusion.Id])))
             .ToImmutableArray();
+        cancellationToken.ThrowIfCancellationRequested();
         var conclusion = rule.Conclusions.FirstOrDefault();
         var edges = conclusion is null ? [] : rule.InputFacts.Select(reference => new ProjectionEdge(
             $"input:{reference.TargetId}:{conclusion.Id}", "input", "", ElementId("fact", reference.TargetId), ElementId("conclusion", conclusion.Id), [reference.TargetId, conclusion.Id]))
@@ -60,7 +66,7 @@ public static class DiagramProjector
         return new(new(revision.Revision, view.Kind, nodes, edges), []);
     }
 
-    private static ProjectionResult Lifecycle(AuthoredContextRevision revision, ViewDefinition view)
+    private static ProjectionResult Lifecycle(AuthoredContextRevision revision, ViewDefinition view, CancellationToken cancellationToken)
     {
         var entity = revision.Definitions.OfType<EntityDefinition>()
             .FirstOrDefault(item => view.Roots.Contains(item.Id));
@@ -70,6 +76,7 @@ public static class DiagramProjector
         var nodes = entity.Lifecycle.Stages
             .Select(stage => new ProjectionNode(ElementId("stage", stage.Id), "lifecycle-stage", stage.Name.Value, [stage.Id]))
             .ToImmutableArray();
+        cancellationToken.ThrowIfCancellationRequested();
         var edges = revision.Definitions.OfType<BehaviourDefinition>()
             .SelectMany(behaviour => behaviour.Transitions)
             .Where(transition => transition.Lifecycle.TargetId == entity.Lifecycle.Id)

@@ -28,11 +28,12 @@ public static class RequestLimits
     public const int MaximumRoots = 500;
 
     /// <summary>The node-count ceiling on an <em>analyzed</em> workspace's own definitions,
-    /// checked before any projection runs. <c>DiagramProjector</c> (Modeller.Projections) accepts
-    /// neither a cancellation token nor a size budget of its own — bounding how large a revision
-    /// it is ever asked to project is the only lever this API has to keep a single projection call
-    /// itself cheap and fast, rather than discovering after the fact (post-hoc, via
-    /// <see cref="MaximumGraphElements"/>) that it produced too much.</summary>
+    /// checked before any projection runs. <c>DiagramProjector</c> (Modeller.Projections) now
+    /// observes cancellation mid-walk, but still has no size budget of its own — bounding how
+    /// large a revision it is ever asked to project remains the primary lever this API has to keep
+    /// a single projection call itself cheap and fast, rather than relying solely on cancellation
+    /// or discovering after the fact (post-hoc, via <see cref="MaximumGraphElements"/>) that it
+    /// produced too much.</summary>
     public const int MaximumDefinitions = 5_000;
 
     /// <summary>Returns the diagnostics a request violates, or an empty list when the request is

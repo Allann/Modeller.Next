@@ -97,9 +97,10 @@ public static class WorkspaceContractMappings
         [new("api.response.aggregate-limit-exceeded", $"The combined projections exceed the {RequestLimits.MaximumAggregateGraphElements}-element response limit.")]);
 
     /// <summary>Rejects a projection request without ever calling <c>DiagramProjector.Project</c>
-    /// — that projector accepts neither a cancellation token nor a size budget of its own, so the
-    /// only way to keep a single projection call itself cheap is to bound how large a revision it
-    /// is ever asked to project, checked once per request before any projection runs.</summary>
+    /// — that projector observes cancellation mid-walk but still has no size budget of its own, so
+    /// bounding how large a revision it is ever asked to project, checked once per request before
+    /// any projection runs, remains the primary way to keep a single projection call itself
+    /// cheap.</summary>
     public static ProjectionResponseDto WorkspaceTooLargeResponse(string id) => new(id, false, null,
         [new("api.response.workspace-too-large", $"The workspace declares more than {RequestLimits.MaximumDefinitions} definitions and cannot be projected.")]);
 

@@ -52,11 +52,12 @@ public sealed class WorkspaceAnalysisPipeline(ILogger<WorkspaceAnalysisPipeline>
     ///
     /// Two independent bounds apply, addressing two different risks. First,
     /// <see cref="RequestLimits.MaximumDefinitions"/> is checked once, before any projection runs
-    /// at all: <c>DiagramProjector.Project</c> accepts neither a cancellation token nor a size
-    /// budget, so bounding how large a revision it is ever asked to project is the only way to
-    /// keep each individual call itself cheap — discovering after the fact that a projection
-    /// produced too much (the second bound, below) does not help if producing it was itself slow
-    /// or memory-heavy. Second, <see cref="RequestLimits.MaximumAggregateGraphElements"/> bounds
+    /// at all: <c>DiagramProjector.Project</c> observes cancellation between definitions as it
+    /// walks but still has no size budget of its own, so bounding how large a revision it is ever
+    /// asked to project remains the primary way to keep each individual call itself cheap —
+    /// discovering after the fact that a projection produced too much (the second bound, below)
+    /// does not help if producing it was itself slow or memory-heavy. Second,
+    /// <see cref="RequestLimits.MaximumAggregateGraphElements"/> bounds
     /// the combined response size across every projection actually computed — checked against the
     /// running total plus each candidate's own count, not the running total alone, since checking
     /// only the total-so-far would still let one large graph push the aggregate past the ceiling

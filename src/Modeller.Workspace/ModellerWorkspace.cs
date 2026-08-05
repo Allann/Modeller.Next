@@ -117,7 +117,14 @@ public static class ModellerWorkspace
         if (!SupportedViewKinds.Contains(view.Kind))
             return WorkspaceOutcome.Failed<ProjectionResult>("project.view.unsupported", $"The '{view.Kind}' view is not implemented yet.");
 
-        return WorkspaceOutcome.Success(DiagramProjector.Project(analyzed.Package.AuthoredRevision, view, layout));
+        try
+        {
+            return WorkspaceOutcome.Success(DiagramProjector.Project(analyzed.Package.AuthoredRevision, view, layout, cancellationToken));
+        }
+        catch (OperationCanceledException)
+        {
+            return WorkspaceOutcome.Cancelled<ProjectionResult>();
+        }
     }
 
     /// <summary>

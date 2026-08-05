@@ -61,13 +61,16 @@ the aggregate response bound must compare the running total *plus* each candidat
 count, not the running total alone — checking only the total accumulated so far still lets one
 large graph push the combined response past the ceiling (e.g. 4,500 already accumulated plus a
 1,000-element graph would otherwise return 5,500 uncaught); and the definition-count bound is
-checked once, before any projection runs at all, specifically because `DiagramProjector.Project`
-(`Modeller.Projections`) accepts neither a cancellation token nor a size budget of its own — a
-per-graph or aggregate cap alone only rejects a projection *after* it has already been computed,
-which does nothing to stop an adversarially large revision from making that computation itself
-slow or memory-heavy. Bounding the input a projection is ever asked to run against is the layer
-this API actually controls; instrumenting `DiagramProjector` internally would require changing a
-library this issue does not otherwise touch. `ExceedsAggregateGraphElementLimit`,
+checked once, before any projection runs at all, because `DiagramProjector.Project`
+(`Modeller.Projections`) still has no size budget of its own — a per-graph or aggregate cap alone
+only rejects a projection *after* it has already been computed, which does nothing to stop an
+adversarially large revision from making that computation itself slow or memory-heavy.
+`DiagramProjector.Project` does now accept a `CancellationToken` and observes it between
+definitions as it walks a revision (threaded from the pipeline's per-request deadline through
+`ModellerWorkspace.Project`), so an in-progress walk against a large revision can be aborted, not
+just refused before starting — but bounding the input a projection is ever asked to run against
+remains the primary control, since cancellation alone does not cap peak memory or per-step cost.
+`ExceedsAggregateGraphElementLimit`,
 `ExceedsDefinitionLimit`, and their paired response-builder helpers are small pure functions in
 `WorkspaceContractMappings` specifically so each bound's logic — not just its wiring — has a
 direct unit test.
@@ -91,10 +94,12 @@ a first-class case from #70) maps directly to `503`. The identity-application tr
 between documents, so a large single document can't hold a deadline open past its own budget. A
 global concurrency-limiter (`AddRateLimiter`, in-box since .NET 7) caps simultaneous in-flight
 analyses, returning `429` past the limit. CORS is a named, configurable-origin policy
-(`Cors:AllowedOrigins`) — empty by default, so nothing is cross-origin-accessible until a specific
-origin is configured for the actual playground frontend — and explicitly allows the `Content-Type`
-header (`WithHeaders("Content-Type")`), without which a browser's preflight for a JSON `POST`
-would reject the follow-up request even with the origin itself permitted.
+(`Cors:AllowedOrigins`) — empty by default so nothing is cross-origin-accessible until a specific
+origin is configured, with `appsettings.Production.json` allowing
+`https://modeller-next.vercel.app` and `https://modeller.website` for the deployed environment —
+and explicitly allows the `Content-Type` header (`WithHeaders("Content-Type")`), without which a
+browser's preflight for a JSON `POST` would reject the follow-up request even with the origin
+itself permitted.
 
 **No-source-logging**: structured logs carry only request metadata (document/projection counts,
 outcome, elapsed time, diagnostic codes) — never document content or identity registries. This is

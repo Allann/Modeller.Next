@@ -13,9 +13,9 @@ public sealed class DiagramProjectionTests
         var revision = ChildCare.Revision();
         var view = new ViewDefinition("accs-lifecycle", 1, ViewKind.Lifecycle, [ChildCare.ApplicationId]);
 
-        var first = DiagramProjector.Project(revision, view);
+        var first = DiagramProjector.Project(revision, view, cancellationToken: TestContext.Current.CancellationToken);
         var second = DiagramProjector.Project(revision, view, new LayoutState(ImmutableDictionary<string, ElementLayout>.Empty
-            .Add("stage:draft", new ElementLayout(400, 200))));
+            .Add("stage:draft", new ElementLayout(400, 200))), TestContext.Current.CancellationToken);
 
         Assert.True(first.Succeeded);
         Assert.Equal(first.Graph!.Nodes.Select(NodeShape), second.Graph!.Nodes.Select(NodeShape));
@@ -33,7 +33,7 @@ public sealed class DiagramProjectionTests
     public void Rule_decision_view_explains_child_care_rule_expression()
     {
         var revision = CanonicalModel.Apply(ChildCare.Revision(), new AddDefinition(ChildCare.Rule())).Revision;
-        var result = DiagramProjector.Project(revision, new("accs-rule", 1, ViewKind.RuleDecision, [ChildCare.RuleId]));
+        var result = DiagramProjector.Project(revision, new("accs-rule", 1, ViewKind.RuleDecision, [ChildCare.RuleId]), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.True(result.Succeeded);
         Assert.Equal(["Active enrolment exists", "Supporting evidence is held", "Eligible"], result.Graph!.Nodes.Select(n => n.Label));
@@ -47,7 +47,7 @@ public sealed class DiagramProjectionTests
         foreach (var kind in Enum.GetValues<ViewKind>())
         {
             var roots = kind == ViewKind.Lifecycle ? ImmutableArray.Create(ChildCare.ApplicationId) : [];
-            var result = DiagramProjector.Project(ChildCare.Revision(), new($"view-{kind}", 1, kind, roots));
+            var result = DiagramProjector.Project(ChildCare.Revision(), new($"view-{kind}", 1, kind, roots), cancellationToken: TestContext.Current.CancellationToken);
             Assert.True(result.Succeeded);
             Assert.Equal(kind, result.Graph!.Kind);
         }
