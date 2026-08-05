@@ -1,8 +1,12 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { NextRequest, NextResponse } from 'next/server';
 import { isKnownSource, loadWorkspace, resolveSourcePath } from '@/server/workspace';
+import { localOnlyRouteGuard } from '@/server/playground-guard';
 
 export async function GET(request: NextRequest) {
+  const guarded = localOnlyRouteGuard();
+  if (guarded) return guarded;
+
   const relativePath = request.nextUrl.searchParams.get('path');
   if (!relativePath) return NextResponse.json({ error: 'Missing path.' }, { status: 400 });
 
@@ -16,6 +20,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const guarded = localOnlyRouteGuard();
+  if (guarded) return guarded;
+
   const relativePath = request.nextUrl.searchParams.get('path');
   if (!relativePath) return NextResponse.json({ error: 'Missing path.' }, { status: 400 });
 

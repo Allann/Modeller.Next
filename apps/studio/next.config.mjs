@@ -12,6 +12,11 @@ const nextConfig = {
   turbopack: {
     root: dirname,
   },
+  // The playground and local-mode Playwright projects (playwright.config.ts)
+  // both run `npm run dev` from this same directory concurrently — sharing
+  // the default `.next` build/cache dir corrupts Turbopack's persistent
+  // cache under concurrent writers, so the playground build gets its own.
+  distDir: process.env.NEXT_PUBLIC_MODELLER_STUDIO_MODE === 'playground' ? '.next-playground' : '.next',
 };
 
 export default nextConfig;
