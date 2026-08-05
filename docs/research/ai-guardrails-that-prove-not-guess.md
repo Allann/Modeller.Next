@@ -1,4 +1,7 @@
-# AI guardrails that prove, not guess
+---
+title: AI guardrails that prove, not guess
+description: What pattern does CommBank Technology's "AI Guardrails That Prove, Not Guess" propose, how strong are its claims, and what parts could Modeller adopt?
+---
 
 Date: 2026-08-05
 

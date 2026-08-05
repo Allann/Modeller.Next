@@ -1,4 +1,7 @@
-# Issue #71 hosting options
+---
+title: Issue 71 hosting options
+description: Can the stateless .NET API in Issue #71 be hosted on Vercel, and what are the strongest alternatives?
+---
 
 Date: 2026-08-04
 
