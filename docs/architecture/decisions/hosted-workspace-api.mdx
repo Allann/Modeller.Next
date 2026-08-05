@@ -166,6 +166,12 @@ scale-to-zero) or **Google Cloud Run** (equally mature, cloud-neutral). Do not r
 into Azure Functions or AWS Lambda to fit a host — #71 already asks for a portable container, and
 ordinary serverless container platforms preserve that design; Lambda/Functions would not.
 
+**Spike result: Vercel container Functions selected.** The image boots and runs successfully as
+the `modeller-api` Vercel project, deployment status Ready, at
+**`https://modeller-next.vercel.app`**. Verified against the live deployment: `/healthz/live` →
+`200 Healthy`; `/v1/workspace/supported-views` → `200`; a real `/v1/workspace/analyze` request →
+`200` with no diagnostics. No fallback to Azure Container Apps or Cloud Run was needed.
+
 `src/Modeller.Api/Dockerfile` is the canonical image definition, built with the repo root as
 context (`docker build -f src/Modeller.Api/Dockerfile .`). `Dockerfile.vercel` at the **repo
 root** — not next to it under `src/Modeller.Api/` — is an intentional duplicate kept in sync by
@@ -178,10 +184,13 @@ script if the two Dockerfiles start to diverge.
 
 ## Deployment and rollback
 
-Generic across every candidate platform above, since no specific account is provisioned in this
-pass (no deployment credentials were available): build the image → tag it with the commit SHA →
-push to the chosen registry → deploy as a new revision → **rollback by redeploying the previous
-tag** (Vercel, Azure Container Apps, and Cloud Run all support revision-based rollback natively).
+Build the image → tag it with the commit SHA → push to the chosen registry → deploy as a new
+revision → **rollback by redeploying the previous tag** (Vercel, Azure Container Apps, and Cloud
+Run all support revision-based rollback natively). For the live `modeller-api` Vercel project:
+roll back via the Vercel dashboard's Deployments list for the project (or `vercel rollback` from
+the CLI) — select the last known-good deployment and promote it back to production; this reuses
+the previously built image rather than rebuilding, so it is fast and does not depend on the
+failing commit's build succeeding.
 `.github/workflows/api-container.yml` builds and smoke-tests the image on every change to
 `Modeller.Api` and its dependencies; it does not push or deploy anywhere, since no registry
 credentials are configured — that wiring is explicit future work once a platform is chosen.
