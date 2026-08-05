@@ -16,15 +16,15 @@ export const metadata: Metadata = {
       : 'http://localhost:3000',
   ),
   title: {
-    default: 'Modeller — Describe intent. Generate structure.',
+    default: 'Modeller: understand first, change deliberately.',
     template: '%s | Modeller',
   },
   description:
-    'Modeller turns concise domain definitions into consistent, production-ready software.',
+    'Modeller helps teams understand a business situation, choose the right intervention, and, when technology is part of the answer, describe it through System Design.',
   openGraph: {
-    title: 'Modeller — Describe intent. Generate structure.',
+    title: 'Modeller: understand first, change deliberately.',
     description:
-      'Modeller turns concise domain definitions into consistent, production-ready software.',
+      'Modeller helps teams understand a business situation, choose the right intervention, and, when technology is part of the answer, describe it through System Design.',
     images: ['/og.png'],
   },
   twitter: {

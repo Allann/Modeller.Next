@@ -8,7 +8,8 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       nav={{ title: 'Modeller', transparentMode: 'top' }}
       links={[
         { text: 'Why Modeller', url: '/#why-modeller' },
-        { text: 'How it works', url: '/#how-it-works' },
+        { text: 'The journey', url: '/#journey' },
+        { text: 'System Design', url: '/#system-design' },
         { text: 'Docs', url: '/docs' },
         { text: 'Playground', url: 'https://modeller.website' },
         { type: 'button', text: 'Get started', url: '/docs/getting-started' },

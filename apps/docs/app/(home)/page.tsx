@@ -1,17 +1,83 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   ArrowRight,
+  Blocks,
   Bot,
   Braces,
   Check,
+  CircleDot,
   Code2,
+  Compass,
   Download,
+  GitBranch,
   Layers3,
+  Network,
   RefreshCw,
-  Route,
+  ScanSearch,
   ShieldCheck,
 } from 'lucide-react';
+
+const problems = [
+  {
+    index: '01',
+    title: 'The request is not the intent',
+    text: 'Separate what someone asked to build from the business reality they want to change.',
+  },
+  {
+    index: '02',
+    title: 'Software is one intervention',
+    text: 'Let process, people, policy, structure, information, and technology compete honestly.',
+  },
+  {
+    index: '03',
+    title: 'The reason must survive',
+    text: 'Keep every chosen intervention connected to outcomes, evidence, assumptions, and decisions.',
+  },
+];
+
+const journey = [
+  {
+    index: '01',
+    label: 'Discover',
+    tag: 'Business discovery',
+    title: 'Understand the situation',
+    text: 'Facilitate the conversation. Capture affected people, current pain, desired outcomes, constraints, assumptions, risks, and open questions.',
+  },
+  {
+    index: '02',
+    label: 'Frame',
+    tag: 'Problem brief',
+    title: 'Agree what better means',
+    text: 'Turn the conversation into durable intent with explicit success measures, non-goals, and evidence.',
+  },
+  {
+    index: '03',
+    label: 'Shape',
+    tag: 'Initiative shaping',
+    title: 'Compare possible interventions',
+    text: 'Explore process, people, organisation, policy, information, technology, experiments, and no action.',
+  },
+  {
+    index: '04',
+    label: 'Design',
+    tag: 'Design workspaces',
+    title: 'Describe the chosen change',
+    text: 'Open the right design step for each selected intervention. A technology intervention continues into System Design, where the team describes actors, capabilities, behaviours, rules, workflows, and lifecycles.',
+  },
+];
+
+const interventionTypes = [
+  { title: 'Process', text: 'Remove friction or change how work flows.' },
+  { title: 'People', text: 'Change roles, authority, capacity, or skills.' },
+  { title: 'Policy', text: 'Change the rules that shape the outcome.' },
+  { title: 'Technology', text: 'Model a system only when technology earns its place.' },
+];
+
+const exampleFlow = [
+  { title: 'Remove a duplicate approval', kind: 'Process' },
+  { title: 'Delegate low-risk decisions', kind: 'People' },
+  { title: 'Automate document checks', kind: 'Technology' },
+];
 
 const capabilities = [
   {
@@ -42,76 +108,141 @@ export default function HomePage() {
   return (
     <main className="modeller-home">
       <section className="marketing-hero">
-        <div className="marketing-brand-hero">
-          <Image
-            className="theme-hero-light"
-            src="/brand/modeller-hero-light.png"
-            width={1731}
-            height={909}
-            priority
-            alt="Modeller — Describe the system. Generate the structure."
-          />
-          <Image
-            className="theme-hero-dark"
-            src="/brand/modeller-hero-dark.png"
-            width={1734}
-            height={907}
-            priority
-            alt="Modeller — Describe the system. Generate the structure."
-          />
-        </div>
         <div className="marketing-hero-intro">
+          <p className="eyebrow"><Compass size={15} /> Start with what needs to change</p>
+          <h1>&ldquo;Build us a new system.&rdquo;</h1>
+          <p className="hero-correction">That is a proposed answer. It is not the problem.</p>
           <p>
-            Modeller turns a clear domain model into consistent, production-ready
-            software—so your team can spend less time rebuilding foundations and more
-            time delivering what makes the product matter.
+            Modeller helps teams understand the business situation, decide what should
+            change, and model the right intervention. Sometimes that intervention is
+            software. Sometimes it is not.
           </p>
-          <div>
-            <div className="hero-actions">
-              <Link className="primary-action" href="/docs/getting-started">
-                Start modelling <ArrowRight size={17} />
-              </Link>
-              <a className="secondary-action" href="https://modeller.website">
-                Try the playground
-              </a>
-              <Link className="secondary-action" href="/docs/concepts">
-                Explore the concepts
-              </Link>
-            </div>
-            <p className="hero-note">Open foundations. Explicit architecture. Your code stays yours.</p>
+          <div className="hero-actions">
+            <a className="primary-action" href="#journey">
+              See the whole journey <ArrowRight size={17} />
+            </a>
+            <a className="secondary-action" href="#why-modeller">
+              Why this matters
+            </a>
           </div>
+          <p className="hero-note">Durable intent. Visible decisions. Deliberate change.</p>
+        </div>
+        <div className="trace-window" aria-label="From request to deliberate change">
+          <div className="trace-window-bar">
+            <span /><span /><span />
+            <span className="trace-window-title">initiative / customer-approvals</span>
+          </div>
+          <div className="trace-graph">
+            <div className="trace-node trace-node--request">
+              <span className="trace-node-kicker">Request</span>
+              <strong>Build a new approval system</strong>
+            </div>
+            <ArrowRight className="trace-arrow trace-arrow--one" size={18} aria-hidden="true" />
+            <div className="trace-node trace-node--problem">
+              <span className="trace-node-kicker">Observed problem</span>
+              <strong>Decisions take 12 days</strong>
+            </div>
+            <ArrowRight className="trace-arrow trace-arrow--two" size={18} aria-hidden="true" />
+            <div className="trace-node trace-node--outcome">
+              <span className="trace-node-kicker">Desired outcome</span>
+              <strong>Decide within 48 hours</strong>
+            </div>
+            <div className="trace-node trace-node--options">
+              <span className="trace-node-kicker">Possible interventions</span>
+              <span className="trace-pill">Process</span>
+              <span className="trace-pill">Authority</span>
+              <span className="trace-pill">Technology</span>
+            </div>
+          </div>
+          <p className="trace-status"><CircleDot size={14} aria-hidden="true" /> Meaning remains connected from problem to intervention</p>
         </div>
       </section>
 
       <section className="promise-strip" aria-label="The Modeller promise">
-        <div><strong>One model</strong><span>A durable source of intent</span></div>
-        <div><strong>Visible decisions</strong><span>No architectural black box</span></div>
-        <div><strong>Repeatable output</strong><span>Consistency across every project</span></div>
-      </section>
-
-      <section className="download-section">
-        <div className="download-icon"><Download size={30} /></div>
-        <div>
-          <p className="eyebrow">Get Modeller <span className="coming-soon-badge">Coming soon</span></p>
-          <h2>A desktop app for the whole workflow.</h2>
-          <p>
-            Model, generate, and review projects without leaving your machine. The
-            Modeller desktop app for macOS, Windows, and Linux is on its way.
-          </p>
-        </div>
-        <span className="primary-action download-action" aria-disabled="true">
-          Download <span className="coming-soon-badge">Coming soon</span>
-        </span>
+        <div><strong>Understand first</strong><span>Turn a requested fix into an evidence-backed problem</span></div>
+        <div><strong>Choose deliberately</strong><span>Compare interventions against the outcome</span></div>
+        <div><strong>Model what matters</strong><span>Carry the reason into every detailed model</span></div>
       </section>
 
       <section className="marketing-section" id="why-modeller">
         <div className="section-heading">
-          <p className="eyebrow"><Route size={15} /> From intention to implementation</p>
-          <h2>Keep the meaning at the centre of the software.</h2>
+          <p className="eyebrow"><ScanSearch size={15} /> Before the architecture</p>
+          <h2>A well-modelled system can still solve the wrong problem.</h2>
           <p>
-            Frameworks change. Infrastructure changes. The language of the business is
-            what gives the system continuity. Modeller makes that language useful all
-            the way into the codebase.
+            Most change requests arrive with the solution already embedded: automate this,
+            replace that, build a portal. Modeller creates space to understand the situation
+            before the requested implementation becomes inevitable.
+          </p>
+        </div>
+        <div className="capability-grid">
+          {problems.map(({ index, title, text }) => (
+            <article key={title}>
+              <span className="capability-icon capability-index">{index}</span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="marketing-section" id="journey">
+        <div className="section-heading">
+          <p className="eyebrow"><GitBranch size={15} /> One initiative, distinct ways of thinking</p>
+          <h2>From business reality to deliberate change.</h2>
+          <p>
+            Each stage has its own purpose and interaction style. Modeller connects them
+            without collapsing discovery, shaping, and detailed modelling into one
+            oversized canvas.
+          </p>
+        </div>
+        <ol className="journey-rows">
+          {journey.map(({ index, label, tag, title, text }) => (
+            <li key={label}>
+              <span className="journey-index">{index}</span>
+              <div>
+                <p className="journey-label">{label}</p>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </div>
+              <em>{tag}</em>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="marketing-section" id="intervention">
+        <div className="section-heading">
+          <p className="eyebrow"><Blocks size={15} /> More than an IT solution</p>
+          <h2>The right response may cross several kinds of change.</h2>
+        </div>
+        <div className="intervention-grid">
+          {interventionTypes.map(({ title, text }) => (
+            <article key={title}>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </article>
+          ))}
+        </div>
+        <div className="intervention-example">
+          <small>Example initiative</small>
+          <h3>Reduce customer approval time from twelve days to two.</h3>
+          <ul>
+            {exampleFlow.map(({ title, kind }) => (
+              <li key={title}><span>{kind}</span>{title}</li>
+            ))}
+          </ul>
+          <p>One outcome. Three coordinated interventions. Only the technology intervention continues into System Design.</p>
+        </div>
+      </section>
+
+      <section className="marketing-section" id="system-design">
+        <div className="section-heading">
+          <p className="eyebrow"><Network size={15} /> The technology design step</p>
+          <h2>System Design gives a technology intervention durable meaning.</h2>
+          <p>
+            System Design is one workspace within Modeller. Teams open it when a selected
+            intervention requires technology, and describe the intended system through
+            actors, capabilities, behaviours, workflows, rules, decisions, and lifecycles.
           </p>
         </div>
         <div className="capability-grid">
@@ -125,12 +256,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="workflow-section" id="how-it-works">
+      <section className="workflow-section">
         <div className="workflow-copy">
-          <p className="eyebrow"><Code2 size={15} /> How it works</p>
+          <p className="eyebrow"><Code2 size={15} /> How System Design works</p>
           <h2>Design once. Realise it deliberately.</h2>
           <p>
-            Modeller connects the vocabulary of your domain to the structure of your
+            System Design connects the vocabulary of your domain to the structure of your
             application without hiding the decisions in between.
           </p>
           <ol className="workflow-steps">
@@ -149,33 +280,51 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="download-section">
+        <div className="download-icon"><Download size={30} /></div>
+        <div>
+          <p className="eyebrow">Get System Design <span className="coming-soon-badge">Coming soon</span></p>
+          <h2>A desktop app for the whole workflow.</h2>
+          <p>
+            Model, generate, and review projects without leaving your machine. The
+            System Design desktop app for macOS, Windows, and Linux is on its way.
+          </p>
+        </div>
+        <span className="primary-action download-action" aria-disabled="true">
+          Download <span className="coming-soon-badge">Coming soon</span>
+        </span>
+      </section>
+
       <section className="ai-section">
         <div className="ai-icon"><Bot size={30} /></div>
         <div>
-          <p className="eyebrow">AI with something real to work from</p>
-          <h2>Assistance grounded in your architecture.</h2>
+          <p className="eyebrow">AI grounded in the initiative</p>
+          <h2>Help the team think without making the decision for them.</h2>
           <p>
-            AI can help discover, propose, explain, and evolve a model—but the model
-            remains explicit, reviewable, and independent of any single provider.
-            You keep the decisions; AI accelerates the conversation around them.
+            AI can propose questions, expose gaps, compare interventions, and explain
+            traceability. People remain responsible for accepting the problem statement,
+            choosing the response, and owning the resulting design.
           </p>
         </div>
         <ShieldCheck className="ai-shield" size={72} aria-hidden="true" />
       </section>
 
       <section className="final-cta">
-        <p className="eyebrow">Build from meaning</p>
-        <h2>Give your next system a source of truth.</h2>
-        <p>Explore the foundations of Modeller and follow the product as it takes shape.</p>
+        <p className="eyebrow">Model the change</p>
+        <h2>Understand first.<br />Change deliberately.</h2>
+        <p>
+          Follow Modeller as it grows from intent-first system design into a connected
+          way to understand and shape organisational change.
+        </p>
         <div className="hero-actions">
-          <Link className="primary-action" href="/docs/getting-started">Read the getting started guide <ArrowRight size={17} /></Link>
-          <Link className="secondary-action" href="/docs">Browse all documentation</Link>
+          <Link className="primary-action" href="/docs/getting-started">Start modelling <ArrowRight size={17} /></Link>
+          <a className="secondary-action" href="https://github.com/Allann/Modeller.Next/issues/82">Join the discussion</a>
         </div>
       </section>
 
       <footer className="marketing-footer">
         <div><span className="wordmark-mark">M</span><strong>Modeller</strong></div>
-        <p>Intent-first software design.</p>
+        <p>Understand first. Change deliberately.</p>
         <nav aria-label="Footer navigation"><Link href="/docs">Documentation</Link><Link href="/docs/concepts">Concepts</Link><a href="https://github.com/Allann/Modeller.Next">GitHub</a></nav>
       </footer>
     </main>
