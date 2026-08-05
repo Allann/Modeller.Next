@@ -18,6 +18,7 @@
     "@dagrejs/dagre": "^3.1.0",
     "@vercel/analytics": "^2.0.1",
     "@xyflow/react": "^12.11.2",
+    "fflate": "^0.8.3",
     "monaco-editor": "0.56.0",
     "monaco-editor-textmate": "^4.0.0",
     "monaco-textmate": "^3.0.1",

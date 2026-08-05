@@ -9,6 +9,9 @@ namespace Modeller.Api;
 /// <summary>The HTTP status code to send alongside a <see cref="WorkspaceAnalyzeResponse"/> body.</summary>
 public sealed record PipelineResult(WorkspaceAnalyzeResponse Body, int StatusCode);
 
+/// <summary>The HTTP status code to send alongside a <see cref="WorkspaceExportResponse"/> body.</summary>
+public sealed record ExportPipelineResult(WorkspaceExportResponse Body, int StatusCode);
+
 /// <summary>
 /// The workspace-analyze request pipeline: validate, analyze, project, map to a response. Holding
 /// this logic here (rather than in the endpoint handler) keeps <c>WorkspaceEndpoints</c> a thin,
@@ -43,6 +46,73 @@ public sealed class WorkspaceAnalysisPipeline(ILogger<WorkspaceAnalysisPipeline>
         LogOutcome(result, stopwatch.ElapsedMilliseconds);
         return ToPipelineResult(result);
     }
+
+    /// <summary>Turns an ephemeral (or durable) draft into a stable local-workspace snapshot
+    /// (issue #73): analyze, then <see cref="ModellerWorkspace.Export"/> to harvest the
+    /// post-identity-application document text and the registry it was harvested from. Reuses
+    /// <see cref="WorkspaceAnalyzeRequest"/>'s shape and <see cref="RequestLimits.Validate"/> rather
+    /// than a dedicated request DTO — <c>Projections</c> is simply ignored — so this endpoint's
+    /// request-shape ceilings can never drift from <c>/analyze</c>'s.</summary>
+    public ExportPipelineResult HandleExport(WorkspaceAnalyzeRequest request, CancellationToken cancellationToken)
+    {
+        var violations = RequestLimits.Validate(request);
+        if (violations.Count > 0)
+        {
+            logger.LogInformation("Workspace export request rejected: {DiagnosticCodes}", string.Join(',', violations.Select(v => v.Code)));
+            return new(new("1.0", violations, [], null), StatusCodes.Status400BadRequest);
+        }
+
+        var stopwatch = Stopwatch.StartNew();
+        using var timeout = new CancellationTokenSource(RequestTimeout);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+
+        var analyzed = ModellerWorkspace.Analyze(request.ToWorkspaceInput(), linked.Token);
+        var result = analyzed switch
+        {
+            WorkspaceOutcome<AnalyzedWorkspace>.Success success => BuildExportResponse(success.Value),
+            WorkspaceOutcome<AnalyzedWorkspace>.Failed failed => WorkspaceOutcome.Failed<WorkspaceExportResponse>(failed.Diagnostics),
+            _ => WorkspaceOutcome.Cancelled<WorkspaceExportResponse>(),
+        };
+
+        LogExportOutcome(result, stopwatch.ElapsedMilliseconds);
+        return ToExportPipelineResult(result);
+    }
+
+    private static WorkspaceOutcome<WorkspaceExportResponse> BuildExportResponse(AnalyzedWorkspace analyzed) => ModellerWorkspace.Export(analyzed) switch
+    {
+        WorkspaceOutcome<WorkspaceIdentityRegistry>.Success success => WorkspaceOutcome.Success(new WorkspaceExportResponse(
+            "1.0", [],
+            [.. analyzed.IdentifiedDocuments.Select(document => new WorkspaceDocumentDto(document.Path.Value, document.Content))],
+            success.Value.ToDto())),
+        WorkspaceOutcome<WorkspaceIdentityRegistry>.Failed failed => WorkspaceOutcome.Failed<WorkspaceExportResponse>(failed.Diagnostics),
+        _ => WorkspaceOutcome.Cancelled<WorkspaceExportResponse>(),
+    };
+
+    private void LogExportOutcome(WorkspaceOutcome<WorkspaceExportResponse> result, long elapsedMilliseconds)
+    {
+        switch (result)
+        {
+            case WorkspaceOutcome<WorkspaceExportResponse>.Success success:
+                logger.LogInformation("Workspace export request succeeded with {DocumentCount} document(s) in {ElapsedMs}ms.", success.Value.Documents.Count, elapsedMilliseconds);
+                break;
+            case WorkspaceOutcome<WorkspaceExportResponse>.Failed failed:
+                logger.LogInformation("Workspace export request failed with {DiagnosticCount} diagnostic(s) in {ElapsedMs}ms.", failed.Diagnostics.Length, elapsedMilliseconds);
+                break;
+            default:
+                logger.LogWarning("Workspace export request timed out or was cancelled after {ElapsedMs}ms.", elapsedMilliseconds);
+                break;
+        }
+    }
+
+    private static ExportPipelineResult ToExportPipelineResult(WorkspaceOutcome<WorkspaceExportResponse> result) => result switch
+    {
+        WorkspaceOutcome<WorkspaceExportResponse>.Success success => new(success.Value, StatusCodes.Status200OK),
+        WorkspaceOutcome<WorkspaceExportResponse>.Failed failed =>
+            new(new("1.0", [.. failed.Diagnostics.Select(WorkspaceContractMappings.ToApiDiagnostic)], [], null), StatusCodes.Status200OK),
+        _ => new(
+            new("1.0", [new("api.request.timeout", "The request was cancelled or exceeded the server-side time budget.")], [], null),
+            StatusCodes.Status503ServiceUnavailable),
+    };
 
     /// <summary>Projects every requested view against an already-analyzed workspace and pairs the
     /// results with the discoverable roots for the two supported view kinds. A per-view failure

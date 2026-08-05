@@ -52,6 +52,22 @@ public sealed record WorkspaceAnalyzeResponse(
 
 public sealed record SupportedViewsResponse(string ApiVersion, IReadOnlyList<ViewKind> Views);
 
+/// <summary>Response for <c>POST /v1/workspace/export</c> (issue #73): the post-identity-application
+/// document text and the durable registry harvested from it, so a caller (the playground) can turn
+/// an ephemeral draft into a stable local workspace download. <see cref="Identity"/> is <c>null</c>
+/// only when <see cref="Diagnostics"/> is non-empty (analysis/harvest failed). Declared as the
+/// polymorphic <see cref="IdentityDto"/> base — not the concrete <see cref="DurableIdentityDto"/> —
+/// specifically so serialization still emits the <c>"kind":"durable"</c> discriminator: System.Text.Json
+/// only applies <c>[JsonPolymorphic]</c>/<c>[JsonDerivedType]</c> when the declared property type is
+/// the attributed base type, not when it's the concrete derived type. Without this, a caller could
+/// not feed this field straight back into a later request's own <c>Identity</c> property, which
+/// does expect the discriminator.</summary>
+public sealed record WorkspaceExportResponse(
+    string ApiVersion,
+    IReadOnlyList<ApiDiagnostic> Diagnostics,
+    IReadOnlyList<WorkspaceDocumentDto> Documents,
+    IdentityDto? Identity);
+
 /// <summary>Mapping between the wire contracts above and <c>Modeller.Workspace</c>'s domain types —
 /// colocated with the DTOs themselves rather than scattered across the endpoint/pipeline. Callers
 /// (the pipeline) invoke these only after <c>RequestLimits.Validate</c> has confirmed the request
@@ -74,6 +90,10 @@ public static class WorkspaceContractMappings
     public static WorkspaceIdentityRegistry ToRegistry(this DurableIdentityDto durable) => new(
         durable.Version,
         durable.Documents.ToImmutableDictionary(entry => LogicalPath.Create(entry.Key), entry => entry.Value.ToImmutableArray()));
+
+    public static DurableIdentityDto ToDto(this WorkspaceIdentityRegistry registry) => new(
+        registry.Version,
+        registry.Documents.ToDictionary(entry => entry.Key.Value, entry => entry.Value.ToList()));
 
     public static ApiDiagnostic ToApiDiagnostic(this WorkspaceDiagnostic diagnostic) => new(
         diagnostic.Code, diagnostic.Message,

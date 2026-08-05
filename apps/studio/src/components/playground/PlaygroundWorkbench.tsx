@@ -10,13 +10,32 @@ import { GraphCanvas } from '@/components/workbench/GraphCanvas';
 import '@/components/workbench/workbench.css';
 import './playground.css';
 import { PlaygroundEditor, applyDiagnosticMarkers } from './PlaygroundEditor';
-import { StatusBanner, type AnalysisStatus } from './StatusBanner';
+import { StatusBanner, type Notice } from './StatusBanner';
 import { loadDraft, resetToExample, saveDraft, type PlaygroundDraft } from '@/lib/playground/session-store';
-import { analyzeWorkspace, fetchSupportedViews, type ProjectionResponseDto, type RootSummaryDto } from '@/lib/playground/api-client';
+import {
+  analyzeWorkspace,
+  exportWorkspace,
+  fetchSupportedViews,
+  EPHEMERAL_IDENTITY,
+  type ProjectionResponseDto,
+  type RootSummaryDto,
+} from '@/lib/playground/api-client';
+import { decodeShareLink, encodeShareLink, type ShareDecodeResult } from '@/lib/playground/share-link';
+import { buildWorkspaceZip, downloadWorkspaceZip } from '@/lib/playground/workspace-bundle';
 
 const VIEW_KINDS = ['Lifecycle', 'RuleDecision'] as const;
 type ViewKind = (typeof VIEW_KINDS)[number];
 const ANALYZE_DEBOUNCE_MS = 500;
+
+function shareDecodeErrorNotice(reason: Exclude<ShareDecodeResult, { ok: true }>['reason']): Notice {
+  const text =
+    reason === 'unsupported-version'
+      ? "This share link was created by a newer version of the playground and can't be opened here."
+      : reason === 'too-large'
+        ? 'This share link is too large to open safely.'
+        : "This share link couldn't be read — it may be corrupted or incomplete.";
+  return { kind: 'error', text };
+}
 
 export function PlaygroundWorkbench() {
   const [draft, setDraft] = useState<PlaygroundDraft>(() => loadDraft());
@@ -28,10 +47,40 @@ export function PlaygroundWorkbench() {
   const [roots, setRoots] = useState<RootSummaryDto[]>([]);
   const [projection, setProjection] = useState<ProjectionResponseDto | undefined>();
   const [supportedViews, setSupportedViews] = useState<string[]>([]);
-  const [status, setStatus] = useState<AnalysisStatus>('idle');
+  const [status, setStatus] = useState<'idle' | 'analyzing' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
+  const [uiNotice, setUiNotice] = useState<Notice | undefined>();
+  const [shareUrl, setShareUrl] = useState<string | undefined>();
+  const [downloading, setDownloading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const requestIdRef = useRef(0);
+
+  const loadSharedDraft = useCallback((shared: PlaygroundDraft) => {
+    setDraft(shared);
+    saveDraft(shared);
+    setDraftRevision((revision) => revision + 1);
+    setOpenPaths(shared.documents[0] ? [shared.documents[0].path] : []);
+    setActivePath(shared.documents[0]?.path);
+    setRootId('');
+    setProjection(undefined);
+  }, []);
+
+  // A share link (issue #73) is consumed once, on first load, before anything else touches the
+  // draft — it always wins over whatever loadDraft() already put in state above. The fragment is
+  // never sent to any server; it's read straight out of the browser's own address bar.
+  useEffect(() => {
+    if (!window.location.hash) return;
+    void decodeShareLink(window.location.hash).then((result) => {
+      if (!result) return; // present but not a share fragment — leave the loaded draft alone
+      if (!result.ok) {
+        setUiNotice(shareDecodeErrorNotice(result.reason));
+        return;
+      }
+      loadSharedDraft({ documents: result.documents, configuration: result.configuration, identity: EPHEMERAL_IDENTITY });
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     void fetchSupportedViews()
@@ -44,7 +93,7 @@ export function PlaygroundWorkbench() {
     setStatus('analyzing');
     const projections = rootId ? [{ id: 'active', kind: view, roots: [rootId] }] : [];
     try {
-      const response = await analyzeWorkspace(draft.documents, draft.configuration, projections);
+      const response = await analyzeWorkspace(draft.documents, draft.identity, draft.configuration, projections);
       if (requestId !== requestIdRef.current) return; // superseded by a newer edit
       setRoots(response.roots);
       setProjection(response.projections[0]);
@@ -56,7 +105,7 @@ export function PlaygroundWorkbench() {
       setStatus('error');
       setErrorMessage(error instanceof Error ? error.message : 'Failed to analyze the workspace.');
     }
-  }, [draft.documents, draft.configuration, view, rootId]);
+  }, [draft.documents, draft.identity, draft.configuration, view, rootId]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -76,13 +125,45 @@ export function PlaygroundWorkbench() {
   };
 
   const onReset = () => {
-    const fresh = resetToExample();
-    setDraft(fresh);
-    setDraftRevision((revision) => revision + 1);
-    setOpenPaths(fresh.documents[0] ? [fresh.documents[0].path] : []);
-    setActivePath(fresh.documents[0]?.path);
-    setRootId('');
-    setProjection(undefined);
+    setUiNotice(undefined);
+    setShareUrl(undefined);
+    loadSharedDraft(resetToExample());
+  };
+
+  const onShare = async () => {
+    setUiNotice(undefined);
+    const result = await encodeShareLink(draft.documents, draft.configuration);
+    if (!result.ok) {
+      setShareUrl(undefined);
+      setUiNotice({ kind: 'error', text: 'This workspace is too large for a share link — use Download workspace instead.' });
+      return;
+    }
+    setShareUrl(result.url);
+  };
+
+  const onDownload = async () => {
+    setUiNotice(undefined);
+    setDownloading(true);
+    try {
+      const response = await exportWorkspace(draft.documents, draft.identity, draft.configuration);
+      if (!response.identity) {
+        setUiNotice({
+          kind: 'error',
+          text: response.diagnostics[0]?.message ?? 'Could not export this workspace — fix the diagnostics above and try again.',
+        });
+        return;
+      }
+      const nextDraft: PlaygroundDraft = { documents: response.documents, configuration: draft.configuration, identity: response.identity };
+      setDraft(nextDraft);
+      saveDraft(nextDraft);
+      setDraftRevision((revision) => revision + 1); // documents now carry embedded "# @id=" identities — remount the editor to show them
+      downloadWorkspaceZip(buildWorkspaceZip(response.documents, response.identity, draft.configuration));
+      setUiNotice({ kind: 'info', text: 'Workspace downloaded. Documents now carry durable identities (the "# @id=" comments) — repeat downloads reuse them.' });
+    } catch (error) {
+      setUiNotice({ kind: 'error', text: error instanceof Error ? error.message : 'Failed to download the workspace.' });
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const openDocument = (path: string) => {
@@ -102,6 +183,16 @@ export function PlaygroundWorkbench() {
 
   const tree = buildTree(draft.documents.map((document) => document.path));
   const availableViews = VIEW_KINDS.filter((kind) => supportedViews.length === 0 || supportedViews.includes(kind));
+  const notice: Notice | undefined =
+    uiNotice ??
+    (status === 'analyzing'
+      ? { kind: 'analyzing', text: 'Analyzing…' }
+      : status === 'error'
+        ? {
+            kind: 'error',
+            text: `Couldn't reach the analysis service${errorMessage ? ` (${errorMessage})` : ''}. Your draft is unaffected — it will retry on your next edit.`,
+          }
+        : undefined);
 
   return (
     <div className="shell">
@@ -109,11 +200,30 @@ export function PlaygroundWorkbench() {
         <div className="brand">
           <span className="mark">M</span> Modeller Playground
         </div>
-        <button className="playground-reset-btn" onClick={onReset}>
-          Reset example
-        </button>
+        <div className="playground-actions">
+          <button className="playground-share-btn" onClick={() => void onShare()}>
+            Share
+          </button>
+          <button className="playground-download-btn" onClick={() => void onDownload()} disabled={downloading}>
+            {downloading ? 'Downloading…' : 'Download workspace'}
+          </button>
+          <button className="playground-reset-btn" onClick={onReset}>
+            Reset example
+          </button>
+        </div>
       </div>
-      <StatusBanner status={status} errorMessage={errorMessage} />
+      {shareUrl && (
+        <div className="playground-share">
+          <input readOnly value={shareUrl} aria-label="Share link" onFocus={(event) => event.currentTarget.select()} />
+          <button className="playground-share-btn" onClick={() => void navigator.clipboard?.writeText(shareUrl).catch(() => undefined)}>
+            Copy
+          </button>
+          <button className="playground-share-btn" aria-label="Dismiss share link" onClick={() => setShareUrl(undefined)}>
+            ×
+          </button>
+        </div>
+      )}
+      <StatusBanner notice={notice} />
       <Group orientation="horizontal" className="panel-group">
         <Panel defaultSize="20" minSize="12">
           <div className="explorer">

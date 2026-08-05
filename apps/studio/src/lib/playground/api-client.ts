@@ -12,6 +12,20 @@ export interface WorkspaceDocumentDto {
   content: string;
 }
 
+export interface EphemeralIdentityDto {
+  kind: 'ephemeral';
+}
+
+export interface DurableIdentityDto {
+  kind: 'durable';
+  version: string;
+  documents: Record<string, string[]>;
+}
+
+export type IdentityDto = EphemeralIdentityDto | DurableIdentityDto;
+
+export const EPHEMERAL_IDENTITY: EphemeralIdentityDto = { kind: 'ephemeral' };
+
 export interface ConfigurationDto {
   generationContractVersion: string;
   logicalOutputRoot: string;
@@ -81,15 +95,24 @@ export interface WorkspaceAnalyzeResponse {
   projections: ProjectionResponseDto[];
 }
 
+// Response of POST /v1/workspace/export (issue #73): the post-identity-application document text
+// plus the durable registry harvested from it. `identity` is null only when `diagnostics` is
+// non-empty (analysis/harvest failed).
+export interface WorkspaceExportResponse {
+  apiVersion: string;
+  diagnostics: ApiDiagnostic[];
+  documents: WorkspaceDocumentDto[];
+  identity: DurableIdentityDto | null;
+}
+
 interface SupportedViewsResponse {
   apiVersion: string;
   views: string[];
 }
 
-// Every playground request is an ephemeral draft — no durable identity
-// registry exists until a workspace is downloaded (#73's scope).
 export async function analyzeWorkspace(
   documents: readonly WorkspaceDocumentDto[],
+  identity: IdentityDto,
   configuration: ConfigurationDto,
   projections: readonly ProjectionRequestDto[] = [],
   signal?: AbortSignal,
@@ -97,11 +120,28 @@ export async function analyzeWorkspace(
   const response = await fetch(`${API_BASE}/v1/workspace/analyze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ documents, identity: { kind: 'ephemeral' }, configuration, projections }),
+    body: JSON.stringify({ documents, identity, configuration, projections }),
     signal,
   });
   if (!response.ok) throw new Error(`Workspace analysis failed with status ${response.status}.`);
   return (await response.json()) as WorkspaceAnalyzeResponse;
+}
+
+// Turns the current draft into a stable snapshot: the resulting `identity` should replace the
+// draft's own identity going forward so a second export (or the next analyze call) carries the
+// same registry instead of an ephemeral draft minting fresh ids every time.
+export async function exportWorkspace(
+  documents: readonly WorkspaceDocumentDto[],
+  identity: IdentityDto,
+  configuration: ConfigurationDto,
+): Promise<WorkspaceExportResponse> {
+  const response = await fetch(`${API_BASE}/v1/workspace/export`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ documents, identity, configuration, projections: [] }),
+  });
+  if (!response.ok) throw new Error(`Workspace export failed with status ${response.status}.`);
+  return (await response.json()) as WorkspaceExportResponse;
 }
 
 export async function fetchSupportedViews(): Promise<string[]> {

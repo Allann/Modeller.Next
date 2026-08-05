@@ -23,6 +23,19 @@ async function mockAnalyze(page: Page, respond: (body: AnalyzeRequestBody) => Re
   });
 }
 
+async function mockExport(page: Page) {
+  await page.route('**/v1/workspace/export', (route) => {
+    const body = route.request().postDataJSON() as AnalyzeRequestBody;
+    const documents = body.documents.map((document) => ({ ...document, content: `${document.content}\n# @id=test-identity\n` }));
+    const identity = {
+      kind: 'durable',
+      version: '1.0',
+      documents: Object.fromEntries(body.documents.map((document) => [document.path, ['test-identity']])),
+    };
+    route.fulfill({ json: { apiVersion: '1.0', diagnostics: [], documents, identity } });
+  });
+}
+
 function cleanResponse(body: AnalyzeRequestBody) {
   const projections = (body.projections ?? []).map((request) => ({
     id: request.id,
@@ -131,4 +144,101 @@ test('local-only filesystem/CLI-subprocess API routes are disabled in playground
     const response = await request.get(path);
     expect(response.status(), path).toBe(404);
   }
+});
+
+test('a share link reproduces the edited model for a fresh recipient, without server-side persistence', async ({ page, browser }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, cleanResponse);
+
+  await page.goto('/');
+  await page.getByText('order.modeller', { exact: true }).click();
+  const editor = page.locator('.monaco-editor');
+  await editor.click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type('entity Shared Widget');
+  await expect(page.locator('.view-lines')).toContainText('Shared Widget');
+
+  await page.getByRole('button', { name: 'Share' }).click();
+  const shareInput = page.getByRole('textbox', { name: 'Share link' });
+  await expect(shareInput).toBeVisible();
+  const shareUrl = await shareInput.inputValue();
+  expect(shareUrl).toContain('#s=');
+
+  // A fresh browser context has no sessionStorage from the sharer's tab — the only way the
+  // recipient's page can reproduce the edit is by decoding the URL fragment itself.
+  const recipientContext = await browser.newContext();
+  try {
+    const recipientPage = await recipientContext.newPage();
+    await mockSupportedViews(recipientPage);
+    await mockAnalyze(recipientPage, cleanResponse);
+
+    await recipientPage.goto(shareUrl);
+    await recipientPage.getByText('order.modeller', { exact: true }).click();
+
+    await expect(recipientPage.locator('.view-lines')).toContainText('Shared Widget');
+  } finally {
+    await recipientContext.close();
+  }
+});
+
+test('a malformed share link fails safely and falls back to the pristine example', async ({ page }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, cleanResponse);
+
+  await page.goto('/#s=not-valid-base64!!!');
+
+  await expect(page.getByRole('status')).toContainText("couldn't be read");
+  await expect(page.locator('.view-lines')).toContainText('context Ordering');
+});
+
+test('an oversized share link fails safely', async ({ page }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, cleanResponse);
+
+  await page.goto(`/#s=${'A'.repeat(7000)}`);
+
+  await expect(page.getByRole('status')).toContainText('too large');
+  await expect(page.locator('.view-lines')).toContainText('context Ordering');
+});
+
+test('an unsupported share-link version fails safely', async ({ page }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, cleanResponse);
+  await page.goto('/');
+
+  // Builds a validly-compressed fragment (same scheme as share-link.ts) but with a version this
+  // build doesn't understand, to prove the version check itself — not just malformed input — is
+  // enforced.
+  const fragment = await page.evaluate(async () => {
+    const payload = JSON.stringify({
+      v: 2,
+      documents: [{ path: 'model/context.modeller', content: 'rml 1.0\n' }],
+      configuration: { generationContractVersion: '1.0', logicalOutputRoot: 'generated' },
+    });
+    const compressedStream = new Blob([new TextEncoder().encode(payload)]).stream().pipeThrough(new CompressionStream('gzip'));
+    const compressed = new Uint8Array(await new Response(compressedStream).arrayBuffer());
+    let binary = '';
+    for (const byte of compressed) binary += String.fromCharCode(byte);
+    const encoded = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return `#s=${encoded}`;
+  });
+
+  await page.goto(`/${fragment}`);
+
+  await expect(page.getByRole('status')).toContainText('newer version');
+  await expect(page.locator('.view-lines')).toContainText('context Ordering');
+});
+
+test('downloading the workspace produces a zip with durable-identity content', async ({ page }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, cleanResponse);
+  await mockExport(page);
+
+  await page.goto('/');
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download workspace' }).click();
+  const download = await downloadPromise;
+
+  expect(download.suggestedFilename()).toBe('modeller-workspace.zip');
+  await expect(page.getByRole('status')).toContainText('durable identities');
 });
