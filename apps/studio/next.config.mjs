@@ -51,7 +51,12 @@ const nextConfig = {
   basePath,
   // Scope Turbopack to this app — without this it infers a shared workspace
   // root with the sibling docs site (both have their own package-lock.json)
-  // and incorrectly pulls in the docs app's root-level proxy.ts.
+  // and incorrectly pulls in the docs app's root-level proxy.ts. Vercel's
+  // monorepo detection sets outputFileTracingRoot independently of
+  // turbopack.root; Next requires the two to match (build warns and falls
+  // back to outputFileTracingRoot otherwise), which reintroduces the same
+  // proxy.ts leak, so it must be pinned here too.
+  outputFileTracingRoot: dirname,
   turbopack: {
     root: dirname,
   },
