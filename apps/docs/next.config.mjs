@@ -1,6 +1,18 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createMDX } from 'fumadocs-mdx/next';
 
 const withMDX = createMDX();
+
+const dirname = path.dirname(fileURLToPath(import.meta.url));
+// This app's content (`lib/source.ts`'s `dir: '../../docs'`) lives at the
+// repo-root `docs/` folder, outside this app's own directory — Turbopack
+// otherwise infers this app's own lockfile location as its root and refuses
+// to resolve modules outside it (same class of fix as apps/studio's
+// turbopack.root pin). outputFileTracingRoot must match turbopack.root or
+// Next warns and silently falls back to it, which reintroduces the same
+// resolution failure.
+const repoRoot = path.resolve(dirname, '../..');
 
 // Baseline production hardening (issue #74) — a considered starting point, not an exhaustively
 // audited final policy; verify mermaid diagram rendering (docs/architecture/decisions uses
@@ -41,6 +53,10 @@ const SECURITY_HEADERS = [
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  outputFileTracingRoot: repoRoot,
+  turbopack: {
+    root: repoRoot,
+  },
   async headers() {
     return [{ source: '/:path*', headers: SECURITY_HEADERS }];
   },

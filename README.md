@@ -11,11 +11,15 @@ the temporary `Modeller.Next` label, but the product and its documentation use
 the Modeller name.
 
 Canonical project documentation lives in `docs/` and is rendered by the
-Next.js/Fumadocs application in this repository.
+Next.js/Fumadocs application at `apps/docs`. Two sibling Next.js apps —
+`apps/website` (the public playground/marketing site) and `apps/studio`
+(the definition-design tool) — deploy as their own, independent Vercel
+projects; see each app's own README.
 
 ## Development
 
 ```bash
+cd apps/docs
 npm install
 npm run dev
 ```
