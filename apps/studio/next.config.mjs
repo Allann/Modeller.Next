@@ -60,11 +60,18 @@ const nextConfig = {
   turbopack: {
     root: dirname,
   },
-  // The playground and local-mode Playwright projects (playwright.config.ts)
-  // both run `npm run dev` from this same directory concurrently — sharing
-  // the default `.next` build/cache dir corrupts Turbopack's persistent
-  // cache under concurrent writers, so the playground build gets its own.
-  distDir: process.env.NEXT_PUBLIC_MODELLER_STUDIO_MODE === 'playground' ? '.next-playground' : '.next',
+  // Locally, the playground and local-mode Playwright projects
+  // (playwright.config.ts) both run `npm run dev` from this same directory
+  // concurrently — sharing the default `.next` build/cache dir corrupts
+  // Turbopack's persistent cache under concurrent writers, so the playground
+  // dev server gets its own. Skip this on Vercel (VERCEL is always set during
+  // its builds): NEXT_PUBLIC_MODELLER_STUDIO_MODE=playground is also required
+  // there for the deployed app, but Vercel's build wrapper expects output at
+  // the standard `.next`, not `.next-playground`.
+  distDir:
+    process.env.NEXT_PUBLIC_MODELLER_STUDIO_MODE === 'playground' && !process.env.VERCEL
+      ? '.next-playground'
+      : '.next',
   async headers() {
     return [{ source: '/:path*', headers: SECURITY_HEADERS }];
   },
