@@ -5,10 +5,11 @@ import { defineDocs } from 'fumadocs-mdx/macro';
 import { metaSchema, pageSchema } from 'fumadocs-core/source/schema';
 
 const docs = defineDocs({
-  // Content lives at the repo-root `docs/` — it's the shared knowledge base
-  // (coding standards, architecture, agent docs), not something that moves
-  // into this app's own directory.
-  dir: '../../docs',
+  // Content is the shared repo-root `docs/` knowledge base (coding
+  // standards, architecture, agent docs), copied here at build/dev time by
+  // scripts/copy-docs-content.mjs (predev/prebuild) rather than referenced
+  // across the app-directory boundary directly — see that script for why.
+  dir: 'docs',
   docs: {
     files: ['**/*.{mdx,md}', '!agents/**'],
     schema: pageSchema,

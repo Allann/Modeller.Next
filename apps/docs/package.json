@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "predev": "node scripts/copy-docs-content.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-docs-content.mjs",
+    "build": "next build",
     "start": "next start",
     "types:check": "next typegen && tsc --noEmit",
     "lint": "eslint"
