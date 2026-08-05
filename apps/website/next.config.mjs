@@ -18,6 +18,14 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 // 'unsafe-eval' is dev-only: Fast Refresh/HMR relies on eval() to load modules; production
 // builds never need it.
 const isDev = process.env.NODE_ENV !== 'production';
+
+// /playground is proxied through to the apps/studio deployment (Next.js "Multi Zones" pattern,
+// issue #74) rather than living at its own subdomain — visitors only ever see modeller.website.
+// STUDIO_DEPLOYMENT_URL points at that deployment's own (non-public-facing) Vercel URL; the
+// localhost fallback lets `npm run dev` here proxy to a locally running `apps/studio` playground
+// build (NEXT_PUBLIC_STUDIO_BASE_PATH=/playground npm run dev, port 3101).
+const studioUrl = process.env.STUDIO_DEPLOYMENT_URL || 'http://localhost:3101';
+
 const SECURITY_HEADERS = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -46,8 +54,18 @@ const nextConfig = {
   turbopack: {
     root: dirname,
   },
+  async rewrites() {
+    return [
+      { source: '/playground', destination: `${studioUrl}/playground` },
+      { source: '/playground/:path*', destination: `${studioUrl}/playground/:path*` },
+    ];
+  },
   async headers() {
-    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+    // Excludes /playground: that path is proxied straight through to apps/studio's own
+    // deployment (see rewrites() above), which sets its own, wider CSP for Monaco/onigasm.
+    // Matching it here too would send a second, more restrictive CSP header alongside it and
+    // break the editor the same way the original blank-page CSP regression did.
+    return [{ source: '/((?!playground).*)', headers: SECURITY_HEADERS }];
   },
 };
 

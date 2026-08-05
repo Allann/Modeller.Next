@@ -27,42 +27,62 @@ This issue closes that last gap: where does the interactive playground live rela
 `modeller.website`, and what does production hardening (TLS, environment separation, security
 headers, monitoring, rollback, privacy) look like across all three deployables together.
 
-## Decision: a subdomain, not a path rewrite
+## Decision: a path under modeller.website, via Next.js Multi Zones
 
-The interactive playground (`apps/studio`, playground mode) deploys as its own Vercel project —
-**`studio.modeller.website`** — rather than being mounted under a path of the `modeller.website`
-project (e.g. `modeller.website/studio`).
+The interactive playground (`apps/studio`, playground mode) is reachable at
+**`https://modeller.website/playground`** — the existing `modeller.website` Vercel project, not a
+new public-facing domain. `apps/studio` still builds and deploys as its own Vercel project (kept
+separate rather than merged into `apps/website`'s codebase — the two apps have unrelated
+dependency trees, build configs, and release cadences), but that deployment gets no domain of its
+own that visitors ever see. Instead, `apps/website` proxies the path through to it using Next.js's
+["Multi Zones"](https://nextjs.org/docs/app/building-your-application/deploying/multi-zone-app)
+pattern: a `rewrites()` rule forwards `/playground` and `/playground/:path*` to the studio
+deployment's own (internal-only) Vercel URL, and `apps/studio` sets a matching `basePath` so its
+own routes and `/_next/*` asset requests resolve correctly once mounted under that prefix.
 
-A path-based mount would need a Vercel `rewrites` rule in `apps/website`'s `vercel.json` proxying
-to the studio deployment's URL, which only works cleanly if the target app is built with a matching
-Next.js `basePath` — otherwise its `/_next/*` asset requests resolve against the wrong origin once
-proxied under a path prefix. That's a real, ongoing coupling between two independently-versioned
-apps for no functional benefit here: nothing requires the playground and the flagship examples to
-share an origin (no cookies, no shared session state — the playground's state is `sessionStorage`
-and the URL fragment, both already origin-scoped to wherever it's hosted). A subdomain keeps each
-project exactly as simple as it already is — `apps/studio`'s `server.ts`/Next.js setup needs no
-`basePath` change at all — and matches the "each app deploys independently" precedent
-`apps/website/README.md` already states.
+This supersedes an earlier draft of this decision that proposed a `studio.modeller.website`
+subdomain instead — reversed because the playground should present as part of the existing
+`modeller.website` site, not a separate one. The `basePath` is only ever set via the studio Vercel
+project's own environment variables (`NEXT_PUBLIC_STUDIO_BASE_PATH=/playground`); local dev and
+the Playwright suite leave it unset, so `apps/studio` keeps serving from `/` exactly as before —
+this decision changes nothing about local development.
 
-`apps/website` links out to `https://studio.modeller.website` as the "try it live" call to action
-(`SiteFooter.tsx`); the playground links back to `https://modeller.website` for the flagship
-examples and `https://modeller.wiki` for documentation, matching the existing
-`modeller.wiki`-links-to-the-playground / `modeller.website`-hosts-the-playground split from issue
-#68's own site-split decision.
+Because the rewrite is a transparent proxy, the browser's address bar and `Origin` never change —
+the playground genuinely runs same-origin with the rest of `modeller.website`. That also means each
+app's own response headers (including its Content-Security-Policy) pass straight through
+unmodified; `apps/website`'s `headers()` config explicitly excludes `/playground` so its own,
+narrower CSP doesn't also get sent alongside `apps/studio`'s wider one (which Monaco/onigasm need —
+sending both would recreate the blank-page CSP regression hit while implementing this issue, just
+via a second conflicting header instead of a too-strict single one).
+
+`SiteFooter.tsx`'s "try it live" link is now a same-origin relative link (`/playground`); the
+playground links back to `https://modeller.website` for the flagship examples and
+`https://modeller.wiki` for documentation, matching the existing `modeller.wiki`-links-to-the-
+playground / `modeller.website`-hosts-the-playground split from issue #68's own site-split
+decision.
+
+Note: `apps/website`'s existing `/examples/[slug]` pages (issue #69) already describe themselves in
+copy and metadata as "a public playground for exploring Modeller examples" — a static, read-only
+viewer, unrelated to and predating the interactive `apps/studio` playground this issue is about.
+There's no routing collision (`/examples/*` vs `/playground`), but the two features sharing the
+word "playground" in visitor-facing copy is a naming overlap worth resolving in site copy at some
+point; out of scope for this infrastructure decision.
 
 ## Environment separation
 
-Each of the three Vercel projects (`modeller-api`, `modeller.website`, the new
-`studio-modeller-website` project) gets its own Production and Preview environments, per Vercel's
-standard model — a Preview deployment (any non-`main` branch or PR) is the "owner-only
-preproduction deployment before public launch" this issue's scope asks for, with no separate
-infrastructure to provision. The playground's `NEXT_PUBLIC_MODELLER_API_URL` is set per-environment
-so Preview builds of the studio project can point at either the same production `Modeller.Api` or a
-Preview deployment of it, and `Modeller.Api`'s `Cors:AllowedOrigins`
-(`src/Modeller.Api/appsettings.Production.json`) already covers both
-`https://modeller-next.vercel.app` and `https://modeller.website`; add
-`https://studio.modeller.website` to that list as part of standing up the new project (see
-Action items, below) — CORS is origin-exact, so the new subdomain needs its own entry.
+The `modeller-api` and `modeller.website` Vercel projects keep their own Production and Preview
+environments per Vercel's standard model. The new `apps/studio` project (internal-only — no public
+domain) gets the same treatment: a Preview deployment (any non-`main` branch or PR) is the
+"owner-only preproduction deployment before public launch" this issue's scope asks for, with no
+separate infrastructure to provision. `modeller.website`'s `STUDIO_DEPLOYMENT_URL` (consumed by its
+`rewrites()`) points Preview builds at the studio project's own Preview deployment and Production at
+its Production deployment. The playground's `NEXT_PUBLIC_MODELLER_API_URL` is set per-environment on
+the studio project so it can point at either the same production `Modeller.Api` or a Preview
+deployment of it. `Modeller.Api`'s `Cors:AllowedOrigins`
+(`src/Modeller.Api/appsettings.Production.json`) already covers `https://modeller-next.vercel.app`
+and `https://modeller.website` — since the playground is now same-origin with `modeller.website`
+from the browser's perspective, **no new CORS entry is needed** (this is one of the concrete
+benefits of the path-proxy approach over the subdomain one).
 
 ## TLS, security headers, and error/leak safety
 
@@ -109,20 +129,23 @@ All three projects follow the same Vercel-native pattern already established for
 `hosted-workspace-api.mdx`: build → deploy as a new revision → **rollback by promoting the previous
 deployment** from the Vercel dashboard's Deployments list (or `vercel rollback` from the CLI) — no
 rebuild required, so rollback is fast and doesn't depend on the failing commit's build succeeding.
-Because each project is independent, a bad `Modeller.Api` deploy and a bad frontend deploy roll back
-separately without coupling one project's incident to another's.
+Because each project is independent, a bad `Modeller.Api` deploy and a bad `apps/studio` deploy roll
+back separately without coupling one project's incident to another's. A bad `apps/studio` deploy is
+also naturally low-blast-radius for `modeller.website` itself: the rewrite only affects the
+`/playground` path, so a broken studio deployment doesn't take down the flagship example pages or
+anything else on the site — rolling back `modeller.website` isn't even needed unless
+`STUDIO_DEPLOYMENT_URL` itself needs to change.
 
-## Action items (require Vercel/DNS dashboard access — not achievable from source control)
+## Action items (require Vercel dashboard access — not achievable from source control)
 
-- [ ] Create the `studio.modeller.website` Vercel project: link this repo, set Root Directory to
-      `apps/studio`, set `NEXT_PUBLIC_MODELLER_STUDIO_MODE=playground` and
+- [ ] Create the `apps/studio` Vercel project (a project like `modeller-studio` is fine — it needs
+      no public domain of its own): link this repo, set Root Directory to `apps/studio`, set
+      `NEXT_PUBLIC_MODELLER_STUDIO_MODE=playground`, `NEXT_PUBLIC_STUDIO_BASE_PATH=/playground`, and
       `NEXT_PUBLIC_MODELLER_API_URL=https://modeller-next.vercel.app` (Production) plus whatever
       Preview-environment equivalents are wanted.
-- [ ] Add the `studio.modeller.website` DNS record and attach it to that project (Vercel handles
-      TLS automatically once attached).
-- [ ] Add `https://studio.modeller.website` to `Modeller.Api`'s `Cors:AllowedOrigins`
-      (`src/Modeller.Api/appsettings.Production.json`) and redeploy `modeller-api`.
-- [ ] Enable Vercel Analytics/Speed Insights and set per-project cost/usage alerts for all three
-      projects (`modeller-api`, `modeller.website`, `studio.modeller.website`).
-- [ ] Add `SiteFooter.tsx`'s "try it live" link to `https://studio.modeller.website` once the
-      project above exists (the link is already written; it 404s until the project is live).
+- [ ] Set `STUDIO_DEPLOYMENT_URL` on the `modeller.website` project to that project's own Vercel
+      deployment URL (e.g. `https://modeller-studio.vercel.app`), for both Production and Preview.
+- [ ] Enable Vercel Analytics/Speed Insights and set per-project cost/usage alerts for both projects
+      (`modeller-api`, `modeller.website`) plus the new `apps/studio` project.
+- [ ] No DNS or CORS changes needed — `/playground` is served from the existing `modeller.website`
+      domain via the rewrite, and that origin is already in `Modeller.Api`'s `Cors:AllowedOrigins`.

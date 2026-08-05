@@ -17,7 +17,7 @@ export function SiteFooter() {
           <a href="https://modeller.wiki">modeller.wiki</a>
         </p>
         <p>
-          <a href="https://studio.modeller.website">Try the interactive playground</a>
+          <a href="/playground">Try the interactive playground</a>
           <a href="/privacy">Privacy</a>
         </p>
       </div>

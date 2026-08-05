@@ -9,6 +9,12 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 // and the playground calls the hosted Modeller.Api origin directly from the browser (local mode's
 // own /lsp WebSocket is same-origin, already covered by 'self').
 const apiOrigin = process.env.NEXT_PUBLIC_MODELLER_API_URL || "'self'";
+// The deployed playground lives at modeller.website/playground, not its own subdomain (issue
+// #74) — this app still builds and deploys as its own Vercel project, but modeller.website's
+// rewrites() proxies that path to it (Next.js "Multi Zones" pattern), so it needs to know its own
+// mount point to generate correct asset/route URLs. Set only via the deployed project's env vars;
+// local dev and Playwright leave it unset so the app still serves from '/'.
+const basePath = process.env.NEXT_PUBLIC_STUDIO_BASE_PATH || undefined;
 // Next.js App Router streams RSC hydration payloads via inline <script>self.__next_f.push(...)
 // tags, not src= URLs — 'unsafe-inline' is required in every environment, not just dev
 // (confirmed the hard way: without it the page hydrates to a blank body and throws "Invariant:
@@ -42,6 +48,7 @@ const SECURITY_HEADERS = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  basePath,
   // Scope Turbopack to this app — without this it infers a shared workspace
   // root with the sibling docs site (both have their own package-lock.json)
   // and incorrectly pulls in the docs app's root-level proxy.ts.
