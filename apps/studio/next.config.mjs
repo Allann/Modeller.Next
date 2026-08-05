@@ -1,8 +1,3 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const dirname = path.dirname(fileURLToPath(import.meta.url));
-
 // Baseline production hardening (issue #74) — a considered starting point, not an exhaustively
 // audited final policy. Wider than apps/website's because this app actually needs it: Monaco's
 // editor worker runs from a blob: URL, onigasm's TextMate grammar engine needs 'wasm-unsafe-eval',
@@ -49,18 +44,6 @@ const SECURITY_HEADERS = [
 const nextConfig = {
   reactStrictMode: true,
   basePath,
-  // Scope Turbopack to this app — without this it infers a shared workspace
-  // root from the sibling apps/docs and apps/website lockfiles (each has its
-  // own package-lock.json) and incorrectly pulls in their files, e.g.
-  // apps/docs's proxy.ts. Vercel's monorepo detection sets
-  // outputFileTracingRoot independently of turbopack.root; Next requires the
-  // two to match (build warns and falls back to outputFileTracingRoot
-  // otherwise), which reintroduces the same leak, so it must be pinned here
-  // too.
-  outputFileTracingRoot: dirname,
-  turbopack: {
-    root: dirname,
-  },
   // Locally, the playground and local-mode Playwright projects
   // (playwright.config.ts) both run `npm run dev` from this same directory
   // concurrently — sharing the default `.next` build/cache dir corrupts
