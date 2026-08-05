@@ -7,7 +7,7 @@
     "predev": "node scripts/copy-grammars.mjs",
     "dev": "tsx server.ts",
     "prebuild": "node scripts/copy-grammars.mjs",
-    "build": "next build --webpack",
+    "build": "next build",
     "start": "cross-env NODE_ENV=production tsx server.ts",
     "lint": "eslint .",
     "types:check": "tsc --noEmit",
