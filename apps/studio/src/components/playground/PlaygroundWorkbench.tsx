@@ -278,7 +278,8 @@ export function PlaygroundWorkbench() {
         </Panel>
       </Group>
       <p className="playground-explainer">
-        This is a browser draft, not a durable local workspace — it lives only in this tab until you download it.
+        This is a browser draft, not a durable local workspace — it lives only in this tab until you download it.{' '}
+        <a href="https://modeller.website/privacy">Privacy</a>
       </p>
     </div>
   );

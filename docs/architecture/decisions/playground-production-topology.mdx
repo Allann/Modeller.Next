@@ -1,0 +1,128 @@
+---
+title: Playground production topology
+description: How the playground's frontend and hosted API deploy, connect, and roll back in production — issue #74.
+---
+
+Status: **Accepted**
+
+## Context
+
+By the time this decision was needed, three of the playground's pieces already existed as
+independent deployables, each already the subject of its own decision:
+
+- `Modeller.Api` (issue #71, `docs/architecture/decisions/hosted-workspace-api.mdx`) — a container
+  deployed as the `modeller-api` Vercel project, live at `https://modeller-next.vercel.app`.
+- `apps/website` (issue #69) — a static, zero-backend Next.js app deployed as the `modeller.website`
+  Vercel project: two flagship example pages with build-time-generated projection data, explicitly
+  documented (`apps/website/README.md`) as having "no request-time .NET execution and no editing
+  yet."
+- `apps/studio` in playground mode (issues #72/#73) — a Next.js app with its own
+  `NEXT_PUBLIC_MODELLER_STUDIO_MODE=playground` build variant that calls `Modeller.Api` directly
+  from the browser, keeps its draft in `sessionStorage`, and supports stateless share links and
+  workspace download. Documented as a "sibling app" to `apps/website` that "deploys
+  independently" — but nothing before this issue actually deployed it or decided how a visitor on
+  `modeller.website` reaches it.
+
+This issue closes that last gap: where does the interactive playground live relative to
+`modeller.website`, and what does production hardening (TLS, environment separation, security
+headers, monitoring, rollback, privacy) look like across all three deployables together.
+
+## Decision: a subdomain, not a path rewrite
+
+The interactive playground (`apps/studio`, playground mode) deploys as its own Vercel project —
+**`studio.modeller.website`** — rather than being mounted under a path of the `modeller.website`
+project (e.g. `modeller.website/studio`).
+
+A path-based mount would need a Vercel `rewrites` rule in `apps/website`'s `vercel.json` proxying
+to the studio deployment's URL, which only works cleanly if the target app is built with a matching
+Next.js `basePath` — otherwise its `/_next/*` asset requests resolve against the wrong origin once
+proxied under a path prefix. That's a real, ongoing coupling between two independently-versioned
+apps for no functional benefit here: nothing requires the playground and the flagship examples to
+share an origin (no cookies, no shared session state — the playground's state is `sessionStorage`
+and the URL fragment, both already origin-scoped to wherever it's hosted). A subdomain keeps each
+project exactly as simple as it already is — `apps/studio`'s `server.ts`/Next.js setup needs no
+`basePath` change at all — and matches the "each app deploys independently" precedent
+`apps/website/README.md` already states.
+
+`apps/website` links out to `https://studio.modeller.website` as the "try it live" call to action
+(`SiteFooter.tsx`); the playground links back to `https://modeller.website` for the flagship
+examples and `https://modeller.wiki` for documentation, matching the existing
+`modeller.wiki`-links-to-the-playground / `modeller.website`-hosts-the-playground split from issue
+#68's own site-split decision.
+
+## Environment separation
+
+Each of the three Vercel projects (`modeller-api`, `modeller.website`, the new
+`studio-modeller-website` project) gets its own Production and Preview environments, per Vercel's
+standard model — a Preview deployment (any non-`main` branch or PR) is the "owner-only
+preproduction deployment before public launch" this issue's scope asks for, with no separate
+infrastructure to provision. The playground's `NEXT_PUBLIC_MODELLER_API_URL` is set per-environment
+so Preview builds of the studio project can point at either the same production `Modeller.Api` or a
+Preview deployment of it, and `Modeller.Api`'s `Cors:AllowedOrigins`
+(`src/Modeller.Api/appsettings.Production.json`) already covers both
+`https://modeller-next.vercel.app` and `https://modeller.website`; add
+`https://studio.modeller.website` to that list as part of standing up the new project (see
+Action items, below) — CORS is origin-exact, so the new subdomain needs its own entry.
+
+## TLS, security headers, and error/leak safety
+
+TLS is automatic on every Vercel-assigned and custom domain; nothing to configure beyond attaching
+the domain. Both Next.js apps that serve the playground's UI now set baseline security headers via
+`headers()` in their `next.config.mjs` (`apps/website`, `apps/studio`) — `X-Content-Type-Options`,
+`Referrer-Policy`, `Permissions-Policy`, `frame-ancestors 'none'` (neither app is meant to be
+iframed), and a Content-Security-Policy scoped to what each app actually loads (`apps/studio`'s is
+the more involved of the two: `worker-src blob:` for Monaco's editor worker,
+`script-src ... 'wasm-unsafe-eval'` for the onigasm WASM grammar engine, and `connect-src`
+restricted to `'self'` plus the configured `Modeller.Api` origin). These are a considered starting
+baseline, not an exhaustively audited final policy — tighten further once real deployed traffic
+confirms exactly which asset origins each app actually needs (a follow-up, not blocking here).
+
+`Modeller.Api` registers no `UseExceptionHandler`/`UseDeveloperExceptionPage` middleware, so an
+unhandled exception in Production falls through to Kestrel's own default: an empty-bodied 500, no
+stack trace, no source. Combined with the no-source-logging guarantee already established in
+`hosted-workspace-api.mdx` (structured logs carry only request metadata — document/projection
+counts, outcome, elapsed time, diagnostic codes — never document content), no code path exposes
+submitted model source or infrastructure credentials in an error response or a log line.
+
+## Monitoring, budgets, and privacy
+
+`apps/website` and `apps/studio` both already depend on `@vercel/analytics` (and `apps/website`
+additionally on `@vercel/speed-insights`) — real-user monitoring and Core Web Vitals without any
+new infrastructure; enabling them is a Vercel dashboard action per project (see Action items).
+`Modeller.Api` already registers OpenTelemetry tracing/metrics unconditionally
+(`hosted-workspace-api.mdx`'s Observability section) — cost/availability alerting on top of that is
+whichever OTLP collector/backend is chosen, plus Vercel's own per-project usage alerts for the
+Next.js projects; no collector is provisioned in this pass (same "not yet chosen" state
+`hosted-workspace-api.mdx` already documented).
+
+`apps/website/src/app/privacy/page.tsx` is the privacy statement this issue's scope asks for,
+linked from `SiteFooter.tsx` and from the playground's own footer text — it covers: no accounts;
+playground drafts live in browser `sessionStorage` only, never persisted server-side; share links
+encode content into the URL fragment client-side (never uploaded, but anyone the link is sent to
+can read it — the same caution as sharing any link); `Modeller.Api` logs request metadata only,
+never submitted document content; anonymized Vercel Analytics/Speed Insights telemetry, no
+model-content tracking.
+
+## Deployment and rollback
+
+All three projects follow the same Vercel-native pattern already established for `modeller-api` in
+`hosted-workspace-api.mdx`: build → deploy as a new revision → **rollback by promoting the previous
+deployment** from the Vercel dashboard's Deployments list (or `vercel rollback` from the CLI) — no
+rebuild required, so rollback is fast and doesn't depend on the failing commit's build succeeding.
+Because each project is independent, a bad `Modeller.Api` deploy and a bad frontend deploy roll back
+separately without coupling one project's incident to another's.
+
+## Action items (require Vercel/DNS dashboard access — not achievable from source control)
+
+- [ ] Create the `studio.modeller.website` Vercel project: link this repo, set Root Directory to
+      `apps/studio`, set `NEXT_PUBLIC_MODELLER_STUDIO_MODE=playground` and
+      `NEXT_PUBLIC_MODELLER_API_URL=https://modeller-next.vercel.app` (Production) plus whatever
+      Preview-environment equivalents are wanted.
+- [ ] Add the `studio.modeller.website` DNS record and attach it to that project (Vercel handles
+      TLS automatically once attached).
+- [ ] Add `https://studio.modeller.website` to `Modeller.Api`'s `Cors:AllowedOrigins`
+      (`src/Modeller.Api/appsettings.Production.json`) and redeploy `modeller-api`.
+- [ ] Enable Vercel Analytics/Speed Insights and set per-project cost/usage alerts for all three
+      projects (`modeller-api`, `modeller.website`, `studio.modeller.website`).
+- [ ] Add `SiteFooter.tsx`'s "try it live" link to `https://studio.modeller.website` once the
+      project above exists (the link is already written; it 404s until the project is live).
