@@ -41,6 +41,13 @@ function buildConfigJson(configuration: ConfigurationDto, sources: readonly stri
       sources,
       templatePack: `${TEMPLATE_PACK_ROOT}/pack.json`,
       identityRegistry: '.modeller/identities.json',
+      // Required by the CLI's own workspace loader (src/Modeller.Cli/WorkspaceLoader.cs
+      // IsValidConfiguration/HasValidParameters) — a config.json without a non-empty
+      // parameters.projectName fails to load at all via `project --workspace`/`generate
+      // --workspace`, even though it's optional for the hosted API's own Analyze/Export.
+      // Hardcoded to the Ordering example's own values (matches samples/ordering/.modeller/config.json)
+      // since that's the only example the playground currently supports.
+      parameters: { projectName: 'Ordering', csharp: { namespace: 'Ordering', targetFramework: 'net10.0' } },
     },
     null,
     2,
