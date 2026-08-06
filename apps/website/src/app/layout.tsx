@@ -9,11 +9,11 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: { default: 'Modeller Playground', template: '%s' },
-  description: 'Explore real Modeller examples in your browser — no install required.',
+  title: { default: 'Modeller: start an Initiative', template: '%s' },
+  description: 'Capture a change request and work through Discover, Frame, and Shape before deciding whether a technology intervention is even the right response.',
   metadataBase: new URL('https://modeller.website'),
   openGraph: {
-    siteName: 'Modeller Playground',
+    siteName: 'Modeller',
     type: 'website',
   },
   twitter: {
