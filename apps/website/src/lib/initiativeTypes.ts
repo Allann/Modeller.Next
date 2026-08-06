@@ -201,15 +201,23 @@ export interface AgentInterventionSuggestionsResponse {
 
 export type InitiativePhase = 'Discover' | 'Frame' | 'Shape' | 'Design';
 
-/** Which of the four phases the Initiative is currently in — derived from what's actually
- * happened, not from whether a gate has been evaluated (evaluating Discovery Gate is a Frame-time
- * action, not the thing that causes Frame to start: any question targeting a Frame-phase field
- * already means the Initiative is in Frame, per #86's phase breakdown). */
+function hasReachedShape(session: InitiativeSessionDto): boolean {
+  return session.selectedInterventions.length > 0 || session.latestShapeGateEvaluation !== null;
+}
+
+/** Either a question targeting a Frame-phase field, or a recorded Discovery Gate evaluation, is
+ * evidence Frame has been reached: Discovery Gate sits at the Frame -> Shape boundary (see
+ * Phases.cs's own remarks), so its mere existence means the Initiative reached the end of Frame
+ * even if every Frame-field question was later withdrawn or never asked. */
+function hasReachedFrame(session: InitiativeSessionDto): boolean {
+  return session.questions.some((q) => PHASE_OF_FIELD[q.field] === 'Frame') || session.latestDiscoveryGateEvaluation !== null;
+}
+
+/** Which of the four phases the Initiative is currently in — derived from what's actually happened. */
 export function currentPhase(session: InitiativeSessionDto): InitiativePhase {
   if (session.finalization) return 'Design';
-  if (session.selectedInterventions.length > 0 || session.latestShapeGateEvaluation) return 'Shape';
-  const touchedFrame = session.questions.some((q) => PHASE_OF_FIELD[q.field] === 'Frame');
-  return touchedFrame ? 'Frame' : 'Discover';
+  if (hasReachedShape(session)) return 'Shape';
+  return hasReachedFrame(session) ? 'Frame' : 'Discover';
 }
 
 /** Groups accepted responses by the field their originating question targeted — mirrors

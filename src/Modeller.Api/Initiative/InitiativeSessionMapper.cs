@@ -79,9 +79,9 @@ public static class InitiativeSessionMapper
         var field = Enum.Parse<InitiativeField>(dto.Field);
         return dto.Status switch
         {
-            "Proposed" => new ProposedQuestion(id, dto.Text, proposedBy, authorRole, field),
-            "Sent" => new SentQuestion(id, dto.Text, proposedBy, authorRole, field),
-            "Rejected" => new RejectedQuestion(id, dto.Text, proposedBy, authorRole, field),
+            "Proposed" => ProposedQuestion.CreateExisting(id, dto.Text, proposedBy, authorRole, field),
+            "Sent" => SentQuestion.CreateExisting(id, dto.Text, proposedBy, authorRole, field),
+            "Rejected" => RejectedQuestion.CreateExisting(id, dto.Text, proposedBy, authorRole, field),
             _ => throw new NotSupportedException($"Unknown question status '{dto.Status}'."),
         };
     }
@@ -103,8 +103,8 @@ public static class InitiativeSessionMapper
         var questionId = QuestionId.FromExisting(dto.QuestionId);
         return dto.Status switch
         {
-            "Pending" => new PendingResponse(id, questionId, dto.Text),
-            "Accepted" => new AcceptedResponse(id, questionId, dto.Text),
+            "Pending" => PendingResponse.CreateExisting(id, questionId, dto.Text),
+            "Accepted" => AcceptedResponse.CreateExisting(id, questionId, dto.Text),
             _ => throw new NotSupportedException($"Unknown response status '{dto.Status}'."),
         };
     }

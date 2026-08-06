@@ -9,6 +9,7 @@ export function InterventionsSection({ id, session, run }: { id: string; session
   const [type, setType] = useState<InterventionType>('Process');
   const [description, setDescription] = useState('');
   const [rationale, setRationale] = useState('');
+  const [continuesToDesignWorkspace, setContinuesToDesignWorkspace] = useState(false);
   const [suggestions, setSuggestions] = useState<{ type: InterventionType; description: string; rationale: string }[] | null>(null);
   const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
 
@@ -42,6 +43,7 @@ export function InterventionsSection({ id, session, run }: { id: string; session
                   setType(s.type);
                   setDescription(s.description);
                   setRationale(s.rationale);
+                  setContinuesToDesignWorkspace(false);
                 }}
               >
                 Use this
@@ -55,13 +57,22 @@ export function InterventionsSection({ id, session, run }: { id: string; session
         className="inline-form"
         onSubmit={(event) => {
           event.preventDefault();
-          void run(() => initiativeApi.selectIntervention(id, type, description, rationale)).then(() => {
+          void run(() =>
+            initiativeApi.selectIntervention(id, type, description, rationale, type === 'Technology' && continuesToDesignWorkspace),
+          ).then(() => {
             setDescription('');
             setRationale('');
+            setContinuesToDesignWorkspace(false);
           });
         }}
       >
-        <select value={type} onChange={(event) => setType(event.target.value as InterventionType)}>
+        <select
+          value={type}
+          onChange={(event) => {
+            setType(event.target.value as InterventionType);
+            setContinuesToDesignWorkspace(false);
+          }}
+        >
           {ALL_INTERVENTION_TYPES.map((t) => (
             <option key={t} value={t}>
               {t}
@@ -70,6 +81,16 @@ export function InterventionsSection({ id, session, run }: { id: string; session
         </select>
         <input required placeholder="Description" value={description} onChange={(event) => setDescription(event.target.value)} />
         <input required placeholder="Rationale" value={rationale} onChange={(event) => setRationale(event.target.value)} />
+        {type === 'Technology' && (
+          <label className="manual-gate-row">
+            <input
+              type="checkbox"
+              checked={continuesToDesignWorkspace}
+              onChange={(event) => setContinuesToDesignWorkspace(event.target.checked)}
+            />
+            Continue into System Design
+          </label>
+        )}
         <button className="secondary-action" type="submit">
           Select
         </button>

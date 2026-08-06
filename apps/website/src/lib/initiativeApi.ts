@@ -58,8 +58,8 @@ export const initiativeApi = {
   getInterventionSuggestions: (id: string) =>
     send<AgentInterventionSuggestionsResponse>(`/v1/initiative/${id}/interventions/suggestions`),
 
-  selectIntervention: (id: string, type: InterventionType, description: string, rationale: string) =>
-    post<InitiativeSessionDto>(`/v1/initiative/${id}/interventions`, { type, description, rationale }),
+  selectIntervention: (id: string, type: InterventionType, description: string, rationale: string, continuesToDesignWorkspace: boolean) =>
+    post<InitiativeSessionDto>(`/v1/initiative/${id}/interventions`, { type, description, rationale, continuesToDesignWorkspace }),
 
   withdrawIntervention: (id: string, interventionId: string) =>
     post<InitiativeSessionDto>(`/v1/initiative/${id}/interventions/${interventionId}/withdraw`),

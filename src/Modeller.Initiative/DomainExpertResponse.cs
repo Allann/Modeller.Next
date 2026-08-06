@@ -19,9 +19,15 @@ public abstract record DomainExpertResponse
 /// <summary>Submitted by the Domain Expert but not yet accepted into the Initiative's structured fields.</summary>
 public sealed record PendingResponse : DomainExpertResponse
 {
-    public PendingResponse(ResponseId id, QuestionId questionId, string text) : base(id, questionId, text)
+    /// <summary>Per docs/coding-standards/domain-modeling/constructor-validation-and-invariants.md: the
+    /// raw constructor is internal — a repository/mapper outside this assembly must go through
+    /// <see cref="CreateExisting"/>, never construct directly.</summary>
+    internal PendingResponse(ResponseId id, QuestionId questionId, string text) : base(id, questionId, text)
     {
     }
+
+    /// <summary>Rehydrates a previously-persisted Pending response.</summary>
+    public static PendingResponse CreateExisting(ResponseId id, QuestionId questionId, string text) => new(id, questionId, text);
 
     public AcceptedResponse Accept() => new(Id, QuestionId, Text);
 
@@ -31,7 +37,10 @@ public sealed record PendingResponse : DomainExpertResponse
 /// <summary>Facilitator-accepted; contributes to the Initiative's official structured fields.</summary>
 public sealed record AcceptedResponse : DomainExpertResponse
 {
-    public AcceptedResponse(ResponseId id, QuestionId questionId, string text) : base(id, questionId, text)
+    internal AcceptedResponse(ResponseId id, QuestionId questionId, string text) : base(id, questionId, text)
     {
     }
+
+    /// <summary>Rehydrates a previously-persisted Accepted response.</summary>
+    public static AcceptedResponse CreateExisting(ResponseId id, QuestionId questionId, string text) => new(id, questionId, text);
 }

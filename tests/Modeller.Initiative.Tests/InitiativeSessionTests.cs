@@ -60,7 +60,7 @@ public class InitiativeSessionTests
         InterventionId processId, technologyId;
         (session, processId) = session.SelectIntervention(InterventionType.Process, "Remove a duplicate approval", "Cuts two days out of the cycle on its own.");
         (session, _) = session.SelectIntervention(InterventionType.People, "Delegate low-risk decisions", "Assessors can decide without escalation for low-risk cases.");
-        (session, technologyId) = session.SelectIntervention(InterventionType.Technology, "Automate document checks", "Removes the slowest manual step.");
+        (session, technologyId) = session.SelectIntervention(InterventionType.Technology, "Automate document checks", "Removes the slowest manual step.", continuesToDesignWorkspace: true);
         session = session.LinkDesignWorkspace(technologyId, "system-design/customer-approvals/application-decision");
 
         Assert.Equal(3, session.SelectedInterventions.Count);
@@ -197,16 +197,38 @@ public class InitiativeSessionTests
     }
 
     [Fact]
-    public void SelectIntervention_TechnologyType_IsFlaggedToContinue_BeforeAnyWorkspaceReferenceExists()
+    public void SelectIntervention_TechnologyType_ContinuationIsIndependentlySelectable()
     {
-        // The continuation flag is independent of the reference — it must be readable (e.g. by a UI
-        // showing "queued for System Design") before any workspace has actually been linked.
+        // Continuation is chosen at selection time, not automatic for every Technology
+        // intervention — a Technology intervention can be selected without opening System Design.
         var session = CreateWithFacilitatorAndDomainExpert(out _, out _);
         var (updated, technologyId) = session.SelectIntervention(InterventionType.Technology, "Automate document checks", "Removes a manual step.");
 
         var intervention = updated.SelectedInterventions.Single(i => i.Id == technologyId);
+        Assert.False(intervention.ContinuesToDesignWorkspace);
+        Assert.Null(intervention.DesignWorkspaceReference);
+    }
+
+    [Fact]
+    public void SelectIntervention_TechnologyType_CanBeFlaggedToContinue_BeforeAnyWorkspaceReferenceExists()
+    {
+        // The continuation flag is independent of the reference — it must be readable (e.g. by a UI
+        // showing "queued for System Design") before any workspace has actually been linked.
+        var session = CreateWithFacilitatorAndDomainExpert(out _, out _);
+        var (updated, technologyId) = session.SelectIntervention(InterventionType.Technology, "Automate document checks", "Removes a manual step.", continuesToDesignWorkspace: true);
+
+        var intervention = updated.SelectedInterventions.Single(i => i.Id == technologyId);
         Assert.True(intervention.ContinuesToDesignWorkspace);
         Assert.Null(intervention.DesignWorkspaceReference);
+    }
+
+    [Fact]
+    public void SelectIntervention_NonTechnologyType_CannotBeFlaggedToContinue()
+    {
+        var session = CreateWithFacilitatorAndDomainExpert(out _, out _);
+
+        Assert.Throws<ArgumentException>(() =>
+            session.SelectIntervention(InterventionType.Process, "Remove a duplicate approval", "Cuts two days.", continuesToDesignWorkspace: true));
     }
 
     [Fact]
@@ -230,5 +252,128 @@ public class InitiativeSessionTests
 
         Assert.Throws<ArgumentException>(() => InitiativeSession.CreateExisting(
             InitiativeId.New(), "Build us a new approval system", [facilitator], [], []));
+    }
+
+    [Fact]
+    public void CreateExisting_WithDuplicateQuestionIds_Throws()
+    {
+        var agent = Participant.CreateNew("Agent", ParticipantRole.Agent);
+        var questionId = QuestionId.New();
+        var duplicateQuestions = new[]
+        {
+            ProposedQuestion.CreateExisting(questionId, "First", ParticipantId.New(), ParticipantRole.Facilitator, InitiativeField.Risks),
+            ProposedQuestion.CreateExisting(questionId, "Second", ParticipantId.New(), ParticipantRole.Facilitator, InitiativeField.Risks),
+        };
+
+        Assert.Throws<ArgumentException>(() => InitiativeSession.CreateExisting(
+            InitiativeId.New(), "Build us a new approval system", [agent], duplicateQuestions, []));
+    }
+
+    [Fact]
+    public void CreateExisting_WithResponseReferencingAQuestionThatWasNeverSent_Throws()
+    {
+        // A response can only be submitted for a SentQuestion (see SubmitResponse) — a persisted
+        // document pairing a response with a still-Proposed question is structurally impossible
+        // to have produced live, and must not be silently restored.
+        var agent = Participant.CreateNew("Agent", ParticipantRole.Agent);
+        var questionId = QuestionId.New();
+        var proposedQuestion = ProposedQuestion.CreateExisting(questionId, "Still proposed", ParticipantId.New(), ParticipantRole.Facilitator, InitiativeField.Risks);
+        var orphanResponse = PendingResponse.CreateExisting(ResponseId.New(), questionId, "An answer to an unsent question.");
+
+        Assert.Throws<ArgumentException>(() => InitiativeSession.CreateExisting(
+            InitiativeId.New(), "Build us a new approval system", [agent], [proposedQuestion], [orphanResponse]));
+    }
+
+    [Fact]
+    public void CreateExisting_WithQuestionProposedByUnknownParticipant_Throws()
+    {
+        var agent = Participant.CreateNew("Agent", ParticipantRole.Agent);
+        var question = ProposedQuestion.CreateExisting(
+            QuestionId.New(), "What is the risk?", ParticipantId.New(),
+            ParticipantRole.Facilitator, InitiativeField.Risks);
+
+        Assert.Throws<ArgumentException>(() => InitiativeSession.CreateExisting(
+            InitiativeId.New(), "Build us a new approval system", [agent], [question], []));
+    }
+
+    [Fact]
+    public void CreateExisting_WithQuestionAuthorRoleThatDoesNotMatchProposer_Throws()
+    {
+        var agent = Participant.CreateNew("Agent", ParticipantRole.Agent);
+        var facilitator = Participant.CreateNew("Alex", ParticipantRole.Facilitator);
+        var question = ProposedQuestion.CreateExisting(
+            QuestionId.New(), "What is the risk?", facilitator.Id,
+            ParticipantRole.Agent, InitiativeField.Risks);
+
+        Assert.Throws<ArgumentException>(() => InitiativeSession.CreateExisting(
+            InitiativeId.New(), "Build us a new approval system", [agent, facilitator], [question], []));
+    }
+
+    [Fact]
+    public void CreateExisting_WithResponseReferencingAnUnknownQuestion_Throws()
+    {
+        var agent = Participant.CreateNew("Agent", ParticipantRole.Agent);
+        var orphanResponse = PendingResponse.CreateExisting(ResponseId.New(), QuestionId.New(), "An answer to a question that doesn't exist.");
+
+        Assert.Throws<ArgumentException>(() => InitiativeSession.CreateExisting(
+            InitiativeId.New(), "Build us a new approval system", [agent], [], [orphanResponse]));
+    }
+
+    [Fact]
+    public void CreateExisting_WithGateEvaluationRecommendingAnUnknownQuestion_Throws()
+    {
+        var agent = Participant.CreateNew("Agent", ParticipantRole.Agent);
+        var evaluation = new GateEvaluation(
+            GateKind.Discovery, [new GateCheckResult(GateCheck.AffectedUsersNamed, false, "Not yet named.")],
+            RecommendedQuestionId: QuestionId.New(), DateTimeOffset.UtcNow, AgentEvaluationStatus.Ready);
+
+        Assert.Throws<ArgumentException>(() => InitiativeSession.CreateExisting(
+            InitiativeId.New(), "Build us a new approval system", [agent], [], [],
+            latestDiscoveryGateEvaluation: evaluation));
+    }
+
+    [Theory]
+    [InlineData(GateKind.Shape, true)]
+    [InlineData(GateKind.Discovery, false)]
+    public void CreateExisting_WithGateEvaluationInWrongSlot_Throws(GateKind kind, bool useDiscoverySlot)
+    {
+        var agent = Participant.CreateNew("Agent", ParticipantRole.Agent);
+        var evaluation = new GateEvaluation(
+            kind, [], RecommendedQuestionId: null, DateTimeOffset.UtcNow, AgentEvaluationStatus.Ready);
+
+        Assert.Throws<ArgumentException>(() => InitiativeSession.CreateExisting(
+            InitiativeId.New(), "Build us a new approval system", [agent], [], [],
+            latestDiscoveryGateEvaluation: useDiscoverySlot ? evaluation : null,
+            latestShapeGateEvaluation: useDiscoverySlot ? null : evaluation));
+    }
+
+    [Fact]
+    public void CreateExisting_WithOpenGateFindingsFinalizationButNoOverride_Throws()
+    {
+        // FinalizeInitiative never records WithOpenGateFindings without also adding a
+        // FinalizedAgainstGate override in the same call — a persisted document claiming that
+        // finalization kind with zero such overrides could never have come from live use.
+        var agent = Participant.CreateNew("Agent", ParticipantRole.Agent);
+        var finalization = new WithOpenGateFindings("# snapshot", DateTimeOffset.UtcNow);
+
+        Assert.Throws<ArgumentException>(() => InitiativeSession.CreateExisting(
+            InitiativeId.New(), "Build us a new approval system", [agent], [], [],
+            finalization: finalization));
+    }
+
+    [Fact]
+    public void SelectedIntervention_CreateExisting_WithReferenceButNotContinuing_Throws()
+    {
+        Assert.Throws<ArgumentException>(() => SelectedIntervention.CreateExisting(
+            InterventionId.New(), InterventionType.Technology, "Automate document checks", "Removes a manual step.",
+            continuesToDesignWorkspace: false, designWorkspaceReference: "system-design/whatever"));
+    }
+
+    [Fact]
+    public void SelectedIntervention_CreateExisting_WithNonTechnologyContinuing_Throws()
+    {
+        Assert.Throws<ArgumentException>(() => SelectedIntervention.CreateExisting(
+            InterventionId.New(), InterventionType.Process, "Remove a duplicate approval", "Cuts two days.",
+            continuesToDesignWorkspace: true, designWorkspaceReference: null));
     }
 }

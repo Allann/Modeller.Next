@@ -30,10 +30,18 @@ public abstract record PromptedQuestion
 /// <summary>Not yet visible to the Domain Expert; only the Facilitator sees it.</summary>
 public sealed record ProposedQuestion : PromptedQuestion
 {
-    public ProposedQuestion(QuestionId id, string text, ParticipantId proposedBy, ParticipantRole authorRole, InitiativeField field)
+    /// <summary>Per docs/coding-standards/domain-modeling/constructor-validation-and-invariants.md: the
+    /// raw constructor is internal — only <see cref="InitiativeSession"/>'s own transitions and this
+    /// type's <see cref="CreateExisting"/> rehydrator may mint one; a repository/mapper outside this
+    /// assembly must go through <see cref="CreateExisting"/>, never construct directly.</summary>
+    internal ProposedQuestion(QuestionId id, string text, ParticipantId proposedBy, ParticipantRole authorRole, InitiativeField field)
         : base(id, text, proposedBy, authorRole, field)
     {
     }
+
+    /// <summary>Rehydrates a previously-persisted Proposed question.</summary>
+    public static ProposedQuestion CreateExisting(QuestionId id, string text, ParticipantId proposedBy, ParticipantRole authorRole, InitiativeField field) =>
+        new(id, text, proposedBy, authorRole, field);
 
     public SentQuestion SendToDomainExpert() => new(Id, Text, ProposedBy, AuthorRole, Field);
 
@@ -47,17 +55,25 @@ public sealed record ProposedQuestion : PromptedQuestion
 /// <summary>Visible to the Domain Expert, who may now submit a response to it.</summary>
 public sealed record SentQuestion : PromptedQuestion
 {
-    public SentQuestion(QuestionId id, string text, ParticipantId proposedBy, ParticipantRole authorRole, InitiativeField field)
+    internal SentQuestion(QuestionId id, string text, ParticipantId proposedBy, ParticipantRole authorRole, InitiativeField field)
         : base(id, text, proposedBy, authorRole, field)
     {
     }
+
+    /// <summary>Rehydrates a previously-persisted Sent question.</summary>
+    public static SentQuestion CreateExisting(QuestionId id, string text, ParticipantId proposedBy, ParticipantRole authorRole, InitiativeField field) =>
+        new(id, text, proposedBy, authorRole, field);
 }
 
 /// <summary>Declined by the Facilitator while still queued; retained for the session's audit trail.</summary>
 public sealed record RejectedQuestion : PromptedQuestion
 {
-    public RejectedQuestion(QuestionId id, string text, ParticipantId proposedBy, ParticipantRole authorRole, InitiativeField field)
+    internal RejectedQuestion(QuestionId id, string text, ParticipantId proposedBy, ParticipantRole authorRole, InitiativeField field)
         : base(id, text, proposedBy, authorRole, field)
     {
     }
+
+    /// <summary>Rehydrates a previously-persisted Rejected question.</summary>
+    public static RejectedQuestion CreateExisting(QuestionId id, string text, ParticipantId proposedBy, ParticipantRole authorRole, InitiativeField field) =>
+        new(id, text, proposedBy, authorRole, field);
 }

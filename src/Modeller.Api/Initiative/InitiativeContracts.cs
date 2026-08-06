@@ -10,7 +10,7 @@ public sealed record ProposeQuestionRequestDto(Guid ProposedBy, string AuthorRol
 
 public sealed record SubmitResponseRequestDto(string Text);
 
-public sealed record SelectInterventionRequestDto(string Type, string Description, string Rationale);
+public sealed record SelectInterventionRequestDto(string Type, string Description, string Rationale, bool ContinuesToDesignWorkspace = false);
 
 public sealed record LinkDesignWorkspaceRequestDto(string Reference);
 

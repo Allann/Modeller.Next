@@ -47,8 +47,10 @@ public sealed record InitiativeSession
     };
 
     /// <summary>Rehydrates an Initiative from previously persisted state, re-validating the same
-    /// participant-cardinality invariants <see cref="AddParticipant"/> enforces during live use — a
-    /// corrupt or hand-edited persisted document cannot silently produce an invalid session.</summary>
+    /// cross-entity invariants live mutation enforces — a corrupt or hand-edited persisted document
+    /// cannot silently produce a session whose questions, responses, gates, interventions, and
+    /// finalization are mutually inconsistent. See <see cref="RequireConsistentState"/> for exactly
+    /// which invariants are re-checked and why.</summary>
     public static InitiativeSession CreateExisting(
         InitiativeId id,
         string originalChangeRequest,
@@ -62,17 +64,23 @@ public sealed record InitiativeSession
         InitiativeFinalization? finalization = null)
     {
         var participantList = participants.ToImmutableList();
+        var questionList = questions.ToImmutableList();
+        var responseList = responses.ToImmutableList();
+        var interventionList = (selectedInterventions ?? []).ToImmutableList();
+        var overrideList = (gateOverrides ?? []).ToImmutableList();
+
         RequireValidParticipants(participantList);
+        RequireConsistentState(participantList, questionList, responseList, interventionList, overrideList, latestDiscoveryGateEvaluation, latestShapeGateEvaluation, finalization);
 
         return new InitiativeSession
         {
             Id = id,
             OriginalChangeRequest = ValidChangeRequest(originalChangeRequest),
             Participants = participantList,
-            Questions = questions.ToImmutableList(),
-            Responses = responses.ToImmutableList(),
-            SelectedInterventions = (selectedInterventions ?? []).ToImmutableList(),
-            GateOverrides = (gateOverrides ?? []).ToImmutableList(),
+            Questions = questionList,
+            Responses = responseList,
+            SelectedInterventions = interventionList,
+            GateOverrides = overrideList,
             LatestDiscoveryGateEvaluation = latestDiscoveryGateEvaluation,
             LatestShapeGateEvaluation = latestShapeGateEvaluation,
             Finalization = finalization,
@@ -176,10 +184,10 @@ public sealed record InitiativeSession
     }
 
     public (InitiativeSession Session, InterventionId InterventionId) SelectIntervention(
-        InterventionType type, string description, string rationale)
+        InterventionType type, string description, string rationale, bool continuesToDesignWorkspace = false)
     {
         EnsureActive();
-        var intervention = SelectedIntervention.CreateNew(type, description, rationale);
+        var intervention = SelectedIntervention.CreateNew(type, description, rationale, continuesToDesignWorkspace);
         return (this with { SelectedInterventions = SelectedInterventions.Add(intervention) }, intervention.Id);
     }
 
@@ -350,6 +358,104 @@ public sealed record InitiativeSession
         if (participants.Count(p => p.Role == ParticipantRole.DomainExpert) > 1)
         {
             throw new ArgumentException("An Initiative can have at most one Domain Expert.", nameof(participants));
+        }
+    }
+
+    /// <summary>
+    /// Re-checks the cross-entity invariants that live mutation can never violate, so a rehydrated
+    /// session can't silently carry a combination live use could never produce:
+    /// <list type="bullet">
+    /// <item>no two questions, responses, interventions, or gate overrides share an identifier;</item>
+    /// <item>every response's <see cref="DomainExpertResponse.QuestionId"/> names a question that was
+    /// actually sent to the Domain Expert (<see cref="SubmitResponse"/> never allows one otherwise —
+    /// a response against a still-Proposed or Rejected question is structurally impossible live);</item>
+    /// <item>a gate evaluation's recommended question, if any, names a question that actually exists
+    /// (<see cref="RecordGateEvaluation"/> always proposes it in the same call); and</item>
+    /// <item>a finalization recorded <see cref="WithOpenGateFindings"/> carries at least one
+    /// <see cref="FinalizedAgainstGate"/> override — <see cref="FinalizeInitiative"/> never produces
+    /// that finalization kind without adding one.</item>
+    /// </list>
+    /// Gate overrides are otherwise not required to match the *current* latest evaluation: they are
+    /// retained rather than deleted (see <see cref="DismissGateFinding"/>'s remarks), so a dismissal
+    /// or finalize-override made against a since-superseded evaluation is legitimate persisted history,
+    /// not corruption.
+    /// </summary>
+    private static void RequireConsistentState(
+        ImmutableList<Participant> participants,
+        ImmutableList<PromptedQuestion> questions,
+        ImmutableList<DomainExpertResponse> responses,
+        ImmutableList<SelectedIntervention> selectedInterventions,
+        ImmutableList<GateOverride> gateOverrides,
+        GateEvaluation? latestDiscoveryGateEvaluation,
+        GateEvaluation? latestShapeGateEvaluation,
+        InitiativeFinalization? finalization)
+    {
+        RequireUniqueIds(questions.Select(q => q.Id), "question");
+        RequireUniqueIds(responses.Select(r => r.Id), "response");
+        RequireUniqueIds(selectedInterventions.Select(i => i.Id), "selected intervention");
+        RequireUniqueIds(gateOverrides.Select(o => o.Id), "gate override");
+
+        var participantsById = participants.ToDictionary(p => p.Id);
+        foreach (var question in questions)
+        {
+            if (!participantsById.TryGetValue(question.ProposedBy, out var proposer)
+                || proposer.Role != question.AuthorRole)
+            {
+                throw new ArgumentException(
+                    "A question's proposer must reference an Initiative participant with the recorded author role.",
+                    nameof(questions));
+            }
+        }
+
+        var questionsById = questions.ToDictionary(q => q.Id);
+        foreach (var response in responses)
+        {
+            if (!questionsById.TryGetValue(response.QuestionId, out var question) || question is not SentQuestion)
+            {
+                throw new ArgumentException(
+                    "A response must reference a question that was sent to the Domain Expert.", nameof(responses));
+            }
+        }
+
+        RequireValidGateEvaluation(latestDiscoveryGateEvaluation, GateKind.Discovery, questionsById);
+        RequireValidGateEvaluation(latestShapeGateEvaluation, GateKind.Shape, questionsById);
+
+        if (finalization is WithOpenGateFindings && !gateOverrides.OfType<FinalizedAgainstGate>().Any())
+        {
+            throw new ArgumentException(
+                "A finalization recorded with open gate findings must carry at least one FinalizedAgainstGate override.",
+                nameof(finalization));
+        }
+    }
+
+    private static void RequireValidGateEvaluation(
+        GateEvaluation? evaluation,
+        GateKind expectedKind,
+        IReadOnlyDictionary<QuestionId, PromptedQuestion> questionsById)
+    {
+        if (evaluation is null)
+        {
+            return;
+        }
+
+        if (evaluation.Kind != expectedKind)
+        {
+            throw new ArgumentException($"The {expectedKind} Gate slot must contain a {expectedKind} evaluation.", nameof(evaluation));
+        }
+
+        if (evaluation.RecommendedQuestionId is { } recommendedId && !questionsById.ContainsKey(recommendedId))
+        {
+            throw new ArgumentException(
+                "A gate evaluation's recommended question must reference an existing question.", nameof(evaluation));
+        }
+    }
+
+    private static void RequireUniqueIds<T>(IEnumerable<T> ids, string entityName)
+    {
+        var idList = ids.ToList();
+        if (idList.Distinct().Count() != idList.Count)
+        {
+            throw new ArgumentException($"An Initiative cannot have duplicate {entityName} identifiers.");
         }
     }
 }

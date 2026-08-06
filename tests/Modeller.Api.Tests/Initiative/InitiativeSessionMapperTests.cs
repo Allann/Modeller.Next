@@ -25,7 +25,7 @@ public sealed class InitiativeSessionMapperTests
         session = session.RejectProposedQuestion(rejectedQuestionId);
 
         InterventionId technologyId;
-        (session, technologyId) = session.SelectIntervention(Modeller.Initiative.InterventionType.Technology, "Automate document checks", "Removes a manual step.");
+        (session, technologyId) = session.SelectIntervention(Modeller.Initiative.InterventionType.Technology, "Automate document checks", "Removes a manual step.", continuesToDesignWorkspace: true);
         session = session.LinkDesignWorkspace(technologyId, "system-design/customer-approvals");
         (session, _) = session.SelectIntervention(Modeller.Initiative.InterventionType.NoAction, "Do nothing yet", "Baseline for comparison.");
 

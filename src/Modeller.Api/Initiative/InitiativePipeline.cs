@@ -130,7 +130,7 @@ public sealed class InitiativePipeline(
             if (!Enum.TryParse<InterventionType>(request.Type, out var type))
                 return Task.FromResult(InitiativeMutationOutcome.Early(Invalid($"'{request.Type}' is not a recognised intervention type.")));
 
-            var (updated, _) = session.SelectIntervention(type, request.Description, request.Rationale);
+            var (updated, _) = session.SelectIntervention(type, request.Description, request.Rationale, request.ContinuesToDesignWorkspace);
             return Task.FromResult(InitiativeMutationOutcome.Success(updated));
         });
 
