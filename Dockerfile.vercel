@@ -18,6 +18,8 @@ WORKDIR /src
 
 COPY Directory.Build.props Directory.Packages.props Modeller.slnx global.json ./
 COPY src/Modeller.Api/Modeller.Api.csproj src/Modeller.Api/
+COPY src/Modeller.Initiative/Modeller.Initiative.csproj src/Modeller.Initiative/
+COPY src/Modeller.Initiative.OpenAICompatible/Modeller.Initiative.OpenAICompatible.csproj src/Modeller.Initiative.OpenAICompatible/
 COPY src/Modeller.Workspace/Modeller.Workspace.csproj src/Modeller.Workspace/
 COPY src/Modeller.Parsing/Modeller.Parsing.csproj src/Modeller.Parsing/
 COPY src/Modeller.Configuration/Modeller.Configuration.csproj src/Modeller.Configuration/
@@ -28,6 +30,8 @@ COPY src/Modeller.Model/Modeller.Model.csproj src/Modeller.Model/
 RUN dotnet restore src/Modeller.Api/Modeller.Api.csproj
 
 COPY src/Modeller.Api/ src/Modeller.Api/
+COPY src/Modeller.Initiative/ src/Modeller.Initiative/
+COPY src/Modeller.Initiative.OpenAICompatible/ src/Modeller.Initiative.OpenAICompatible/
 COPY src/Modeller.Workspace/ src/Modeller.Workspace/
 COPY src/Modeller.Parsing/ src/Modeller.Parsing/
 COPY src/Modeller.Configuration/ src/Modeller.Configuration/
