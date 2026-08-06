@@ -1,0 +1,100 @@
+---
+title: Initiatives
+description: Carry a change request through Discover, Frame, and Shape without assuming software is the answer.
+---
+
+An **Initiative** is the growing record of a change being explored. It starts
+with an original change request and preserves the reasoning from the observed
+situation to desired outcomes, considered interventions, selected interventions,
+and any later design workspaces.
+
+Modeller is the whole platform. **System Design** is the technology-specific
+workspace within it. An Initiative reaches System Design only when the team
+selects a technology intervention.
+
+## The journey
+
+### Discover
+
+Discover establishes what is happening before the requested implementation is
+treated as the answer. A live Discovery Session progresses through:
+
+1. **Capture Request**: retain the original Change Request.
+2. **Clarify Problem**: describe the problem, affected people, and pain points.
+3. **Identify Impact**: make the current impact and evidence visible.
+
+### Frame
+
+Frame agrees what better means and where the Initiative is bounded:
+
+4. **Define Outcomes**: record desired outcomes and success criteria.
+5. **Set Boundaries**: record non-goals, constraints, assumptions, open questions, and risks.
+
+The **Discovery Gate** sits between Frame and Shape. It reports gaps in the
+Initiative, but it is advisory: it never blocks or forces a Facilitator action.
+An override can be recorded with an optional reason.
+
+### Shape
+
+Shape compares possible responses against the framed outcomes and constraints.
+The fixed intervention taxonomy is:
+
+- Process
+- People
+- Organisation
+- Policy
+- Information
+- Technology
+- Experiment
+- No action
+
+An Initiative can select several interventions. This supports mixed change, such
+as removing an approval step, delegating authority, and automating a document
+check against one shared outcome. Each selected intervention independently
+records whether it continues into a design workspace.
+
+The **Shape Gate** is advisory too. It can surface concerns such as a technology
+intervention without a rationale, or no-action never being considered, without
+taking the decision away from the Facilitator.
+
+## One record, three human roles
+
+Discover, Frame, and Shape update the same structured Initiative record. There
+is no separate Business Problem Brief artifact. A human-readable document is a
+projection of the machine-readable record, not a second source of truth.
+
+The smallest useful session has three roles:
+
+- **Facilitator**: guides the session, curates questions and proposals, and accepts durable changes.
+- **Domain Expert**: supplies knowledge about the situation through focused responses.
+- **Agent Participant**: optionally proposes questions or candidate interventions for people to dispose of.
+
+The core loop is a Prompted Question followed by a Domain Expert Response, which
+the Facilitator can draft into a structured field. The workflow works fully
+human-only. AI is a pluggable adapter and never a hard dependency.
+
+## Handoff to System Design
+
+Selecting a technology intervention may add a cross-reference to a System Design
+workspace. The link carries the reason for the design forward. It deliberately
+does not generate model content from the intervention wording.
+
+Non-technology interventions remain legitimate selected responses. Modeller
+does not imply that every Initiative ends in software.
+
+## Current scope
+
+The Initiative domain module, optional Agent Advisor seam, JSON-backed session
+repository, HTTP API, realtime session updates, Facilitator cockpit, and focused
+Domain Expert response view are implemented. The end-to-end experience still
+needs validation through a real facilitated Initiative before it should be
+treated as a hardened production workflow.
+
+Deferred capabilities include additional participant roles, teaching and replay
+mechanics, load-bearing-assumption tagging, automatic System Design scaffolding,
+authentication, and production persistence hardening.
+
+The settled direction comes from
+[the Initiative Shaping decision](https://github.com/Allann/Modeller.Next/issues/83),
+[the Discover and Frame decision](https://github.com/Allann/Modeller.Next/issues/86),
+and [the implementation epic](https://github.com/Allann/Modeller.Next/issues/87).

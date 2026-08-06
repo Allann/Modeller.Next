@@ -1,6 +1,6 @@
 ---
 title: Introduction to Modeller
-description: Model intent once, then realise it consistently as software.
+description: Understand the situation, choose the intervention, and model the change.
 full: true
 ---
 
@@ -17,25 +17,37 @@ full: true
   />
 </div>
 
-Modeller is an intent-first software design tool. It turns concise domain
-definitions into consistent, production-ready source code while keeping the
-model, architecture, and generated output visible.
+Modeller helps teams understand a business situation, agree what better means,
+compare possible interventions, and design the selected change. Technology is
+one possible intervention, not the assumed destination.
+
+When an Initiative selects a technology intervention, the System Design
+workspace turns concise domain definitions into consistent source code while
+keeping the model, architecture, and generated output visible.
 
 ## Start here
 
 <Cards>
-  <Card title="Getting started" href="/docs/getting-started" description="Install Modeller and generate your first project." />
-  <Card title="Core concepts" href="/docs/concepts" description="Understand models, generation, templates, and ownership." />
+  <Card title="Initiatives" href="/docs/concepts/initiatives" description="Follow Discover, Frame, and Shape from a change request to selected interventions." />
+  <Card title="Try the playground" href="https://modeller.website/playground" description="Explore System Design in the browser with a working example." />
+  <Card title="System Design" href="/docs/getting-started" description="Install the tooling and generate your first project." />
+  <Card title="Core concepts" href="/docs/concepts" description="Understand initiatives, models, generation, templates, and ownership." />
   <Card title="Reference" href="/docs/reference" description="Look up the DSL, CLI, configuration, and data types." />
 </Cards>
 
 ## The central idea
 
-Your domain model records what the business means. Template packs translate that
-intent into the conventions of a particular architecture. Generated and
-handwritten code remain clearly separated, so regeneration is safe and the
-result stays understandable.
+An Initiative records the original request, observed problem, desired outcomes,
+constraints, and selected interventions. If technology is selected, a recorded
+cross-reference connects that intervention to System Design. The handoff does
+not invent or scaffold model content automatically.
 
-AI assistance can propose, explain, and transform models, but it uses the same
-explicit Modeller interfaces available to people and other tools. The core does
-not require a particular AI provider.
+Within System Design, the domain model records what the business means. Template
+packs translate that intent into the conventions of a particular architecture.
+Generated and handwritten code remain clearly separated, so regeneration is
+safe and the result stays understandable.
+
+AI assistance is optional. It can propose questions, interventions, explanations,
+and model changes, but people curate and accept them through the same explicit
+Modeller interfaces available without AI. The core does not require a particular
+provider.

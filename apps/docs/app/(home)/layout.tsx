@@ -11,7 +11,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
         { text: 'The journey', url: '/#journey' },
         { text: 'System Design', url: '/#system-design' },
         { text: 'Docs', url: '/docs' },
-        { text: 'Playground', url: 'https://modeller.website' },
+        { text: 'Playground', url: 'https://modeller.website/playground' },
         { type: 'button', text: 'Get started', url: '/docs/getting-started' },
       ]}
     >

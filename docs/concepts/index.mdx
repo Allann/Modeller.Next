@@ -5,8 +5,13 @@ description: The ideas that make Modeller predictable, extensible, and safe.
 
 ## Intent before implementation
 
-A model describes the business concepts and behaviours that must survive changes
-in frameworks, storage engines, interfaces, and AI providers.
+Modeller starts with the situation a team wants to change, not the implementation
+someone first requested. An [Initiative](/docs/concepts/initiatives) carries that
+intent through Discover, Frame, and Shape. System Design is opened only when a
+selected intervention needs technology.
+
+A system model then describes the business concepts and behaviours that must
+survive changes in frameworks, storage engines, interfaces, and AI providers.
 
 The [ubiquitous language](/docs/concepts/ubiquitous-language) is the canonical,
 easy-to-find vocabulary for those concepts. Documentation, architecture, model
@@ -24,6 +29,6 @@ separate, making regeneration routine rather than risky.
 
 ## AI is an adapter
 
-AI can assist with modelling and explanation, but it does not own the domain
-model. The durable interface is the explicit model and the operations performed
-on it.
+AI can propose questions, interventions, modelling changes, and explanations,
+but it does not own the Initiative or domain model. Every workflow remains
+usable without an AI provider, and people accept the durable decisions.
