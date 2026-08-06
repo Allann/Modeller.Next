@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { examples } from '@/lib/examples';
 
-export default function PlaygroundPage() {
+export default function ExamplesPage() {
   return (
     <main>
       <p className="eyebrow">Explore Modeller</p>
@@ -12,7 +12,7 @@ export default function PlaygroundPage() {
         locally? See <a href="https://modeller.wiki">modeller.wiki</a>.
       </p>
       {examples.map((example) => (
-        <Link key={example.slug} href={`/playground/${example.slug}`} className="card">
+        <Link key={example.slug} href={`/examples/${example.slug}`} className="card">
           <p className="eyebrow">{example.kind === 'intro' ? 'Start here' : 'Deep dive'}</p>
           <h2>{example.title}</h2>
           <p>{example.tagline}</p>

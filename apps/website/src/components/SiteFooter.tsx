@@ -9,8 +9,8 @@ export function SiteFooter() {
           <strong>Modeller</strong>
         </div>
         <p>
-          This is a public playground for exploring Modeller examples — not a substitute for local
-          Modeller. Take a model further with:
+          Start an Initiative, browse Modeller examples, or try the interactive playground — none of
+          this is a substitute for local Modeller. Take a model further with:
         </p>
         <p>
           <a href="https://modeller.wiki/docs/getting-started">the CLI</a>
@@ -19,6 +19,7 @@ export function SiteFooter() {
           <a href="https://modeller.wiki">modeller.wiki</a>
         </p>
         <p>
+          <Link href="/examples">Browse examples</Link>
           <Link href="/playground">Try the interactive playground</Link>
           <Link href="/privacy">Privacy</Link>
         </p>

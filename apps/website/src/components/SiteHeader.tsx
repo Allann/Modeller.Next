@@ -12,6 +12,7 @@ export function SiteHeader() {
           <a href="https://modeller.wiki/#why-modeller">Why Modeller</a>
           <a href="https://modeller.wiki/#how-it-works">How it works</a>
           <a href="https://modeller.wiki">Docs</a>
+          <Link href="/examples">Examples</Link>
           <Link href="/playground">Playground</Link>
           <a className="site-header-cta" href="https://modeller.wiki/docs/getting-started">Get started</a>
         </nav>
