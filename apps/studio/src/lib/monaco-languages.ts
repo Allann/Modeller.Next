@@ -13,6 +13,12 @@ const LANGUAGES = [
   { id: 'modeller-saf', extensions: ['.saf'], scopeName: 'source.modeller.saf', grammarFile: 'saf.tmLanguage.json' },
 ] as const;
 
+// public/ assets sit under next.config.mjs's basePath once deployed (the playground is mounted at
+// modeller.website/playground), and neither loadWASM nor fetch knows anything about that prefix —
+// a bare '/grammars/...' resolves to the site root, 404s, and takes syntax highlighting with it.
+// Same source of truth as the basePath itself, so local dev (unset) still resolves from '/'.
+const GRAMMARS_BASE = `${process.env.NEXT_PUBLIC_STUDIO_BASE_PATH ?? ''}/grammars`;
+
 let registered: Promise<void> | undefined;
 
 export function registerModellerLanguages(monaco: typeof Monaco): Promise<void> {
@@ -21,9 +27,9 @@ export function registerModellerLanguages(monaco: typeof Monaco): Promise<void> 
 }
 
 async function doRegister(monaco: typeof Monaco): Promise<void> {
-  await loadWASM('/grammars/onigasm.wasm');
+  await loadWASM(`${GRAMMARS_BASE}/onigasm.wasm`);
 
-  const languageConfiguration = await fetch('/grammars/language-configuration.json').then((response) => response.json());
+  const languageConfiguration = await fetch(`${GRAMMARS_BASE}/language-configuration.json`).then((response) => response.json());
 
   for (const language of LANGUAGES) {
     monaco.languages.register({ id: language.id, extensions: [...language.extensions] });
@@ -33,7 +39,7 @@ async function doRegister(monaco: typeof Monaco): Promise<void> {
   const registry = new Registry({
     getGrammarDefinition: async (scopeName) => {
       const language = LANGUAGES.find((entry) => entry.scopeName === scopeName);
-      const content = await fetch(`/grammars/${language?.grammarFile}`).then((response) => response.text());
+      const content = await fetch(`${GRAMMARS_BASE}/${language?.grammarFile}`).then((response) => response.text());
       return { format: 'json', content };
     },
   });

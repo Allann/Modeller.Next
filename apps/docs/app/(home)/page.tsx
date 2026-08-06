@@ -66,6 +66,24 @@ const journey = [
   },
 ];
 
+const startSteps = [
+  {
+    index: '01',
+    title: 'Capture the request',
+    text: 'Open modeller.website, paste the change request in the words it arrived in, and name yourself and your Domain Expert.',
+  },
+  {
+    index: '02',
+    title: 'Invite the Domain Expert',
+    text: 'Starting the Initiative gives you a shareable link. They see the question waiting for them, not the whole cockpit.',
+  },
+  {
+    index: '03',
+    title: 'Work through Discover and Frame',
+    text: 'Ask, answer, and accept. Each accepted response becomes part of the structured record behind the Initiative.',
+  },
+];
+
 const interventionTypes = [
   { title: 'Process', text: 'Remove friction or change how work flows.' },
   { title: 'People', text: 'Change roles, authority, capacity, or skills.' },
@@ -118,14 +136,16 @@ export default function HomePage() {
             software. Sometimes it is not.
           </p>
           <div className="hero-actions">
-            <a className="primary-action" href="#journey">
-              See the whole journey <ArrowRight size={17} />
+            <a className="primary-action" href="https://modeller.website">
+              Start a Discovery Session <ArrowRight size={17} />
             </a>
-            <a className="secondary-action" href="#why-modeller">
-              Why this matters
+            <a className="secondary-action" href="#journey">
+              See the whole journey
             </a>
           </div>
-          <p className="hero-note">Durable intent. Visible decisions. Deliberate change.</p>
+          <p className="hero-note">
+            Runs in your browser at <strong>modeller.website</strong>. No install, no account.
+          </p>
         </div>
         <div className="trace-window" aria-label="From request to deliberate change">
           <div className="trace-window-bar">
@@ -208,6 +228,35 @@ export default function HomePage() {
             </li>
           ))}
         </ol>
+      </section>
+
+      <section className="marketing-section" id="start-discovery">
+        <div className="section-heading">
+          <p className="eyebrow"><Compass size={15} /> Begin at Discover</p>
+          <h2>Start a Discovery Session in your browser.</h2>
+          <p>
+            Discovery runs at <strong>modeller.website</strong>. There is nothing to install
+            and no account to create — you need a change request and someone who understands
+            the situation it came from.
+          </p>
+        </div>
+        <div className="capability-grid">
+          {startSteps.map(({ index, title, text }) => (
+            <article key={title}>
+              <span className="capability-icon capability-index">{index}</span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </article>
+          ))}
+        </div>
+        <div className="hero-actions">
+          <a className="primary-action" href="https://modeller.website">
+            Start a Discovery Session <ArrowRight size={17} />
+          </a>
+          <Link className="secondary-action" href="/docs/getting-started/start-a-discovery-session">
+            Read the walkthrough first
+          </Link>
+        </div>
       </section>
 
       <section className="marketing-section" id="intervention">
@@ -317,7 +366,8 @@ export default function HomePage() {
           way to understand and shape organisational change.
         </p>
         <div className="hero-actions">
-          <Link className="primary-action" href="/docs/getting-started">Start modelling <ArrowRight size={17} /></Link>
+          <a className="primary-action" href="https://modeller.website">Start a Discovery Session <ArrowRight size={17} /></a>
+          <Link className="secondary-action" href="/docs/getting-started">Install System Design tooling</Link>
           <a className="secondary-action" href="https://github.com/Allann/Modeller.Next/issues/82">Join the discussion</a>
         </div>
       </section>

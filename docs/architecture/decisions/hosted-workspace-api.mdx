@@ -96,10 +96,20 @@ global concurrency-limiter (`AddRateLimiter`, in-box since .NET 7) caps simultan
 analyses, returning `429` past the limit. CORS is a named, configurable-origin policy
 (`Cors:AllowedOrigins`) — empty by default so nothing is cross-origin-accessible until a specific
 origin is configured, with `appsettings.Production.json` allowing
-`https://modeller-next.vercel.app` and `https://modeller.website` for the deployed environment —
-and explicitly allows the `Content-Type` header (`WithHeaders("Content-Type")`), without which a
-browser's preflight for a JSON `POST` would reject the follow-up request even with the origin
-itself permitted.
+`https://modeller-next.vercel.app`, `https://modeller.website`, and `https://www.modeller.website`
+for the deployed environment — and explicitly allows the `Content-Type` header
+(`WithHeaders("Content-Type")`), without which a browser's preflight for a JSON `POST` would reject
+the follow-up request even with the origin itself permitted. `www` is listed because it is the
+canonical host: the apex `308`s to it, so every real browser request carries
+`Origin: https://www.modeller.website` — with only the apex allowed, the entire deployed playground
+and Initiative experience failed with an opaque "Failed to fetch". An allowlist keyed on a hostname
+has to include every host the site actually serves from, not just its canonical spelling in prose.
+
+The policy also carries what the SignalR JavaScript client needs for `/hubs/initiative`
+(`x-requested-with`/`x-signalr-user-agent` in the allowed headers, plus `AllowCredentials()` for the
+client's default `withCredentials`); without those the realtime channel silently fails its
+negotiate, leaving the Initiative pages working but no longer live. Credentials are only safe to
+allow because the origin list is explicit and never a wildcard.
 
 **No-source-logging**: structured logs carry only request metadata (document/projection counts,
 outcome, elapsed time, diagnostic codes) — never document content or identity registries. This is

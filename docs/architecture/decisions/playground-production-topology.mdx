@@ -79,10 +79,19 @@ separate infrastructure to provision. `modeller.website`'s `STUDIO_DEPLOYMENT_UR
 its Production deployment. The playground's `NEXT_PUBLIC_MODELLER_API_URL` is set per-environment on
 the studio project so it can point at either the same production `Modeller.Api` or a Preview
 deployment of it. `Modeller.Api`'s `Cors:AllowedOrigins`
-(`src/Modeller.Api/appsettings.Production.json`) already covers `https://modeller-next.vercel.app`
-and `https://modeller.website` — since the playground is now same-origin with `modeller.website`
-from the browser's perspective, **no new CORS entry is needed** (this is one of the concrete
-benefits of the path-proxy approach over the subdomain one).
+(`src/Modeller.Api/appsettings.Production.json`) covers `https://modeller-next.vercel.app`,
+`https://modeller.website`, and `https://www.modeller.website`. The playground being same-origin
+with `modeller.website` removes the need for a *studio-specific* entry, but it does not remove the
+API from the cross-origin picture at all: the browser still calls `Modeller.Api` directly, so the
+allowlist has to match whichever host the visitor is actually on.
+
+**`www.modeller.website` is that host.** The apex `308`s to `www`, so every browser request carries
+`Origin: https://www.modeller.website`. An earlier revision of this decision claimed "no new CORS
+entry is needed" and listed only the apex; the result was a deployed playground where every analyze
+call failed with `Failed to fetch` and a deployed Initiative form that could never start a session.
+Both surfaces were reported as broken before anyone noticed the redirect. Any future domain change
+(adding a custom API domain, dropping `www`, adding a marketing host) has to be paired with the
+allowlist, and the check is cheap: load the deployed page and read the `Origin` the browser sends.
 
 ## TLS, security headers, and error/leak safety
 
@@ -96,6 +105,22 @@ the more involved of the two: `worker-src blob:` for Monaco's editor worker,
 restricted to `'self'` plus the configured `Modeller.Api` origin). These are a considered starting
 baseline, not an exhaustively audited final policy — tighten further once real deployed traffic
 confirms exactly which asset origins each app actually needs (a follow-up, not blocking here).
+
+Both of those headers describe cross-origin *permission*, which makes them easy to fall out of step
+with the code that actually makes the call. `apps/website` resolves the API origin once in
+`next.config.mjs` and feeds the same value to both its `connect-src` and (via Next's `env` config)
+its client bundle, so the two cannot disagree; the resolution prefers
+`NEXT_PUBLIC_MODELLER_API_URL` when the Vercel project sets it and otherwise defaults to the
+deployed API in production and `http://localhost:8080` in development. The default matters: while
+the variable was unset on that project, production shipped the localhost fallback and the CSP
+listed no API origin at all, so the Initiative form failed twice over — once on the CSP, once on
+the unreachable host — behind a single "Is the Modeller API running?" message.
+
+`apps/studio`'s `basePath` has the same class of hazard on the asset side. `public/` files are
+served under `/playground`, so any hard-coded absolute asset path (`/grammars/onigasm.wasm` and
+friends in `src/lib/monaco-languages.ts`) resolves to the site root and 404s once deployed, taking
+syntax highlighting down with it while local dev — where `basePath` is unset — stays green. Those
+paths are built from `NEXT_PUBLIC_STUDIO_BASE_PATH`, the same source as `basePath` itself.
 
 `Modeller.Api` registers no `UseExceptionHandler`/`UseDeveloperExceptionPage` middleware, so an
 unhandled exception in Production falls through to Kestrel's own default: an empty-bodied 500, no
@@ -146,6 +171,10 @@ anything else on the site — rolling back `modeller.website` isn't even needed 
 - [ ] Set `STUDIO_DEPLOYMENT_URL` on the `modeller.website` project to that project's own Vercel
       deployment URL (e.g. `https://modeller-studio.vercel.app`), for both Production and Preview.
 - [ ] Enable Vercel Analytics/Speed Insights and set per-project cost/usage alerts for both projects
-      (`modeller-api`, `modeller.website`) plus the new `apps/studio` project.
-- [ ] No DNS or CORS changes needed — `/playground` is served from the existing `modeller.website`
-      domain via the rewrite, and that origin is already in `Modeller.Api`'s `Cors:AllowedOrigins`.
+      (`modeller-api`, `modeller.website`) plus the new `apps/studio` project. Analytics is
+      currently unenabled on `modeller.website`: its injected script 404s on every page load.
+- [ ] Optional: set `NEXT_PUBLIC_MODELLER_API_URL` on the `modeller.website` project. Production no
+      longer depends on it (`next.config.mjs` defaults to the deployed API), but setting it per
+      environment is how a Preview build is pointed at a Preview API.
+- [ ] Keep `Cors:AllowedOrigins` in step with the domains actually served. `www.modeller.website` is
+      the canonical host today; the apex redirects to it.

@@ -8,7 +8,9 @@ import type {
   ParticipantRole,
 } from './initiativeTypes';
 
-// Matches Modeller.Api's own PORT default (src/Modeller.Api/Program.cs) for local dev.
+// next.config.mjs resolves this for every Next build (and keeps the CSP's connect-src in step with
+// it), so the fallback only applies outside a Next build — it matches Modeller.Api's own PORT
+// default (src/Modeller.Api/Program.cs) for a locally running API.
 const API_BASE_URL = process.env.NEXT_PUBLIC_MODELLER_API_URL ?? 'http://localhost:8080';
 
 export class InitiativeApiError extends Error {

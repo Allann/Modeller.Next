@@ -31,7 +31,9 @@ const SECURITY_HEADERS = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
       "font-src 'self' data:",
-      'worker-src blob:',
+      // 'self' for the bundled Monaco editor worker (src/lib/monaco-worker.ts), which Turbopack
+      // serves as a same-origin chunk; blob: for the wrapper worker Monaco creates around it.
+      "worker-src 'self' blob:",
       `connect-src 'self' ${apiOrigin} https://va.vercel-scripts.com https://vitals.vercel-insights.com`,
       "frame-ancestors 'none'",
       "base-uri 'self'",

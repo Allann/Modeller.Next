@@ -61,7 +61,16 @@ builder.Services.AddCors(options => options.AddPolicy("Playground", policy =>
     // WithHeaders("Content-Type") is required for a browser's CORS preflight to approve a JSON
     // POST — without it, Access-Control-Request-Headers: Content-Type has no matching
     // Access-Control-Allow-Headers in the preflight response and the browser blocks the request.
-    if (allowedOrigins.Length > 0) policy.WithOrigins(allowedOrigins).WithMethods("GET", "POST").WithHeaders("Content-Type");
+    // The two x-* headers and AllowCredentials are what the SignalR JavaScript client needs on top
+    // of that: it sends x-requested-with/x-signalr-user-agent on its negotiate POST and sets
+    // withCredentials by default, and a credentialed request is rejected outright unless the
+    // response carries Access-Control-Allow-Credentials. Credentials are safe to allow here only
+    // because the origins are an explicit allowlist (never a wildcard).
+    if (allowedOrigins.Length > 0)
+        policy.WithOrigins(allowedOrigins)
+            .WithMethods("GET", "POST")
+            .WithHeaders("Content-Type", "x-requested-with", "x-signalr-user-agent")
+            .AllowCredentials();
 }));
 
 var maxConcurrentRequests = builder.Configuration.GetValue("Limits:MaxConcurrentRequests", 16);

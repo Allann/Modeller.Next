@@ -5,9 +5,9 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Baseline production hardening (issue #74) — a considered starting point, not an exhaustively
 // audited final policy; tighten further once real deployed traffic confirms exactly which asset
-// origins this app needs. This app is otherwise static/build-time-generated (no request-time API
-// calls) — the only cross-origin allowances are for @vercel/analytics, which loads its script from
-// and beacons to va.vercel-scripts.com / vitals.vercel-insights.com.
+// origins this app needs. Beyond @vercel/analytics (script from and beacons to
+// va.vercel-scripts.com / vitals.vercel-insights.com), the Initiative pages call the hosted
+// Modeller.Api from the browser, so its origin has to be in connect-src too — see apiOrigin below.
 //
 // Next.js App Router streams RSC hydration payloads via inline <script>self.__next_f.push(...)
 // tags, not src= URLs — 'unsafe-inline' is required in every environment, not just dev
@@ -18,6 +18,23 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 // 'unsafe-eval' is dev-only: Fast Refresh/HMR relies on eval() to load modules; production
 // builds never need it.
 const isDev = process.env.NODE_ENV !== 'production';
+
+// The hosted Modeller.Api the Initiative pages talk to. Resolved once here and pushed into the
+// client bundle via `env` below, so the CSP that has to permit the call and the code that makes it
+// can never disagree. The production default is deliberate rather than dashboard-only: a build with
+// NEXT_PUBLIC_MODELLER_API_URL unset used to silently ship the localhost dev fallback to
+// modeller.website, where every Initiative failed with "Is the Modeller API running?". Setting the
+// variable on the Vercel project still wins — that is how a Preview build points at a Preview API.
+const apiOrigin =
+  process.env.NEXT_PUBLIC_MODELLER_API_URL ||
+  (isDev ? 'http://localhost:8080' : 'https://modeller-next.vercel.app');
+
+// CSP scheme matching does not treat an http(s) source as covering the matching ws(s) one
+// (CSP3 6.6.2.6 only relaxes in the other direction), so the SignalR hub behind the Initiative
+// pages needs its own entry. Without it the WebSocket transport is refused and realtime quietly
+// degrades to a slower fallback transport — the pages still work, which is exactly what makes it
+// easy to miss.
+const apiSocketOrigin = apiOrigin.replace(/^http/, 'ws');
 
 // /playground is proxied through to the apps/studio deployment (Next.js "Multi Zones" pattern,
 // issue #74) rather than living at its own subdomain — visitors only ever see modeller.website.
@@ -38,7 +55,7 @@ const SECURITY_HEADERS = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
       "font-src 'self' data:",
-      "connect-src 'self' https://va.vercel-scripts.com https://vitals.vercel-insights.com",
+      `connect-src 'self' ${apiOrigin} ${apiSocketOrigin} https://va.vercel-scripts.com https://vitals.vercel-insights.com`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -49,6 +66,7 @@ const SECURITY_HEADERS = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  env: { NEXT_PUBLIC_MODELLER_API_URL: apiOrigin },
   // Scope Turbopack to this app — without this it infers a shared workspace
   // root with the sibling docs/studio apps (each has its own package-lock.json).
   turbopack: {

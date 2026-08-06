@@ -7,7 +7,10 @@ export function baseOptions(): BaseLayoutProps {
       // JSX supported
       title: appName,
     },
-    links: [{ text: 'Playground', url: 'https://modeller.website/playground' }],
+    links: [
+      { text: 'Start a Discovery Session', url: 'https://modeller.website' },
+      { text: 'Playground', url: 'https://modeller.website/playground' },
+    ],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   };
 }

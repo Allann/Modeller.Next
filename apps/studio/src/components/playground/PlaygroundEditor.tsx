@@ -9,6 +9,7 @@
 // which tab is currently active.
 import { useEffect, useRef, useState } from 'react';
 import * as monaco from 'monaco-editor';
+import '@/lib/monaco-worker';
 import { registerModellerLanguages, languageIdForPath } from '@/lib/monaco-languages';
 import { watchMonacoTheme } from '@/lib/monaco-theme';
 import type { ApiDiagnostic, WorkspaceDocumentDto } from '@/lib/playground/api-client';

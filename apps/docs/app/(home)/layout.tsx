@@ -12,7 +12,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
         { text: 'System Design', url: '/#system-design' },
         { text: 'Docs', url: '/docs' },
         { text: 'Playground', url: 'https://modeller.website/playground' },
-        { type: 'button', text: 'Get started', url: '/docs/getting-started' },
+        { type: 'button', text: 'Start a Discovery Session', url: 'https://modeller.website' },
       ]}
     >
       {children}
