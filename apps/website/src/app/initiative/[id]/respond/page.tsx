@@ -5,12 +5,13 @@ import { InitiativeApiError, initiativeApi } from '@/lib/initiativeApi';
 import { useInitiativeSession } from '@/lib/useInitiativeSession';
 
 /** The Domain Expert's focused view — deliberately not the whole cockpit surface (issue #91):
- * just the current sent question and a place to answer it. The API returns the full session to
- * everyone (v1 dropped role-scoped visibility, issue #88), so the restriction is enforced here,
- * in what this page chooses to render, not on the wire. */
+ * just the current sent question and a place to answer it. Enforced on the wire, not just in what
+ * this page renders — the `DomainExpert` viewer role asks the API for the role-scoped projection
+ * (Modeller.Api.Initiative.InitiativeSessionMapper.ToDomainExpertDto), which hides proposed-but-
+ * unsent questions, gate evaluations/overrides, and Shape's intervention curation. */
 export default function DomainExpertRespondPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { session, error, loading, refetch } = useInitiativeSession(id);
+  const { session, error, loading, refetch } = useInitiativeSession(id, 'DomainExpert');
   const [text, setText] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);

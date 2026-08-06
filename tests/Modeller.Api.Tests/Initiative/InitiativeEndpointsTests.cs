@@ -120,6 +120,55 @@ public sealed class InitiativeEndpointsTests : IDisposable
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Create_MalformedJsonBody_Returns400WithStructuredEnvelope_NotFrameworkDefault()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var content = new StringContent("this is not json", System.Text.Encoding.UTF8, "application/json");
+
+        var response = await _client.PostAsync("/v1/initiative", content, ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.Content.ReadFromJsonAsync<InitiativeErrorResponse>(ApiJson.Options, ct);
+        Assert.Equal("initiative.request.malformed", error!.Code);
+    }
+
+    [Fact]
+    public async Task Create_EmptyBody_Returns400WithStructuredEnvelope_NotFrameworkDefault()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var content = new StringContent(string.Empty, System.Text.Encoding.UTF8, "application/json");
+
+        var response = await _client.PostAsync("/v1/initiative", content, ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.Content.ReadFromJsonAsync<InitiativeErrorResponse>(ApiJson.Options, ct);
+        Assert.Equal("initiative.request.malformed", error!.Code);
+    }
+
+    [Fact]
+    public async Task Get_WithDomainExpertViewerRole_HidesFacilitatorOnlyContent()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var created = await PostAsync("/v1/initiative", new CreateInitiativeRequest("Build us a new approval system", "Alex", "Jordan"), ct);
+        var session = await created.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
+        var facilitatorId = session!.Participants.Single(p => p.Role == "Facilitator").Id;
+
+        // A proposed-but-never-sent question must not be visible to the Domain Expert.
+        await PostAsync($"/v1/initiative/{session.Id}/questions",
+            new ProposeQuestionRequestDto(facilitatorId, "Facilitator", "PainPoints", "Not sent yet"), ct);
+
+        var response = await _client.GetAsync($"/v1/initiative/{session.Id}?viewerRole=DomainExpert", ct);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var domainExpertView = await response.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
+
+        Assert.Empty(domainExpertView!.Questions);
+
+        var facilitatorView = await _client.GetAsync($"/v1/initiative/{session.Id}", ct);
+        var facilitatorDto = await facilitatorView.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
+        Assert.Single(facilitatorDto!.Questions);
+    }
+
     private async Task<HttpResponseMessage> PostAsync(string url, object? body, CancellationToken cancellationToken) =>
         body is null
             ? await _client.PostAsync(url, content: null, cancellationToken)

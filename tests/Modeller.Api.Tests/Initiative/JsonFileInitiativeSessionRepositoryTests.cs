@@ -12,9 +12,8 @@ public sealed class JsonFileInitiativeSessionRepositoryTests : IDisposable
     public async Task SaveAsync_ThenLoadAsync_RoundTripsTheSession()
     {
         var repository = new JsonFileInitiativeSessionRepository(_root);
-        var session = InitiativeSession.Create(InitiativeId.New(), "Build us a new approval system");
-        var facilitator = new Participant(ParticipantId.New(), "Alex", ParticipantRole.Facilitator);
-        session.AddParticipant(facilitator);
+        var session = InitiativeSession.CreateNew("Build us a new approval system");
+        session = session.AddParticipant(Participant.CreateNew("Alex", ParticipantRole.Facilitator));
 
         await repository.SaveAsync(session, TestContext.Current.CancellationToken);
         var loaded = await repository.LoadAsync(session.Id, TestContext.Current.CancellationToken);
@@ -22,7 +21,7 @@ public sealed class JsonFileInitiativeSessionRepositoryTests : IDisposable
         Assert.NotNull(loaded);
         Assert.Equal(session.Id, loaded.Id);
         Assert.Equal(session.OriginalChangeRequest, loaded.OriginalChangeRequest);
-        // InitiativeSession.Create auto-adds the fixed Agent participant, so this is Agent + Facilitator.
+        // InitiativeSession.CreateNew auto-adds the Agent participant, so this is Agent + Facilitator.
         Assert.Equal(2, loaded.Participants.Count);
         Assert.Contains(loaded.Participants, p => p.Role == ParticipantRole.Facilitator && p.DisplayName == "Alex");
     }
@@ -41,10 +40,10 @@ public sealed class JsonFileInitiativeSessionRepositoryTests : IDisposable
     public async Task SaveAsync_OverwritesAPreviouslySavedSession()
     {
         var repository = new JsonFileInitiativeSessionRepository(_root);
-        var session = InitiativeSession.Create(InitiativeId.New(), "Build us a new approval system");
+        var session = InitiativeSession.CreateNew("Build us a new approval system");
         await repository.SaveAsync(session, TestContext.Current.CancellationToken);
 
-        session.AddParticipant(new Participant(ParticipantId.New(), "Alex", ParticipantRole.Facilitator));
+        session = session.AddParticipant(Participant.CreateNew("Alex", ParticipantRole.Facilitator));
         await repository.SaveAsync(session, TestContext.Current.CancellationToken);
 
         var loaded = await repository.LoadAsync(session.Id, TestContext.Current.CancellationToken);

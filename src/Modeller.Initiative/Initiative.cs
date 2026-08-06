@@ -1,56 +1,55 @@
+using System.Collections.Immutable;
+
 namespace Modeller.Initiative;
 
 /// <summary>
 /// The single growing record an Initiative is, per issue #86's resolution: there is no separately-named
 /// "Business Problem Brief" — Discover and Frame populate this record's structured fields directly, and
-/// Shape adds selected interventions to the same record. Adapted from Business Statement's
+/// Shape adds selected interventions to the same record. Conceptually adapted from Business Statement's
 /// <c>DiscoverySession</c> (M:\business-statement\src\BusinessStatement.Domain\DiscoverySession.cs),
 /// scoped to v1's three roles and mechanics per issue #83's resolution — see issue #88's "explicitly not
 /// built here" list for what was deliberately left out.
+///
+/// Unlike <c>DiscoverySession</c>, this is an immutable record per
+/// docs/coding-standards/domain-modeling/immutable-domain-model.md: every mutator returns a new
+/// <see cref="InitiativeSession"/> rather than changing this instance in place, so a caller (the
+/// persistence/API layer) must capture and persist the returned value.
 /// </summary>
-public sealed class InitiativeSession
+public sealed record InitiativeSession
 {
-    private static readonly Participant AgentParticipant = new(ParticipantId.New(), "Agent", ParticipantRole.Agent);
-
-    /// <summary>The fixed session-scoped identity that AI-proposed Prompted Questions are attributed to.</summary>
-    public static ParticipantId AgentParticipantId => AgentParticipant.Id;
-
-    private readonly List<Participant> _participants = [];
-    private readonly List<PromptedQuestion> _questions = [];
-    private readonly List<DomainExpertResponse> _responses = [];
-    private readonly List<SelectedIntervention> _selectedInterventions = [];
-    private readonly List<GateOverride> _gateOverrides = [];
-
-    public InitiativeId Id { get; }
-    public string OriginalChangeRequest { get; }
-    public IReadOnlyList<Participant> Participants => _participants;
-    public IReadOnlyList<PromptedQuestion> Questions => _questions;
-    public IReadOnlyList<DomainExpertResponse> Responses => _responses;
-    public IReadOnlyList<SelectedIntervention> SelectedInterventions => _selectedInterventions;
-    public IReadOnlyList<GateOverride> GateOverrides => _gateOverrides;
-    public GateEvaluation? LatestDiscoveryGateEvaluation { get; private set; }
-    public GateEvaluation? LatestShapeGateEvaluation { get; private set; }
+    public InitiativeId Id { get; private init; }
+    public string OriginalChangeRequest { get; private init; } = null!;
+    public ImmutableList<Participant> Participants { get; private init; } = [];
+    public ImmutableList<PromptedQuestion> Questions { get; private init; } = [];
+    public ImmutableList<DomainExpertResponse> Responses { get; private init; } = [];
+    public ImmutableList<SelectedIntervention> SelectedInterventions { get; private init; } = [];
+    public ImmutableList<GateOverride> GateOverrides { get; private init; } = [];
+    public GateEvaluation? LatestDiscoveryGateEvaluation { get; private init; }
+    public GateEvaluation? LatestShapeGateEvaluation { get; private init; }
 
     /// <summary>Null while the Initiative is active; set once finalized (reopen clears it — not irreversible in v1).</summary>
-    public InitiativeFinalization? Finalization { get; private set; }
+    public InitiativeFinalization? Finalization { get; private init; }
 
-    private InitiativeSession(InitiativeId id, string originalChangeRequest)
+    /// <summary>The session-scoped identity AI-proposed Prompted Questions are attributed to. Looked up
+    /// from this session's own participants rather than a shared static field, so a session restored in
+    /// a different process still resolves to the Agent identity it was actually created with.</summary>
+    public ParticipantId AgentParticipantId => Participants.Single(p => p.Role == ParticipantRole.Agent).Id;
+
+    private InitiativeSession()
     {
-        Id = id;
-        OriginalChangeRequest = string.IsNullOrWhiteSpace(originalChangeRequest)
-            ? throw new ArgumentException("The original change request is required.", nameof(originalChangeRequest))
-            : originalChangeRequest.Trim();
     }
 
-    public static InitiativeSession Create(InitiativeId id, string originalChangeRequest)
+    public static InitiativeSession CreateNew(string originalChangeRequest) => new()
     {
-        var session = new InitiativeSession(id, originalChangeRequest);
-        session._participants.Add(AgentParticipant);
-        return session;
-    }
+        Id = InitiativeId.New(),
+        OriginalChangeRequest = ValidChangeRequest(originalChangeRequest),
+        Participants = [Participant.CreateNew("Agent", ParticipantRole.Agent)],
+    };
 
-    /// <summary>Rehydrates an Initiative from previously persisted state without re-running live-mutation invariants.</summary>
-    public static InitiativeSession Restore(
+    /// <summary>Rehydrates an Initiative from previously persisted state, re-validating the same
+    /// participant-cardinality invariants <see cref="AddParticipant"/> enforces during live use — a
+    /// corrupt or hand-edited persisted document cannot silently produce an invalid session.</summary>
+    public static InitiativeSession CreateExisting(
         InitiativeId id,
         string originalChangeRequest,
         IEnumerable<Participant> participants,
@@ -62,20 +61,25 @@ public sealed class InitiativeSession
         GateEvaluation? latestShapeGateEvaluation = null,
         InitiativeFinalization? finalization = null)
     {
-        var session = new InitiativeSession(id, originalChangeRequest);
-        session._participants.Clear();
-        session._participants.AddRange(participants);
-        session._questions.AddRange(questions);
-        session._responses.AddRange(responses);
-        session._selectedInterventions.AddRange(selectedInterventions ?? []);
-        session._gateOverrides.AddRange(gateOverrides ?? []);
-        session.LatestDiscoveryGateEvaluation = latestDiscoveryGateEvaluation;
-        session.LatestShapeGateEvaluation = latestShapeGateEvaluation;
-        session.Finalization = finalization;
-        return session;
+        var participantList = participants.ToImmutableList();
+        RequireValidParticipants(participantList);
+
+        return new InitiativeSession
+        {
+            Id = id,
+            OriginalChangeRequest = ValidChangeRequest(originalChangeRequest),
+            Participants = participantList,
+            Questions = questions.ToImmutableList(),
+            Responses = responses.ToImmutableList(),
+            SelectedInterventions = (selectedInterventions ?? []).ToImmutableList(),
+            GateOverrides = (gateOverrides ?? []).ToImmutableList(),
+            LatestDiscoveryGateEvaluation = latestDiscoveryGateEvaluation,
+            LatestShapeGateEvaluation = latestShapeGateEvaluation,
+            Finalization = finalization,
+        };
     }
 
-    public void AddParticipant(Participant participant)
+    public InitiativeSession AddParticipant(Participant participant)
     {
         EnsureActive();
         if (participant.Role == ParticipantRole.Agent)
@@ -83,15 +87,16 @@ public sealed class InitiativeSession
             throw new InvalidOperationException("The Agent participant is fixed at creation and cannot be added.");
         }
 
-        if (_participants.Any(p => p.Role == participant.Role))
+        if (Participants.Any(p => p.Role == participant.Role))
         {
             throw new InvalidOperationException($"A session can only have one {participant.Role} participant.");
         }
 
-        _participants.Add(participant);
+        return this with { Participants = Participants.Add(participant) };
     }
 
-    public QuestionId ProposeQuestion(string text, ParticipantId proposedBy, ParticipantRole authorRole, InitiativeField field)
+    public (InitiativeSession Session, QuestionId QuestionId) ProposeQuestion(
+        string text, ParticipantId proposedBy, ParticipantRole authorRole, InitiativeField field)
     {
         EnsureActive();
         if (authorRole is not (ParticipantRole.Facilitator or ParticipantRole.Agent))
@@ -99,7 +104,7 @@ public sealed class InitiativeSession
             throw new InvalidOperationException("Only the Facilitator or the Agent Participant can propose a Prompted Question.");
         }
 
-        var participant = _participants.SingleOrDefault(p => p.Id == proposedBy)
+        var participant = Participants.SingleOrDefault(p => p.Id == proposedBy)
             ?? throw new InvalidOperationException("Unknown participant.");
         if (participant.Role != authorRole)
         {
@@ -107,155 +112,153 @@ public sealed class InitiativeSession
         }
 
         var question = new ProposedQuestion(QuestionId.New(), text, proposedBy, authorRole, field);
-        _questions.Add(question);
-        return question.Id;
+        return (this with { Questions = Questions.Add(question) }, question.Id);
     }
 
-    public void SendQuestion(QuestionId questionId)
+    public InitiativeSession SendQuestion(QuestionId questionId)
     {
         EnsureActive();
-        var index = _questions.FindIndex(q => q.Id == questionId);
-        if (index < 0 || _questions[index] is not ProposedQuestion proposed)
+        var index = Questions.FindIndex(q => q.Id == questionId);
+        if (index < 0 || Questions[index] is not ProposedQuestion proposed)
         {
             throw new InvalidOperationException("Only a proposed question can be sent to the Domain Expert.");
         }
 
-        _questions[index] = proposed.SendToDomainExpert();
+        return this with { Questions = Questions.SetItem(index, proposed.SendToDomainExpert()) };
     }
 
-    public void EditProposedQuestion(QuestionId questionId, string newText)
+    public InitiativeSession EditProposedQuestion(QuestionId questionId, string newText)
     {
         EnsureActive();
-        var index = _questions.FindIndex(q => q.Id == questionId);
-        if (index < 0 || _questions[index] is not ProposedQuestion proposed)
+        var index = Questions.FindIndex(q => q.Id == questionId);
+        if (index < 0 || Questions[index] is not ProposedQuestion proposed)
         {
             throw new InvalidOperationException("Only a proposed question can be edited.");
         }
 
-        _questions[index] = proposed.WithText(newText);
+        return this with { Questions = Questions.SetItem(index, proposed.WithText(newText)) };
     }
 
-    public void RejectProposedQuestion(QuestionId questionId)
+    public InitiativeSession RejectProposedQuestion(QuestionId questionId)
     {
         EnsureActive();
-        var index = _questions.FindIndex(q => q.Id == questionId);
-        if (index < 0 || _questions[index] is not ProposedQuestion proposed)
+        var index = Questions.FindIndex(q => q.Id == questionId);
+        if (index < 0 || Questions[index] is not ProposedQuestion proposed)
         {
             throw new InvalidOperationException("Only a proposed question can be rejected.");
         }
 
-        _questions[index] = proposed.Reject();
+        return this with { Questions = Questions.SetItem(index, proposed.Reject()) };
     }
 
-    public ResponseId SubmitResponse(QuestionId questionId, string text)
+    public (InitiativeSession Session, ResponseId ResponseId) SubmitResponse(QuestionId questionId, string text)
     {
         EnsureActive();
-        if (_questions.SingleOrDefault(q => q.Id == questionId) is not SentQuestion)
+        if (Questions.SingleOrDefault(q => q.Id == questionId) is not SentQuestion)
         {
             throw new InvalidOperationException("A response can only be submitted for a question sent to the Domain Expert.");
         }
 
         var response = new PendingResponse(ResponseId.New(), questionId, text);
-        _responses.Add(response);
-        return response.Id;
+        return (this with { Responses = Responses.Add(response) }, response.Id);
     }
 
-    public void AcceptResponse(ResponseId responseId)
+    public InitiativeSession AcceptResponse(ResponseId responseId)
     {
         EnsureActive();
-        var index = _responses.FindIndex(r => r.Id == responseId);
-        if (index < 0 || _responses[index] is not PendingResponse pending)
+        var index = Responses.FindIndex(r => r.Id == responseId);
+        if (index < 0 || Responses[index] is not PendingResponse pending)
         {
             throw new InvalidOperationException("Only a pending response can be accepted.");
         }
 
-        _responses[index] = pending.Accept();
+        return this with { Responses = Responses.SetItem(index, pending.Accept()) };
     }
 
-    public InterventionId SelectIntervention(InterventionType type, string description, string rationale)
+    public (InitiativeSession Session, InterventionId InterventionId) SelectIntervention(
+        InterventionType type, string description, string rationale)
     {
         EnsureActive();
-        var intervention = new SelectedIntervention(InterventionId.New(), type, description, rationale);
-        _selectedInterventions.Add(intervention);
-        return intervention.Id;
+        var intervention = SelectedIntervention.CreateNew(type, description, rationale);
+        return (this with { SelectedInterventions = SelectedInterventions.Add(intervention) }, intervention.Id);
     }
 
-    public void WithdrawIntervention(InterventionId interventionId)
+    public InitiativeSession WithdrawIntervention(InterventionId interventionId)
     {
         EnsureActive();
-        var removed = _selectedInterventions.RemoveAll(i => i.Id == interventionId);
-        if (removed == 0)
-        {
-            throw new InvalidOperationException("Unknown intervention.");
-        }
-    }
-
-    /// <summary>Records a cross-reference link into a design workspace. Never scaffolds model content (issue #83).</summary>
-    public void LinkDesignWorkspace(InterventionId interventionId, string reference)
-    {
-        EnsureActive();
-        var index = _selectedInterventions.FindIndex(i => i.Id == interventionId);
+        var index = SelectedInterventions.FindIndex(i => i.Id == interventionId);
         if (index < 0)
         {
             throw new InvalidOperationException("Unknown intervention.");
         }
 
-        _selectedInterventions[index] = _selectedInterventions[index].WithDesignWorkspaceReference(reference);
+        return this with { SelectedInterventions = SelectedInterventions.RemoveAt(index) };
+    }
+
+    /// <summary>Records a cross-reference link into a design workspace. Never scaffolds model content (issue #83).</summary>
+    public InitiativeSession LinkDesignWorkspace(InterventionId interventionId, string reference)
+    {
+        EnsureActive();
+        var index = SelectedInterventions.FindIndex(i => i.Id == interventionId);
+        if (index < 0)
+        {
+            throw new InvalidOperationException("Unknown intervention.");
+        }
+
+        return this with { SelectedInterventions = SelectedInterventions.SetItem(index, SelectedInterventions[index].WithDesignWorkspaceReference(reference)) };
     }
 
     /// <summary>
     /// Records a gate evaluation. If a recommendation is provided, it is proposed as a new Prompted
     /// Question attributed to the Agent Participant — the gate stays strictly advisory either way.
     /// </summary>
-    public void RecordGateEvaluation(GateEvaluation evaluation, string? recommendedQuestionText = null, InitiativeField? recommendedQuestionField = null)
+    public InitiativeSession RecordGateEvaluation(
+        GateEvaluation evaluation, string? recommendedQuestionText = null, InitiativeField? recommendedQuestionField = null)
     {
         EnsureActive();
+        var session = this;
         QuestionId? recommendedQuestionId = null;
         if (!string.IsNullOrWhiteSpace(recommendedQuestionText) && recommendedQuestionField is not null)
         {
-            recommendedQuestionId = ProposeQuestion(recommendedQuestionText, AgentParticipant.Id, ParticipantRole.Agent, recommendedQuestionField.Value);
+            (session, var questionId) = session.ProposeQuestion(recommendedQuestionText, AgentParticipantId, ParticipantRole.Agent, recommendedQuestionField.Value);
+            recommendedQuestionId = questionId;
         }
 
         var recorded = evaluation with { RecommendedQuestionId = recommendedQuestionId };
-        switch (recorded.Kind)
+        return recorded.Kind switch
         {
-            case GateKind.Discovery:
-                LatestDiscoveryGateEvaluation = recorded;
-                break;
-            case GateKind.Shape:
-                LatestShapeGateEvaluation = recorded;
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(evaluation));
-        }
+            GateKind.Discovery => session with { LatestDiscoveryGateEvaluation = recorded },
+            GateKind.Shape => session with { LatestShapeGateEvaluation = recorded },
+            _ => throw new ArgumentOutOfRangeException(nameof(evaluation)),
+        };
     }
 
     /// <summary>
     /// Records the Facilitator's dismissal of a flagged gap as a <see cref="DismissedGateFinding"/>
     /// override. The dismissal is retained, never deleted, and never changes the evaluation itself —
-    /// both gates stay strictly advisory.
+    /// both gates stay strictly advisory. A dismissed finding is excluded from
+    /// <see cref="FinalizeInitiative"/>'s "still open" check — see that method's own remarks.
     /// </summary>
-    public GateOverrideId DismissGateFinding(GateKind kind, GateCheck check, string? reason)
+    public (InitiativeSession Session, GateOverrideId GateOverrideId) DismissGateFinding(GateKind kind, GateCheck check, string? reason)
     {
         EnsureActive();
         var latest = kind == GateKind.Discovery ? LatestDiscoveryGateEvaluation : LatestShapeGateEvaluation;
         var finding = latest?.Results.FirstOrDefault(r => r.Check == check && !r.Passed)
             ?? throw new InvalidOperationException("Only a failed check in the latest gate evaluation can be dismissed.");
 
-        if (_gateOverrides.OfType<DismissedGateFinding>().Any(d => d.Kind == kind && d.Finding == finding))
+        if (GateOverrides.OfType<DismissedGateFinding>().Any(d => d.Kind == kind && d.Finding == finding))
         {
             throw new InvalidOperationException("This gate finding has already been dismissed.");
         }
 
         var dismissal = new DismissedGateFinding(GateOverrideId.New(), kind, finding, reason);
-        _gateOverrides.Add(dismissal);
-        return dismissal.Id;
+        return (this with { GateOverrides = GateOverrides.Add(dismissal) }, dismissal.Id);
     }
 
     public InitiativeStructuredFields BuildStructuredFields()
     {
-        var accepted = _responses.OfType<AcceptedResponse>()
-            .Join(_questions, r => r.QuestionId, q => q.Id, (r, q) => (r.Text, q.Field))
+        var accepted = Responses.OfType<AcceptedResponse>()
+            .Join(Questions, r => r.QuestionId, q => q.Id, (r, q) => (r.Text, q.Field))
             .ToLookup(x => x.Field, x => x.Text);
 
         return new InitiativeStructuredFields(
@@ -270,16 +273,19 @@ public sealed class InitiativeSession
             [.. accepted[InitiativeField.Assumptions]],
             [.. accepted[InitiativeField.OpenQuestions]],
             [.. accepted[InitiativeField.Risks]],
-            [.. _selectedInterventions]);
+            [.. SelectedInterventions]);
     }
 
     /// <summary>
     /// Finalizes the Initiative, snapshotting its structured fields as markdown. Neither gate ever
-    /// blocks this: if a gate's latest evaluation has failing checks, the Initiative is finalized as
+    /// blocks this: if a gate's latest evaluation has failing checks that have <em>not</em> already
+    /// been dismissed via <see cref="DismissGateFinding"/>, the Initiative is finalized as
     /// <see cref="WithOpenGateFindings"/> and the disagreement is recorded as a
-    /// <see cref="FinalizedAgainstGate"/> override carrying those findings.
+    /// <see cref="FinalizedAgainstGate"/> override carrying only those still-open findings — a
+    /// dismissed finding was already the Facilitator's recorded judgment call and must not also
+    /// produce a second, contradictory override at finalize time.
     /// </summary>
-    public InitiativeFinalization FinalizeInitiative(DateTimeOffset finalizedAt, string? reason)
+    public InitiativeSession FinalizeInitiative(DateTimeOffset finalizedAt, string? reason)
     {
         if (Finalization is not null)
         {
@@ -287,29 +293,34 @@ public sealed class InitiativeSession
         }
 
         var snapshot = BuildStructuredFields().ToMarkdown();
+        var overrides = GateOverrides;
         var hasOpenFindings = false;
 
         foreach (var (kind, evaluation) in new[] { (GateKind.Discovery, LatestDiscoveryGateEvaluation), (GateKind.Shape, LatestShapeGateEvaluation) })
         {
-            var failed = evaluation?.Results.Where(r => !r.Passed).ToList() ?? [];
-            if (failed.Count == 0) continue;
+            var dismissed = overrides.OfType<DismissedGateFinding>()
+                .Where(d => d.Kind == kind)
+                .Select(d => d.Finding)
+                .ToHashSet();
+            var stillOpen = evaluation?.Results.Where(r => !r.Passed && !dismissed.Contains(r)).ToList() ?? [];
+            if (stillOpen.Count == 0) continue;
             hasOpenFindings = true;
-            _gateOverrides.Add(new FinalizedAgainstGate(GateOverrideId.New(), kind, failed, reason));
+            overrides = overrides.Add(new FinalizedAgainstGate(GateOverrideId.New(), kind, stillOpen, reason));
         }
 
-        Finalization = hasOpenFindings ? new WithOpenGateFindings(snapshot, finalizedAt) : new Clean(snapshot, finalizedAt);
-        return Finalization;
+        InitiativeFinalization finalization = hasOpenFindings ? new WithOpenGateFindings(snapshot, finalizedAt) : new Clean(snapshot, finalizedAt);
+        return this with { GateOverrides = overrides, Finalization = finalization };
     }
 
     /// <summary>Reopens a finalized Initiative. Not irreversible in v1; gate overrides are retained.</summary>
-    public void Reopen()
+    public InitiativeSession Reopen()
     {
         if (Finalization is null)
         {
             throw new InvalidOperationException("Only a finalized Initiative can be reopened.");
         }
 
-        Finalization = null;
+        return this with { Finalization = null };
     }
 
     private void EnsureActive()
@@ -317,6 +328,28 @@ public sealed class InitiativeSession
         if (Finalization is not null)
         {
             throw new InvalidOperationException("The Initiative is finalized. Reopen it before making changes.");
+        }
+    }
+
+    private static string ValidChangeRequest(string value) => string.IsNullOrWhiteSpace(value)
+        ? throw new ArgumentException("The original change request is required.", nameof(value))
+        : value.Trim();
+
+    private static void RequireValidParticipants(ImmutableList<Participant> participants)
+    {
+        if (participants.Count(p => p.Role == ParticipantRole.Agent) != 1)
+        {
+            throw new ArgumentException("An Initiative must have exactly one Agent participant.", nameof(participants));
+        }
+
+        if (participants.Count(p => p.Role == ParticipantRole.Facilitator) > 1)
+        {
+            throw new ArgumentException("An Initiative can have at most one Facilitator.", nameof(participants));
+        }
+
+        if (participants.Count(p => p.Role == ParticipantRole.DomainExpert) > 1)
+        {
+            throw new ArgumentException("An Initiative can have at most one Domain Expert.", nameof(participants));
         }
     }
 }

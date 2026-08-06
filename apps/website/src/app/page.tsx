@@ -34,7 +34,7 @@ export default function HomePage() {
         That is a proposed answer, not the problem. Capture the original request here, then work
         through Discover, Frame, and Shape with a Domain Expert before deciding whether the right
         response is a technology intervention at all. Explore a working example first?{' '}
-        <Link href="/examples">See the playground</Link>.
+        <Link href="/playground">See the playground</Link>.
       </p>
 
       <form className="initiative-start-form" onSubmit={handleSubmit}>

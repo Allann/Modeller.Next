@@ -16,7 +16,36 @@ public static class InitiativeSessionMapper
         session.LatestShapeGateEvaluation is { } shape ? ToDto(shape) : null,
         session.Finalization is { } finalization ? ToDto(finalization) : null);
 
-    public static InitiativeSession ToDomain(InitiativeSessionDto dto) => InitiativeSession.Restore(
+    /// <summary>
+    /// The Domain Expert's projection: only questions actually sent to them, only their own
+    /// responses to those questions, and none of the Facilitator's judgment surfaces (gate
+    /// evaluations, gate overrides, Shape's intervention curation) — mirrors Business Statement's
+    /// <c>QuestionsVisibleTo</c>/<c>ResponsesVisibleTo</c>/<c>GateOverridesVisibleTo</c> role-scoped
+    /// visibility rules (M:\business-statement\src\BusinessStatement.Domain\DiscoverySession.cs),
+    /// which #88 never actually dropped — only the roles beyond Facilitator/Domain Expert/Agent were
+    /// dropped, not this filtering. Finalization is still shown, matching the "thank you, nothing
+    /// further needed" state the Domain Expert view renders once finalized.
+    /// </summary>
+    public static InitiativeSessionDto ToDomainExpertDto(InitiativeSession session)
+    {
+        var visibleQuestions = session.Questions.Where(q => q is SentQuestion).ToList();
+        var visibleQuestionIds = visibleQuestions.Select(q => q.Id).ToHashSet();
+        var visibleResponses = session.Responses.Where(r => visibleQuestionIds.Contains(r.QuestionId)).ToList();
+
+        return new InitiativeSessionDto(
+            session.Id.Value,
+            session.OriginalChangeRequest,
+            [.. session.Participants.Select(p => new ParticipantDto(p.Id.Value, p.DisplayName, p.Role.ToString()))],
+            [.. visibleQuestions.Select(ToDto)],
+            [.. visibleResponses.Select(ToDto)],
+            [],
+            [],
+            null,
+            null,
+            session.Finalization is { } finalization ? ToDto(finalization) : null);
+    }
+
+    public static InitiativeSession ToDomain(InitiativeSessionDto dto) => InitiativeSession.CreateExisting(
         InitiativeId.FromExisting(dto.Id),
         dto.OriginalChangeRequest,
         dto.Participants.Select(ToDomain),
@@ -81,13 +110,19 @@ public static class InitiativeSessionMapper
     }
 
     private static SelectedInterventionDto ToDto(SelectedIntervention intervention) => new(
-        intervention.Id.Value, intervention.Type.ToString(), intervention.Description, intervention.Rationale, intervention.DesignWorkspaceReference);
+        intervention.Id.Value,
+        intervention.Type.ToString(),
+        intervention.Description,
+        intervention.Rationale,
+        intervention.ContinuesToDesignWorkspace,
+        intervention.DesignWorkspaceReference);
 
-    private static SelectedIntervention ToDomain(SelectedInterventionDto dto) => new(
+    private static SelectedIntervention ToDomain(SelectedInterventionDto dto) => SelectedIntervention.CreateExisting(
         InterventionId.FromExisting(dto.Id),
         Enum.Parse<InterventionType>(dto.Type),
         dto.Description,
         dto.Rationale,
+        dto.ContinuesToDesignWorkspace,
         dto.DesignWorkspaceReference);
 
     private static GateCheckResultDto ToDto(GateCheckResult result) => new(result.Check.ToString(), result.Passed, result.Reason);
@@ -141,7 +176,6 @@ public static class InitiativeSessionMapper
         _ => throw new NotSupportedException($"Unknown finalization status '{dto.Status}'."),
     };
 
-    private static Participant ToDomain(ParticipantDto dto) => new(
+    private static Participant ToDomain(ParticipantDto dto) => Participant.CreateExisting(
         ParticipantId.FromExisting(dto.Id), dto.DisplayName, Enum.Parse<ParticipantRole>(dto.Role));
-
 }

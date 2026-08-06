@@ -45,9 +45,11 @@ public sealed record InitiativeStructuredFields(
             lines.Add("## Selected Interventions");
             foreach (var intervention in SelectedInterventions)
             {
-                var handoff = intervention.ContinuesToDesignWorkspace
-                    ? $" (continues into System Design: {intervention.DesignWorkspaceReference})"
-                    : string.Empty;
+                var handoff = intervention.DesignWorkspaceReference is { } reference
+                    ? $" (continues into System Design: {reference})"
+                    : intervention.ContinuesToDesignWorkspace
+                        ? " (queued for System Design)"
+                        : string.Empty;
                 lines.Add($"- [{intervention.Type}] {intervention.Description} — {intervention.Rationale}{handoff}");
             }
         }

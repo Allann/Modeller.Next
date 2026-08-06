@@ -132,6 +132,9 @@ export interface SelectedInterventionDto {
   type: InterventionType;
   description: string;
   rationale: string;
+  /** Set at selection time (true only for Technology), independent of whether a workspace has
+   * actually been linked yet — see Modeller.Initiative.SelectedIntervention's own remarks. */
+  continuesToDesignWorkspace: boolean;
   designWorkspaceReference: string | null;
 }
 
@@ -194,6 +197,19 @@ export interface AgentInterventionSuggestionDto {
 
 export interface AgentInterventionSuggestionsResponse {
   suggestions: AgentInterventionSuggestionDto[];
+}
+
+export type InitiativePhase = 'Discover' | 'Frame' | 'Shape' | 'Design';
+
+/** Which of the four phases the Initiative is currently in — derived from what's actually
+ * happened, not from whether a gate has been evaluated (evaluating Discovery Gate is a Frame-time
+ * action, not the thing that causes Frame to start: any question targeting a Frame-phase field
+ * already means the Initiative is in Frame, per #86's phase breakdown). */
+export function currentPhase(session: InitiativeSessionDto): InitiativePhase {
+  if (session.finalization) return 'Design';
+  if (session.selectedInterventions.length > 0 || session.latestShapeGateEvaluation) return 'Shape';
+  const touchedFrame = session.questions.some((q) => PHASE_OF_FIELD[q.field] === 'Frame');
+  return touchedFrame ? 'Frame' : 'Discover';
 }
 
 /** Groups accepted responses by the field their originating question targeted — mirrors

@@ -62,10 +62,9 @@ public class AgentAdvisorTests
         // wiring an advisor in at all (which #88's own tests already cover for the aggregate alone).
         IAgentAdvisor advisor = new HumanOnlyAgentAdvisor();
 
-        var session = InitiativeSession.Create(InitiativeId.New(), "Build us a new approval system");
-        var facilitator = new Participant(ParticipantId.New(), "Alex", ParticipantRole.Facilitator);
-        session.AddParticipant(facilitator);
-        session.AddParticipant(new Participant(ParticipantId.New(), "Jordan", ParticipantRole.DomainExpert));
+        var session = InitiativeSession.CreateNew("Build us a new approval system");
+        var facilitator = Participant.CreateNew("Alex", ParticipantRole.Facilitator);
+        session = session.AddParticipant(facilitator).AddParticipant(Participant.CreateNew("Jordan", ParticipantRole.DomainExpert));
 
         var questionSuggestion = await advisor.ProposeQuestionAsync(
             new ProposeQuestionRequest(session.OriginalChangeRequest, session.BuildStructuredFields(), InitiativeField.PainPoints),
@@ -73,32 +72,33 @@ public class AgentAdvisorTests
         Assert.False(questionSuggestion.Succeeded);
 
         // The Facilitator proceeds manually since the advisor offered nothing.
-        var questionId = session.ProposeQuestion("What's painful today?", facilitator.Id, ParticipantRole.Facilitator, InitiativeField.PainPoints);
-        session.SendQuestion(questionId);
-        var responseId = session.SubmitResponse(questionId, "Decisions take twelve days.");
+        var (afterPropose, questionId) = session.ProposeQuestion("What's painful today?", facilitator.Id, ParticipantRole.Facilitator, InitiativeField.PainPoints);
+        session = afterPropose.SendQuestion(questionId);
+        ResponseId responseId;
+        (session, responseId) = session.SubmitResponse(questionId, "Decisions take twelve days.");
 
         var draftSuggestion = await advisor.DraftFieldUpdateAsync(
             new DraftFieldUpdateRequest(InitiativeField.PainPoints, "Decisions take twelve days.", []),
             TestContext.Current.CancellationToken);
         Assert.False(draftSuggestion.Succeeded);
-        session.AcceptResponse(responseId);
+        session = session.AcceptResponse(responseId);
 
         var interventionSuggestions = await advisor.ProposeInterventionsAsync(
             new ProposeInterventionsRequest(session.BuildStructuredFields()), TestContext.Current.CancellationToken);
         Assert.False(interventionSuggestions.Succeeded);
-        session.SelectIntervention(InterventionType.Process, "Remove a duplicate approval", "Cuts two days.");
+        (session, _) = session.SelectIntervention(InterventionType.Process, "Remove a duplicate approval", "Cuts two days.");
 
         var gateSuggestion = await advisor.EvaluateGateAsync(
             new GateEvaluationRequest(GateKind.Shape, session.BuildStructuredFields()), TestContext.Current.CancellationToken);
         Assert.False(gateSuggestion.Succeeded);
-        session.RecordGateEvaluation(new GateEvaluation(
+        session = session.RecordGateEvaluation(new GateEvaluation(
             GateKind.Shape,
             [new GateCheckResult(GateCheck.NoActionWasConsidered, false, "Not explicitly considered.")],
             null, DateTimeOffset.UtcNow, AgentEvaluationStatus.NotConfigured));
 
-        var finalization = session.FinalizeInitiative(DateTimeOffset.UtcNow, "Proceeding without AI assistance.");
+        session = session.FinalizeInitiative(DateTimeOffset.UtcNow, "Proceeding without AI assistance.");
 
-        Assert.IsType<WithOpenGateFindings>(finalization);
+        Assert.IsType<WithOpenGateFindings>(session.Finalization);
         Assert.Contains("Decisions take twelve days.", session.BuildStructuredFields().PainPoints);
     }
 

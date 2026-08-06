@@ -1,10 +1,11 @@
 namespace Modeller.Api.Initiative;
 
 /// <summary>
-/// The canonical persisted-and-wire JSON representation of an Initiative session. One DTO serves
-/// both storage (issue #90's JSON-file repository) and the API's read model (GET .../initiative/{id})
-/// — v1 dropped Business Statement's role-scoped visibility filtering (see issue #88's "explicitly
-/// not built here" list), so there's no reason to keep persistence and wire shapes separate yet.
+/// The canonical persisted JSON representation of an Initiative session (issue #90's JSON-file
+/// repository). This is also the shape returned to the Facilitator; the Domain Expert gets a
+/// filtered projection — see <see cref="InitiativeSessionMapper.ToDomainExpertDto"/> — because,
+/// contrary to what earlier issue comments claimed, #88 never dropped Business Statement's
+/// role-scoped visibility rule; it only dropped the roles beyond the three v1 keeps.
 /// </summary>
 public sealed record ParticipantDto(Guid Id, string DisplayName, string Role);
 
@@ -12,7 +13,8 @@ public sealed record QuestionDto(Guid Id, string Text, Guid ProposedBy, string A
 
 public sealed record ResponseDto(Guid Id, Guid QuestionId, string Text, string Status);
 
-public sealed record SelectedInterventionDto(Guid Id, string Type, string Description, string Rationale, string? DesignWorkspaceReference);
+public sealed record SelectedInterventionDto(
+    Guid Id, string Type, string Description, string Rationale, bool ContinuesToDesignWorkspace, string? DesignWorkspaceReference);
 
 public sealed record GateCheckResultDto(string Check, bool Passed, string Reason);
 

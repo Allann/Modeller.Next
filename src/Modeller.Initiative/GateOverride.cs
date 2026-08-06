@@ -7,11 +7,18 @@ namespace Modeller.Initiative;
 /// never blocks or forces anything; it only makes the human disagreement durable. Immutable once
 /// created; retained rather than deleted.
 /// </summary>
-public abstract class GateOverride(GateOverrideId id, GateKind kind, string? reason)
+public abstract record GateOverride
 {
-    public GateOverrideId Id { get; } = id;
-    public GateKind Kind { get; } = kind;
-    public string? Reason { get; } = reason;
+    public GateOverrideId Id { get; }
+    public GateKind Kind { get; }
+    public string? Reason { get; }
+
+    protected GateOverride(GateOverrideId id, GateKind kind, string? reason)
+    {
+        Id = id;
+        Kind = kind;
+        Reason = reason;
+    }
 
     protected static GateCheckResult RequireFailed(GateCheckResult finding) => finding.Passed
         ? throw new ArgumentException("Only a failed gate finding can be overridden.", nameof(finding))
@@ -19,15 +26,22 @@ public abstract class GateOverride(GateOverrideId id, GateKind kind, string? rea
 }
 
 /// <summary>The Facilitator dismissed a flagged gap the gate raised; retained, never deleted.</summary>
-public sealed class DismissedGateFinding(GateOverrideId id, GateKind kind, GateCheckResult finding, string? reason)
-    : GateOverride(id, kind, reason)
+public sealed record DismissedGateFinding : GateOverride
 {
-    public GateCheckResult Finding { get; } = RequireFailed(finding);
+    public GateCheckResult Finding { get; }
+
+    public DismissedGateFinding(GateOverrideId id, GateKind kind, GateCheckResult finding, string? reason)
+        : base(id, kind, reason)
+    {
+        Finding = RequireFailed(finding);
+    }
 }
 
 /// <summary>The Facilitator finalized the Initiative while a gate recommendation was negative.</summary>
-public sealed class FinalizedAgainstGate : GateOverride
+public sealed record FinalizedAgainstGate : GateOverride
 {
+    public IReadOnlyList<GateCheckResult> Findings { get; }
+
     public FinalizedAgainstGate(GateOverrideId id, GateKind kind, IReadOnlyList<GateCheckResult> findings, string? reason)
         : base(id, kind, reason)
     {
@@ -38,6 +52,4 @@ public sealed class FinalizedAgainstGate : GateOverride
 
         Findings = findings.Select(RequireFailed).ToList();
     }
-
-    public IReadOnlyList<GateCheckResult> Findings { get; }
 }

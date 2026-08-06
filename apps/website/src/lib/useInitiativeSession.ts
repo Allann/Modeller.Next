@@ -10,7 +10,7 @@ const SESSION_UPDATED_EVENT = 'InitiativeSessionUpdated';
 /** Loads an Initiative session and keeps it live via #90's SignalR hub — a bare "something
  * changed" notification, so this just refetches rather than trying to apply a partial delta
  * (matches InitiativeHub's own deliberately-thin design, src/Modeller.Api/Initiative/InitiativeHub.cs). */
-export function useInitiativeSession(id: string) {
+export function useInitiativeSession(id: string, viewerRole?: 'DomainExpert') {
   const [session, setSession] = useState<InitiativeSessionDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,7 @@ export function useInitiativeSession(id: string) {
 
   const refetch = useCallback(async () => {
     try {
-      const latest = await initiativeApi.get(id);
+      const latest = await initiativeApi.get(id, viewerRole);
       setSession(latest);
       setError(null);
     } catch (err) {
@@ -26,7 +26,7 @@ export function useInitiativeSession(id: string) {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, viewerRole]);
 
   useEffect(() => {
     // react-hooks/set-state-in-effect flags this, but refetch only calls setState after its

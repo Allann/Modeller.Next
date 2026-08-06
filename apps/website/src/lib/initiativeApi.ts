@@ -37,7 +37,8 @@ export const initiativeApi = {
   create: (originalChangeRequest: string, facilitatorName: string, domainExpertName: string) =>
     post<InitiativeSessionDto>('/v1/initiative', { originalChangeRequest, facilitatorName, domainExpertName }),
 
-  get: (id: string) => send<InitiativeSessionDto>(`/v1/initiative/${id}`),
+  get: (id: string, viewerRole?: 'DomainExpert') =>
+    send<InitiativeSessionDto>(`/v1/initiative/${id}${viewerRole ? `?viewerRole=${viewerRole}` : ''}`),
 
   proposeQuestion: (id: string, proposedBy: string, authorRole: ParticipantRole, field: string, text: string | null) =>
     post<InitiativeSessionDto>(`/v1/initiative/${id}/questions`, { proposedBy, authorRole, field, text }),

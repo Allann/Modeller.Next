@@ -54,7 +54,7 @@ export default async function ExamplePage({ params }: { params: Promise<{ slug: 
 
   return (
     <main>
-      <Link href="/" className="breadcrumb">
+      <Link href="/playground" className="breadcrumb">
         ← All examples
       </Link>
       <p className="eyebrow">{example.kind === 'intro' ? 'Start here' : 'Deep dive'}</p>

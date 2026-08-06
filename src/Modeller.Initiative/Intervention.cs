@@ -19,33 +19,62 @@ public enum InterventionType
 
 /// <summary>
 /// One of possibly several interventions selected for this Initiative (issue #83: multiple
-/// interventions can be selected per Initiative, matching the shipped mixed-intervention example).
-/// <see cref="DesignWorkspaceReference"/> is only ever set for a <see cref="InterventionType.Technology"/>
-/// intervention and is a recorded cross-reference link only — never auto-scaffolded model content,
-/// per issue #83's resolution.
+/// interventions can be selected per Initiative, matching the shipped mixed-intervention example),
+/// "each independently flagged for whether it continues into a design workspace" (#83's own wording).
+/// <see cref="ContinuesToDesignWorkspace"/> is that independent flag — set at selection time, true only
+/// for a <see cref="InterventionType.Technology"/> intervention (the only type any design workspace
+/// exists for today) — and is deliberately a separate field from <see cref="DesignWorkspaceReference"/>,
+/// which is only ever populated later, once a real workspace exists to link to. Conflating the two
+/// (deriving "continues" from "has a reference") would make it impossible to show an intervention as
+/// queued for System Design before that workspace has actually been created.
+///
+/// Per docs/coding-standards/domain-modeling/constructor-validation-and-invariants.md: the raw
+/// constructor is private; <see cref="CreateNew"/> mints a fresh selection, <see cref="CreateExisting"/>
+/// rehydrates a previously-persisted one.
 /// </summary>
-public sealed record SelectedIntervention(
-    InterventionId Id,
-    InterventionType Type,
-    string Description,
-    string Rationale,
-    string? DesignWorkspaceReference = null)
+public sealed record SelectedIntervention
 {
-    public string Description { get; init; } = string.IsNullOrWhiteSpace(Description)
-        ? throw new ArgumentException("An intervention description is required.", nameof(Description))
-        : Description.Trim();
+    public InterventionId Id { get; private init; }
+    public InterventionType Type { get; private init; }
+    public string Description { get; private init; } = null!;
+    public string Rationale { get; private init; } = null!;
+    public bool ContinuesToDesignWorkspace { get; private init; }
+    public string? DesignWorkspaceReference { get; private init; }
 
-    public string Rationale { get; init; } = string.IsNullOrWhiteSpace(Rationale)
-        ? throw new ArgumentException("An intervention's rationale is required.", nameof(Rationale))
-        : Rationale.Trim();
+    private SelectedIntervention()
+    {
+    }
 
-    public bool ContinuesToDesignWorkspace => DesignWorkspaceReference is not null;
+    public static SelectedIntervention CreateNew(InterventionType type, string description, string rationale) => new()
+    {
+        Id = InterventionId.New(),
+        Type = type,
+        Description = ValidText(description, nameof(description)),
+        Rationale = ValidText(rationale, nameof(rationale)),
+        ContinuesToDesignWorkspace = type == InterventionType.Technology,
+    };
+
+    public static SelectedIntervention CreateExisting(
+        InterventionId id,
+        InterventionType type,
+        string description,
+        string rationale,
+        bool continuesToDesignWorkspace,
+        string? designWorkspaceReference) => new()
+    {
+        Id = id,
+        Type = type,
+        Description = ValidText(description, nameof(description)),
+        Rationale = ValidText(rationale, nameof(rationale)),
+        ContinuesToDesignWorkspace = continuesToDesignWorkspace,
+        DesignWorkspaceReference = string.IsNullOrWhiteSpace(designWorkspaceReference) ? null : designWorkspaceReference.Trim(),
+    };
 
     public SelectedIntervention WithDesignWorkspaceReference(string reference)
     {
-        if (Type != InterventionType.Technology)
+        if (!ContinuesToDesignWorkspace)
         {
-            throw new InvalidOperationException("Only a Technology intervention can reference a design workspace.");
+            throw new InvalidOperationException("Only an intervention flagged to continue into a design workspace can be linked.");
         }
 
         if (string.IsNullOrWhiteSpace(reference))
@@ -55,4 +84,8 @@ public sealed record SelectedIntervention(
 
         return this with { DesignWorkspaceReference = reference.Trim() };
     }
+
+    private static string ValidText(string value, string paramName) => string.IsNullOrWhiteSpace(value)
+        ? throw new ArgumentException($"A value for '{paramName}' is required.", paramName)
+        : value.Trim();
 }

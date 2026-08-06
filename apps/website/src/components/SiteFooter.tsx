@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export function SiteFooter() {
   return (
     <footer className="site-footer">
@@ -17,8 +19,8 @@ export function SiteFooter() {
           <a href="https://modeller.wiki">modeller.wiki</a>
         </p>
         <p>
-          <a href="/playground">Try the interactive playground</a>
-          <a href="/privacy">Privacy</a>
+          <Link href="/playground">Try the interactive playground</Link>
+          <Link href="/privacy">Privacy</Link>
         </p>
       </div>
     </footer>
