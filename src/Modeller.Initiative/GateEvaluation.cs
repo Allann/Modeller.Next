@@ -49,6 +49,11 @@ public enum AgentEvaluationStatus
     ModelError,
     ConfigurationError,
     RequestFailed,
+
+    /// <summary>No <see cref="IAgentAdvisor"/> is wired in at all — the intentional, by-design state
+    /// for a fully human-only Initiative (issue #89), distinct from an AI that is configured but
+    /// failing.</summary>
+    NotConfigured,
 }
 
 public sealed record GateEvaluation(
