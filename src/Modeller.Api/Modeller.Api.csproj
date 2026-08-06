@@ -6,6 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Modeller.Workspace/Modeller.Workspace.csproj" />
+    <ProjectReference Include="../Modeller.Initiative/Modeller.Initiative.csproj" />
+    <ProjectReference Include="../Modeller.Initiative.OpenAICompatible/Modeller.Initiative.OpenAICompatible.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />

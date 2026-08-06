@@ -3,6 +3,9 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Modeller.Api;
 using Modeller.Api.Endpoints;
+using Modeller.Api.Initiative;
+using Modeller.Initiative;
+using Modeller.Initiative.OpenAICompatible;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -18,6 +21,29 @@ builder.Host.UseSerilog((context, loggerConfig) => loggerConfig.ReadFrom.Configu
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 builder.Services.AddSingleton<WorkspaceAnalysisPipeline>();
+
+// Initiative (issue #90): the Agent Advisor is an add-on, never a hard dependency, per #83/#86 —
+// only registered as the real OpenAI-compatible adapter when an endpoint is actually configured;
+// otherwise every Discover/Frame/Shape action runs fully human-only via HumanOnlyAgentAdvisor.
+var agentBaseUrl = builder.Configuration["Agent:BaseUrl"];
+if (!string.IsNullOrWhiteSpace(agentBaseUrl))
+{
+    builder.Services.AddSingleton(new AgentAdvisorOptions(
+        new Uri(agentBaseUrl),
+        builder.Configuration["Agent:Model"] ?? throw new InvalidOperationException("Agent:Model is required when Agent:BaseUrl is set."),
+        builder.Configuration["Agent:ApiKey"]));
+    builder.Services.AddHttpClient<IAgentAdvisor, OpenAiCompatibleAgentAdvisor>();
+}
+else
+{
+    builder.Services.AddSingleton<IAgentAdvisor, HumanOnlyAgentAdvisor>();
+}
+
+var initiativeStorageRoot = builder.Configuration["Initiative:StorageRoot"]
+    ?? Path.Combine(AppContext.BaseDirectory, "data", "initiative");
+builder.Services.AddSingleton<IInitiativeSessionRepository>(new JsonFileInitiativeSessionRepository(initiativeStorageRoot));
+builder.Services.AddScoped<InitiativePipeline>();
+builder.Services.AddSignalR();
 // ViewKind must serialize as a stable name, not an ordinal int — the ordinal is an
 // implementation-order detail that could change without the contract itself changing.
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -80,6 +106,8 @@ app.UseCors("Playground");
 app.UseRateLimiter();
 
 app.MapWorkspaceEndpoints();
+app.MapInitiativeEndpoints();
+app.MapHub<InitiativeHub>("/hubs/initiative");
 app.MapHealthChecks("/healthz/live");
 app.MapHealthChecks("/healthz/ready");
 
