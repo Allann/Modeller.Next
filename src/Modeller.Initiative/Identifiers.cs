@@ -1,0 +1,67 @@
+namespace Modeller.Initiative;
+
+public readonly record struct InitiativeId
+{
+    private InitiativeId(Guid value) => Value = value;
+
+    public Guid Value { get; }
+
+    public static InitiativeId New() => new(Guid.CreateVersion7());
+
+    public override string ToString() => Value.ToString("D");
+}
+
+public readonly record struct ParticipantId
+{
+    private ParticipantId(Guid value) => Value = value;
+
+    public Guid Value { get; }
+
+    public static ParticipantId New() => new(Guid.CreateVersion7());
+
+    public override string ToString() => Value.ToString("D");
+}
+
+public readonly record struct QuestionId
+{
+    private QuestionId(Guid value) => Value = value;
+
+    public Guid Value { get; }
+
+    public static QuestionId New() => new(Guid.CreateVersion7());
+
+    public override string ToString() => Value.ToString("D");
+}
+
+public readonly record struct ResponseId
+{
+    private ResponseId(Guid value) => Value = value;
+
+    public Guid Value { get; }
+
+    public static ResponseId New() => new(Guid.CreateVersion7());
+
+    public override string ToString() => Value.ToString("D");
+}
+
+public readonly record struct InterventionId
+{
+    private InterventionId(Guid value) => Value = value;
+
+    public Guid Value { get; }
+
+    public static InterventionId New() => new(Guid.CreateVersion7());
+
+    public override string ToString() => Value.ToString("D");
+}
+
+public readonly record struct GateOverrideId
+{
+    private GateOverrideId(Guid value) => Value = value;
+
+    public Guid Value { get; }
+
+    public static GateOverrideId New() => new(Guid.CreateVersion7());
+
+    public override string ToString() => Value.ToString("D");
+}

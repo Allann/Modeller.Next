@@ -9,6 +9,7 @@
     <Project Path="src/Modeller.Editor/Modeller.Editor.csproj" />
     <Project Path="src/Modeller.Generation/Modeller.Generation.csproj" />
     <Project Path="src/Modeller.GenerationWorkflow/Modeller.GenerationWorkflow.csproj" />
+    <Project Path="src/Modeller.Initiative/Modeller.Initiative.csproj" />
     <Project Path="src/Modeller.LanguageServer/Modeller.LanguageServer.csproj" />
     <Project Path="src/Modeller.Model/Modeller.Model.csproj" />
     <Project Path="src/Modeller.Output/Modeller.Output.csproj" />
@@ -31,6 +32,7 @@
     <Project Path="tests/Modeller.Editor.Tests/Modeller.Editor.Tests.csproj" />
     <Project Path="tests/Modeller.Generation.Tests/Modeller.Generation.Tests.csproj" />
     <Project Path="tests/Modeller.GenerationWorkflow.Tests/Modeller.GenerationWorkflow.Tests.csproj" />
+    <Project Path="tests/Modeller.Initiative.Tests/Modeller.Initiative.Tests.csproj" />
     <Project Path="tests/Modeller.LanguageServer.Tests/Modeller.LanguageServer.Tests.csproj" />
     <Project Path="tests/Modeller.Model.Tests/Modeller.Model.Tests.csproj" />
     <Project Path="tests/Modeller.Output.Tests/Modeller.Output.Tests.csproj" />
