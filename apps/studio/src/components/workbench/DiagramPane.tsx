@@ -21,6 +21,10 @@ export function DiagramPane() {
   const [error, setError] = useState<string | undefined>();
 
   useEffect(() => {
+    // react-hooks/set-state-in-effect flags the resets below, but this effect's job is the
+    // fetch-on-view-change side effect itself — the resets just clear stale selection/graph state
+    // before that fetch starts, same fetch-on-mount shape as useInitiativeSession.ts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRootId('');
     setGraph(undefined);
     void fetchProjectionRoots(view)
@@ -30,6 +34,7 @@ export function DiagramPane() {
 
   useEffect(() => {
     if (!rootId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- see rationale above
     setError(undefined);
     setDiagnostics([]);
     void fetchProjectionGraph(view, rootId)

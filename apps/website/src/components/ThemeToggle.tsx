@@ -30,6 +30,10 @@ export function ThemeToggle() {
   // is not a reliable "haven't mounted yet" signal and caused a hydration
   // mismatch. An explicit `mounted` flag, only ever set true after mount, keeps
   // the first client render identical to the server's placeholder.
+  // react-hooks/set-state-in-effect flags this, but there is no render-time alternative for a
+  // mounted flag — it must stay false through the first client render and flip after, which is
+  // exactly what an effect (not a render-time computation) is for.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
   if (!mounted) return <span className="theme-toggle" aria-hidden="true" />;
 

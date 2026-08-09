@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -40,14 +40,21 @@ export interface GraphCanvasData {
 }
 
 export function GraphCanvas({ graph }: { graph: GraphCanvasData | undefined }) {
-  const [nodes, setNodes] = useState<Node[]>([]);
-  const [edges, setEdges] = useState<Edge[]>([]);
+  // Layout is a pure derivation of `graph`, so it's recomputed during render on a `graph`
+  // identity change (React's documented "adjusting state when a prop changes" pattern) rather
+  // than via an effect — this is the case react-hooks/set-state-in-effect exists to steer away
+  // from an unnecessary effect+extra-render round trip, unlike the fetch effects elsewhere in
+  // this app where the setState is a side effect of async work, not a render-time derivation.
+  const [prevGraph, setPrevGraph] = useState(graph);
+  const [nodes, setNodes] = useState<Node[]>(() => layoutGraph(graph).nodes);
+  const [edges, setEdges] = useState<Edge[]>(() => layoutGraph(graph).edges);
 
-  useEffect(() => {
+  if (graph !== prevGraph) {
+    setPrevGraph(graph);
     const laid = layoutGraph(graph);
     setNodes(laid.nodes);
     setEdges(laid.edges);
-  }, [graph]);
+  }
 
   // Dragging a node is a layout-only change (repositioning, not editing the
   // model) — see the semantic/view/layout/session split already decided in
