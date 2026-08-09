@@ -1,3 +1,0 @@
-{
-  "ignoreCommand": "PREVIOUS=${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}; if ! git cat-file -e \"$PREVIOUS^{commit}\" 2>/dev/null; then exit 1; fi; git diff --quiet \"$PREVIOUS\" HEAD -- src Directory.Build.props Directory.Packages.props Modeller.slnx global.json Dockerfile.vercel"
-}
