@@ -277,10 +277,10 @@ export default function HomePage() {
             </article>
           ))}
         </div>
-        <div className="intervention-example">
-          <small>Example initiative</small>
+        <div className="accent-panel">
+          <p className="accent-panel-kicker">Example initiative</p>
           <h3>Reduce customer approval time from twelve days to two.</h3>
-          <ul>
+          <ul className="pill-list">
             {exampleFlow.map(({ title, kind }) => (
               <li key={title}><span>{kind}</span>{title}</li>
             ))}
@@ -325,10 +325,10 @@ export default function HomePage() {
             <li><span>4</span><div><strong>Evolve</strong><p>Change the model and bring the implementation forward with it.</p></div></li>
           </ol>
         </div>
-        <div className="outcome-panel">
-          <p className="panel-kicker">What teams gain</p>
+        <div className="accent-panel">
+          <p className="accent-panel-kicker">What teams gain</p>
           <h3>Alignment that survives the handoff.</h3>
-          <ul>
+          <ul className="check-list">
             {outcomes.map((outcome) => <li key={outcome}><Check size={17} />{outcome}</li>)}
           </ul>
         </div>
