@@ -1,8 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Modeller.Api</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <UserSecretsId>6e5acc69-3f94-4b86-ad13-3b835c45a166</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Modeller.Workspace/Modeller.Workspace.csproj" />
