@@ -10,9 +10,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/website
     steps:
       - uses: actions/checkout@v4
 
@@ -23,17 +20,24 @@ jobs:
           cache-dependency-path: apps/website/package-lock.json
 
       - name: Install dependencies
+        working-directory: apps/website
         run: npm ci
 
       - name: Lint
+        working-directory: apps/website
         run: npm run lint
 
       - name: Type check
+        working-directory: apps/website
         run: npm run types:check
 
       - name: Build
+        working-directory: apps/website
         run: npm run build
 
+      # Vercel CLI steps run from the repo root: the linked project already has its Root
+      # Directory set to apps/website, so cwd + Root Directory would otherwise double up
+      # (apps/website/apps/website/package.json).
       - name: Pull Vercel environment
         run: npx vercel pull --yes --environment=production --token=$VERCEL_TOKEN
         env:
