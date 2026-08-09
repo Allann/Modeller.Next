@@ -156,7 +156,7 @@ html > body[data-scroll-locked] { margin-right: 0 !important; --removed-body-scr
 .dark .check-list li { color: var(--surface-accent-muted); }
 .dark .check-list li svg { color: var(--modeller-dark-accent); }
 
-#intervention .accent-panel { margin-top: 1px; }
+#intervention .accent-panel { margin-top: var(--spacing-lg); }
 
 .workflow-section { display: grid; grid-template-columns: 1fr .82fr; gap: var(--content-gap); }
 .workflow-steps { display: grid; gap: 1.35rem; margin-top: 2.5rem; }

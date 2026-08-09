@@ -278,7 +278,7 @@ export default function HomePage() {
           ))}
         </div>
         <div className="accent-panel">
-          <p className="accent-panel-kicker">Example initiative</p>
+          <div className="accent-panel-kicker">Example initiative</div>
           <h3>Reduce customer approval time from twelve days to two.</h3>
           <ul className="pill-list">
             {exampleFlow.map(({ title, kind }) => (
