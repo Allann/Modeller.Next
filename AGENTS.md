@@ -1,5 +1,7 @@
 ## Agent skills
 
+Use ASD-STE100 Simplified Technical English for all responses
+
 ### Issue tracker
 
 GitHub Issues on `Allann/Modeller.Next`, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
