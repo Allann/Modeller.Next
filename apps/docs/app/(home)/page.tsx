@@ -124,7 +124,7 @@ const outcomes = [
 
 export default function HomePage() {
   return (
-    <main className="modeller-home">
+    <div className="modeller-home">
       <section className="marketing-hero">
         <div className="marketing-hero-intro">
           <p className="eyebrow"><Compass size={15} /> Start with what needs to change</p>
@@ -173,8 +173,13 @@ export default function HomePage() {
               <span className="trace-pill">Authority</span>
               <span className="trace-pill">Technology</span>
             </div>
+            <ArrowRight className="trace-arrow trace-arrow--three" size={18} aria-hidden="true" />
+            <div className="trace-node trace-node--design">
+              <span className="trace-node-kicker">Selected technology intervention</span>
+              <strong>System Design: document checks</strong>
+            </div>
           </div>
-          <p className="trace-status"><CircleDot size={14} aria-hidden="true" /> Meaning remains connected from problem to intervention</p>
+          <p className="trace-status"><CircleDot size={14} aria-hidden="true" /> Meaning remains connected from problem and outcome through intervention to System Design</p>
         </div>
       </section>
 
@@ -236,7 +241,7 @@ export default function HomePage() {
           <h2>Start a Discovery Session in your browser.</h2>
           <p>
             Discovery runs at <strong>modeller.website</strong>. There is nothing to install
-            and no account to create — you need a change request and someone who understands
+            and no account to create. You need a change request and someone who understands
             the situation it came from.
           </p>
         </div>
@@ -333,7 +338,7 @@ export default function HomePage() {
         <div className="download-icon"><Download size={30} /></div>
         <div>
           <p className="eyebrow">Get System Design <span className="coming-soon-badge">Coming soon</span></p>
-          <h2>A desktop app for the whole workflow.</h2>
+          <h2>A desktop app for the System Design workflow.</h2>
           <p>
             Model, generate, and review projects without leaving your machine. The
             System Design desktop app for macOS, Windows, and Linux is on its way.
@@ -377,6 +382,6 @@ export default function HomePage() {
         <p>Understand first. Change deliberately.</p>
         <nav aria-label="Footer navigation"><Link href="/docs">Documentation</Link><Link href="/docs/concepts">Concepts</Link><a href="https://github.com/Allann/Modeller.Next">GitHub</a></nav>
       </footer>
-    </main>
+    </div>
   );
 }
