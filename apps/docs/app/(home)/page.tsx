@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ComponentType, ReactNode } from 'react';
 import {
   ArrowRight,
   Blocks,
@@ -17,48 +18,135 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 
-const problems = [
-  {
-    index: '01',
-    title: 'The request is not the intent',
-    text: 'Separate what someone asked to build from the business reality they want to change.',
-  },
-  {
-    index: '02',
-    title: 'Software is one intervention',
-    text: 'Let process, people, policy, structure, information, and technology compete honestly.',
-  },
-  {
-    index: '03',
-    title: 'The reason must survive',
-    text: 'Keep every chosen intervention connected to outcomes, evidence, assumptions, and decisions.',
-  },
+type Icon = ComponentType<{ size?: number }>;
+
+type GridItem = { badge?: string | Icon; title: string; text: string };
+type RowItem = { badge: string; label?: string; title: string; text: string; tag?: string };
+type StripItem = { title: string; text: string };
+
+function GridBadge({ badge }: { badge: string | Icon }) {
+  if (typeof badge === 'string') return badge;
+  const BadgeIcon = badge;
+  return <BadgeIcon size={20} />;
+}
+
+/** Boxed card grid. Badge is a number or an icon; omit it for plain cards. */
+function Grid({ items, columns = 3 }: { items: GridItem[]; columns?: number }) {
+  return (
+    <div className="block-grid" style={{ '--grid-cols': columns } as React.CSSProperties}>
+      {items.map(({ badge, title, text }) => (
+        <article key={title}>
+          {badge && (
+            <span className="block-badge block-badge--md">
+              <GridBadge badge={badge} />
+            </span>
+          )}
+          <h3>{title}</h3>
+          <p>{text}</p>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+/** Sequenced row list. "divided" adds dividers plus optional label/tag; "compact" is a plain flex list. */
+function RowList({ items, variant = 'divided' }: { items: RowItem[]; variant?: 'divided' | 'compact' }) {
+  return (
+    <ol className={`block-rows block-rows--${variant}`}>
+      {items.map(({ badge, label, title, text, tag }) => (
+        <li key={title}>
+          <span className="block-badge block-badge--sm">{badge}</span>
+          <div>
+            {label && <p className="block-kicker">{label}</p>}
+            <h3>{title}</h3>
+            <p>{text}</p>
+          </div>
+          {tag && <em>{tag}</em>}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** Flush divider band, no card boxes. */
+function Strip({ items }: { items: StripItem[] }) {
+  return (
+    <div className="block-strip" aria-label="The Modeller promise">
+      {items.map(({ title, text }) => (
+        <div key={title}>
+          <strong>{title}</strong>
+          <span>{text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Icon-flanked banner: badge, heading block, trailing content. */
+function IconBanner({
+  icon: BannerIcon,
+  eyebrow,
+  title,
+  text,
+  trailing,
+  className,
+}: {
+  icon: Icon;
+  eyebrow: ReactNode;
+  title: string;
+  text: string;
+  trailing?: ReactNode;
+  className: string;
+}) {
+  return (
+    <section className={`block-banner ${className}`}>
+      <span className="block-badge block-badge--lg"><BannerIcon size={30} /></span>
+      <div>
+        <p className="eyebrow">{eyebrow}</p>
+        <h2>{title}</h2>
+        <p>{text}</p>
+      </div>
+      {trailing}
+    </section>
+  );
+}
+
+const promises: StripItem[] = [
+  { title: 'Understand first', text: 'Turn a requested fix into an evidence-backed problem' },
+  { title: 'Choose deliberately', text: 'Compare interventions against the outcome' },
+  { title: 'Model what matters', text: 'Carry the reason into every detailed model' }
 ];
 
-const journey = [
+const problems: GridItem[] = [
+  { badge: '01', title: 'The request is not the intent', text: 'Separate what someone asked to build from the business reality they want to change.' },
+  { badge: '02', title: 'Software is one intervention', text: 'Let process, people, policy, structure, information, and technology compete honestly.' },
+  { badge: '03', title: 'The reason must survive', text: 'Keep every chosen intervention connected to outcomes, evidence, assumptions, and decisions.' }
+];
+
+const journey: RowItem[] = [
   {
-    index: '01',
+    badge: '01',
     label: 'Discover',
     tag: 'Business discovery',
     title: 'Understand the situation',
     text: 'Facilitate the conversation. Capture affected people, current pain, desired outcomes, constraints, assumptions, risks, and open questions.',
   },
   {
-    index: '02',
+    badge: '02',
     label: 'Frame',
     tag: 'Problem brief',
     title: 'Agree what better means',
     text: 'Turn the conversation into durable intent with explicit success measures, non-goals, and evidence.',
   },
   {
-    index: '03',
+    badge: '03',
     label: 'Shape',
     tag: 'Initiative shaping',
     title: 'Compare possible interventions',
     text: 'Explore process, people, organisation, policy, information, technology, experiments, and no action.',
   },
   {
-    index: '04',
+    badge: '04',
     label: 'Design',
     tag: 'Design workspaces',
     title: 'Describe the chosen change',
@@ -66,25 +154,25 @@ const journey = [
   },
 ];
 
-const startSteps = [
+const startSteps: GridItem[] = [
   {
-    index: '01',
+    badge: '01',
     title: 'Capture the request',
     text: 'Open modeller.website, paste the change request in the words it arrived in, and name yourself and your Domain Expert.',
   },
   {
-    index: '02',
+    badge: '02',
     title: 'Invite the Domain Expert',
     text: 'Starting the Initiative gives you a shareable link. They see the question waiting for them, not the whole cockpit.',
   },
   {
-    index: '03',
+    badge: '03',
     title: 'Work through Discover and Frame',
     text: 'Ask, answer, and accept. Each accepted response becomes part of the structured record behind the Initiative.',
   },
 ];
 
-const interventionTypes = [
+const interventionTypes: GridItem[] = [
   { title: 'Process', text: 'Remove friction or change how work flows.' },
   { title: 'People', text: 'Change roles, authority, capacity, or skills.' },
   { title: 'Policy', text: 'Change the rules that shape the outcome.' },
@@ -97,22 +185,29 @@ const exampleFlow = [
   { title: 'Automate document checks', kind: 'Technology' },
 ];
 
-const capabilities = [
+const capabilities: GridItem[] = [
   {
-    icon: Braces,
+    badge: Braces,
     title: 'Model the meaning',
     text: 'Describe domains, concepts, relationships, behaviours, and constraints in a form people and tools can understand.',
   },
   {
-    icon: Layers3,
+    badge: Layers3,
     title: 'Choose the architecture',
     text: 'Apply an explicit template pack that turns intent into the conventions and boundaries your team has chosen.',
   },
   {
-    icon: RefreshCw,
+    badge: RefreshCw,
     title: 'Evolve without drift',
     text: 'Regenerate predictable structure as the model changes while keeping owned code clearly separated and safe.',
   },
+];
+
+const workflowSteps: RowItem[] = [
+  { badge: '1', title: 'Describe', text: 'Capture concepts, behaviours, rules, and relationships.' },
+  { badge: '2', title: 'Shape', text: 'Select the architecture and conventions that fit the system.' },
+  { badge: '3', title: 'Generate', text: 'Create navigable software structure with clear ownership boundaries.' },
+  { badge: '4', title: 'Evolve', text: 'Change the model and bring the implementation forward with it.' },
 ];
 
 const outcomes = [
@@ -131,9 +226,7 @@ export default function HomePage() {
           <h1>&ldquo;Build us a new system.&rdquo;</h1>
           <p className="hero-correction">That is a proposed answer. It is not the problem.</p>
           <p>
-            Modeller helps teams understand the business situation, decide what should
-            change, and model the right intervention. Sometimes that intervention is
-            software. Sometimes it is not.
+            Modeller helps teams understand the business situation, decide what should change, and model the right intervention. Sometimes that intervention is software. Sometimes it is not.
           </p>
           <div className="hero-actions">
             <a className="primary-action" href="https://modeller.website">
@@ -183,31 +276,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="promise-strip" aria-label="The Modeller promise">
-        <div><strong>Understand first</strong><span>Turn a requested fix into an evidence-backed problem</span></div>
-        <div><strong>Choose deliberately</strong><span>Compare interventions against the outcome</span></div>
-        <div><strong>Model what matters</strong><span>Carry the reason into every detailed model</span></div>
-      </section>
+      <Strip items={promises} />
 
       <section className="marketing-section" id="why-modeller">
         <div className="section-heading">
           <p className="eyebrow"><ScanSearch size={15} /> Before the architecture</p>
           <h2>A well-modelled system can still solve the wrong problem.</h2>
           <p>
-            Most change requests arrive with the solution already embedded: automate this,
-            replace that, build a portal. Modeller creates space to understand the situation
-            before the requested implementation becomes inevitable.
+            Most change requests arrive with the solution already embedded: automate this, replace that, build a portal. Modeller creates space to understand the situation before the requested implementation becomes inevitable.
           </p>
         </div>
-        <div className="capability-grid">
-          {problems.map(({ index, title, text }) => (
-            <article key={title}>
-              <span className="capability-icon capability-index">{index}</span>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </article>
-          ))}
-        </div>
+        <Grid items={problems} columns={3} />
       </section>
 
       <section className="marketing-section" id="journey">
@@ -215,24 +294,10 @@ export default function HomePage() {
           <p className="eyebrow"><GitBranch size={15} /> One initiative, distinct ways of thinking</p>
           <h2>From business reality to deliberate change.</h2>
           <p>
-            Each stage has its own purpose and interaction style. Modeller connects them
-            without collapsing discovery, shaping, and detailed modelling into one
-            oversized canvas.
+            Each stage has its own purpose and interaction style. Modeller connects them without collapsing discovery, shaping, and detailed modelling into one oversized canvas.
           </p>
         </div>
-        <ol className="journey-rows">
-          {journey.map(({ index, label, tag, title, text }) => (
-            <li key={label}>
-              <span className="journey-index">{index}</span>
-              <div>
-                <p className="journey-label">{label}</p>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </div>
-              <em>{tag}</em>
-            </li>
-          ))}
-        </ol>
+        <RowList items={journey} variant="divided" />
       </section>
 
       <section className="marketing-section" id="start-discovery">
@@ -245,15 +310,7 @@ export default function HomePage() {
             the situation it came from.
           </p>
         </div>
-        <div className="capability-grid">
-          {startSteps.map(({ index, title, text }) => (
-            <article key={title}>
-              <span className="capability-icon capability-index">{index}</span>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </article>
-          ))}
-        </div>
+        <Grid items={startSteps} columns={3} />
         <div className="hero-actions">
           <a className="primary-action" href="https://modeller.website">
             Start a Discovery Session <ArrowRight size={17} />
@@ -269,14 +326,7 @@ export default function HomePage() {
           <p className="eyebrow"><Blocks size={15} /> More than an IT solution</p>
           <h2>The right response may cross several kinds of change.</h2>
         </div>
-        <div className="intervention-grid">
-          {interventionTypes.map(({ title, text }) => (
-            <article key={title}>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </article>
-          ))}
-        </div>
+        <Grid items={interventionTypes} columns={4} />
         <div className="accent-panel">
           <div className="accent-panel-kicker">Example initiative</div>
           <h3>Reduce customer approval time from twelve days to two.</h3>
@@ -299,15 +349,7 @@ export default function HomePage() {
             actors, capabilities, behaviours, workflows, rules, decisions, and lifecycles.
           </p>
         </div>
-        <div className="capability-grid">
-          {capabilities.map(({ icon: Icon, title, text }) => (
-            <article key={title}>
-              <span className="capability-icon"><Icon size={22} /></span>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </article>
-          ))}
-        </div>
+        <Grid items={capabilities} columns={3} />
       </section>
 
       <section className="workflow-section">
@@ -318,12 +360,7 @@ export default function HomePage() {
             System Design connects the vocabulary of your domain to the structure of your
             application without hiding the decisions in between.
           </p>
-          <ol className="workflow-steps">
-            <li><span>1</span><div><strong>Describe</strong><p>Capture concepts, behaviours, rules, and relationships.</p></div></li>
-            <li><span>2</span><div><strong>Shape</strong><p>Select the architecture and conventions that fit the system.</p></div></li>
-            <li><span>3</span><div><strong>Generate</strong><p>Create navigable software structure with clear ownership boundaries.</p></div></li>
-            <li><span>4</span><div><strong>Evolve</strong><p>Change the model and bring the implementation forward with it.</p></div></li>
-          </ol>
+          <RowList items={workflowSteps} variant="compact" />
         </div>
         <div className="accent-panel">
           <p className="accent-panel-kicker">What teams gain</p>
@@ -334,34 +371,27 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="download-section">
-        <div className="download-icon"><Download size={30} /></div>
-        <div>
-          <p className="eyebrow">Get System Design <span className="coming-soon-badge">Coming soon</span></p>
-          <h2>A desktop app for the System Design workflow.</h2>
-          <p>
-            Model, generate, and review projects without leaving your machine. The
-            System Design desktop app for macOS, Windows, and Linux is on its way.
-          </p>
-        </div>
-        <span className="primary-action download-action" aria-disabled="true">
-          Download <span className="coming-soon-badge">Coming soon</span>
-        </span>
-      </section>
+      <IconBanner
+        className="download-banner"
+        icon={Download}
+        eyebrow={<>Get System Design <span className="coming-soon-badge">Coming soon</span></>}
+        title="A desktop app for the System Design workflow."
+        text="Model, generate, and review projects without leaving your machine. The System Design desktop app for macOS, Windows, and Linux is on its way."
+        trailing={
+          <span className="primary-action download-action" aria-disabled="true">
+            Download <span className="coming-soon-badge">Coming soon</span>
+          </span>
+        }
+      />
 
-      <section className="ai-section">
-        <div className="ai-icon"><Bot size={30} /></div>
-        <div>
-          <p className="eyebrow">AI grounded in the initiative</p>
-          <h2>Help the team think without making the decision for them.</h2>
-          <p>
-            AI can propose questions, expose gaps, compare interventions, and explain
-            traceability. People remain responsible for accepting the problem statement,
-            choosing the response, and owning the resulting design.
-          </p>
-        </div>
-        <ShieldCheck className="ai-shield" size={72} aria-hidden="true" />
-      </section>
+      <IconBanner
+        className="ai-banner"
+        icon={Bot}
+        eyebrow="AI grounded in the initiative"
+        title="Help the team think without making the decision for them."
+        text="AI can propose questions, expose gaps, compare interventions, and explain traceability. People remain responsible for accepting the problem statement, choosing the response, and owning the resulting design."
+        trailing={<ShieldCheck className="ai-shield" size={56} aria-hidden="true" />}
+      />
 
       <section className="final-cta">
         <p className="eyebrow">Model the change</p>
