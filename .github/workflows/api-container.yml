@@ -80,22 +80,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Pull Vercel environment
-        run: npx vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID_API }}
-
-      - name: Build on Vercel
-        run: npx vercel build --prod --token=$VERCEL_TOKEN
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID_API }}
-
+      # Prefer remote deploy over `vercel build` + `--prebuilt` so Sensitive
+      # project env vars stay available in Vercel's build container.
       - name: Deploy to Vercel
-        run: npx vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+        run: npx vercel deploy --prod --yes --token=$VERCEL_TOKEN
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
