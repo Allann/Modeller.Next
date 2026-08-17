@@ -7,4 +7,4 @@ export const proxy = auth((request) => {
   response.cookies.set('modeller_internal', '1', { domain: '.modeller.website', path: '/', secure: true, sameSite: 'lax', maxAge: 31536000 });
   return response;
 });
-export const config = { matcher: ['/((?!api/auth|sign-in|_next/static|_next/image|favicon.ico).*)'] };
+export const config = { matcher: ['/((?!api/auth|sign-in|_next/static|_next/image|favicon.ico|icon).*)'] };
