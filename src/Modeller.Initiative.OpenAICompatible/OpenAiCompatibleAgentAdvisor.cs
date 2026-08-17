@@ -125,7 +125,10 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
     private async Task<AgentAdvisorResult<T>> CompleteAsync<T>(
         string operationName, string systemPrompt, string userPrompt, Func<JsonElement, T> parse, CancellationToken cancellationToken)
     {
-        var apiKey = options.RequestApiKeyProvider?.Invoke() ?? options.ApiKey;
+        var requestApiKey = options.RequestApiKeyProvider?.Invoke();
+        var usesCallerKey = !string.IsNullOrWhiteSpace(requestApiKey);
+        var model = usesCallerKey ? options.Model : options.FreeModel ?? options.Model;
+        var apiKey = requestApiKey ?? options.HostApiKeyProvider?.Invoke() ?? options.ApiKey;
         if (options.RequireApiKey && string.IsNullOrWhiteSpace(apiKey))
         {
             return AgentAdvisorResult<T>.Failure(
@@ -143,12 +146,13 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(options.Timeout);
         using var activity = ActivitySource.StartActivity($"agent.{operationName}", ActivityKind.Client);
-        activity?.SetTag("agent.model", options.Model);
+        activity?.SetTag("agent.model", model);
+        activity?.SetTag("agent.caller_funded", usesCallerKey);
         activity?.SetTag("server.address", options.BaseUrl.Host);
 
         try
         {
-            var httpRequest = BuildRequest(systemPrompt, userPrompt, apiKey);
+            var httpRequest = BuildRequest(systemPrompt, userPrompt, model, apiKey);
             var response = await httpClient.SendAsync(httpRequest, timeout.Token);
             activity?.SetTag("http.response.status_code", (int)response.StatusCode);
             if (!response.IsSuccessStatusCode)
@@ -193,13 +197,13 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
         }
     }
 
-    private HttpRequestMessage BuildRequest(string systemPrompt, string userPrompt, string? apiKey)
+    private HttpRequestMessage BuildRequest(string systemPrompt, string userPrompt, string model, string? apiKey)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, BuildEndpointUri())
         {
             Content = JsonContent.Create(new
             {
-                model = options.Model,
+                model,
                 temperature = 0,
                 max_tokens = options.MaxOutputTokens,
                 response_format = new { type = "json_object" },

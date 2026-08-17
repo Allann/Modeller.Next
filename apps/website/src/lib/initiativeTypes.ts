@@ -233,6 +233,7 @@ export interface AgentAdvisorStatusResponse {
   available: boolean;
   model: string | null;
   requiresApiKey: boolean;
+  freeModel: string | null;
 }
 
 export type InitiativePhase = 'Discover' | 'Frame' | 'Shape' | 'Design';

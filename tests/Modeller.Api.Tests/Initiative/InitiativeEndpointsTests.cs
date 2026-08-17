@@ -86,6 +86,7 @@ public sealed class InitiativeEndpointsTests : IDisposable
         Assert.False(status!.Available);
         Assert.Null(status.Model);
         Assert.True(status.RequiresApiKey);
+        Assert.Null(status.FreeModel);
     }
 
     [Fact]

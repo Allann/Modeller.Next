@@ -82,6 +82,60 @@ public class OpenAiCompatibleAgentAdvisorTests
     }
 
     [Fact]
+    public async Task ProposeQuestionAsync_WithoutCallerKey_UsesOnlyConfiguredFreeModelAndHostKey()
+    {
+        JsonElement? requestBody = null;
+        string? authorization = null;
+        var handler = new FakeHandler(request =>
+        {
+            requestBody = request.Content!.ReadFromJsonAsync<JsonElement>().GetAwaiter().GetResult();
+            authorization = request.Headers.Authorization?.Parameter;
+            return FakeChatCompletion("""{"text": "What is painful?"}""").Response(request);
+        });
+        var advisor = new OpenAiCompatibleAgentAdvisor(new HttpClient(handler), Options with
+        {
+            ApiKey = null,
+            RequestApiKeyProvider = () => null,
+            HostApiKeyProvider = () => "host-oidc",
+            FreeModel = "alibaba/qwen3.8-27b",
+        });
+
+        var result = await advisor.ProposeQuestionAsync(
+            new ProposeQuestionRequest("Build a new system", EmptyFields(), InitiativeField.PainPoints), TestContext.Current.CancellationToken);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("alibaba/qwen3.8-27b", requestBody!.Value.GetProperty("model").GetString());
+        Assert.Equal("host-oidc", authorization);
+    }
+
+    [Fact]
+    public async Task ProposeQuestionAsync_WithCallerKey_UsesPremiumModelAndNeverHostKey()
+    {
+        JsonElement? requestBody = null;
+        string? authorization = null;
+        var handler = new FakeHandler(request =>
+        {
+            requestBody = request.Content!.ReadFromJsonAsync<JsonElement>().GetAwaiter().GetResult();
+            authorization = request.Headers.Authorization?.Parameter;
+            return FakeChatCompletion("""{"text": "What is painful?"}""").Response(request);
+        });
+        var advisor = new OpenAiCompatibleAgentAdvisor(new HttpClient(handler), Options with
+        {
+            ApiKey = null,
+            RequestApiKeyProvider = () => "caller-key",
+            HostApiKeyProvider = () => "host-oidc",
+            FreeModel = "alibaba/qwen3.8-27b",
+        });
+
+        var result = await advisor.ProposeQuestionAsync(
+            new ProposeQuestionRequest("Build a new system", EmptyFields(), InitiativeField.PainPoints), TestContext.Current.CancellationToken);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("local-model", requestBody!.Value.GetProperty("model").GetString());
+        Assert.Equal("caller-key", authorization);
+    }
+
+    [Fact]
     public async Task ProposeQuestionAsync_FencedCodeBlockResponse_IsUnwrapped()
     {
         var advisor = CreateAdvisor(FakeChatCompletion("```json\n{\"text\": \"Who is affected?\"}\n```"));

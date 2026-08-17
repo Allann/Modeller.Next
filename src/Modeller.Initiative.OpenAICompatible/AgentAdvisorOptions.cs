@@ -22,5 +22,11 @@ public sealed record AgentAdvisorOptions(Uri BaseUrl, string Model, string? ApiK
     /// </summary>
     public Func<string?>? RequestApiKeyProvider { get; init; }
 
+    /// <summary>Host authentication used only with <see cref="FreeModel"/> when no caller key exists.</summary>
+    public Func<string?>? HostApiKeyProvider { get; init; }
+
+    /// <summary>A Gateway model verified as free for anonymous requests. Null requires a caller key.</summary>
+    public string? FreeModel { get; init; }
+
     public bool RequireApiKey { get; init; } = true;
 }

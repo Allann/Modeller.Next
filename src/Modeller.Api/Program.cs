@@ -43,7 +43,7 @@ if (!string.IsNullOrWhiteSpace(agentBaseUrl))
     var timeoutSeconds = builder.Configuration.GetValue("Agent:TimeoutSeconds", 30);
     var maxOutputTokens = builder.Configuration.GetValue("Agent:MaxOutputTokens", 1200);
     var maxPromptCharacters = builder.Configuration.GetValue("Agent:MaxPromptCharacters", 24_000);
-    var requireRequestApiKey = builder.Configuration.GetValue("Agent:RequireRequestApiKey", true);
+    var freeModel = builder.Configuration["Agent:FreeModel"];
     if (timeoutSeconds is < 1 or > 120) throw new InvalidOperationException("Agent:TimeoutSeconds must be from 1 to 120.");
     if (maxOutputTokens is < 100 or > 8_000) throw new InvalidOperationException("Agent:MaxOutputTokens must be from 100 to 8000.");
     if (maxPromptCharacters is < 1_000 or > 200_000) throw new InvalidOperationException("Agent:MaxPromptCharacters must be from 1000 to 200000.");
@@ -56,27 +56,27 @@ if (!string.IsNullOrWhiteSpace(agentBaseUrl))
         return new AgentAdvisorOptions(
             new Uri(agentBaseUrl),
             agentModel,
-            requireRequestApiKey
-                ? null
-                : builder.Configuration["Agent:ApiKey"] ?? builder.Configuration["AI_GATEWAY_API_KEY"])
+            builder.Configuration["Agent:ApiKey"] ?? builder.Configuration["AI_GATEWAY_API_KEY"])
         {
             Timeout = TimeSpan.FromSeconds(timeoutSeconds),
             MaxOutputTokens = maxOutputTokens,
             MaxPromptCharacters = maxPromptCharacters,
             RequireApiKey = true,
-            RequestApiKeyProvider = requireRequestApiKey
-                ? () => httpContextAccessor.HttpContext?.Request.Headers["X-Agent-Api-Key"].FirstOrDefault()
-                : null,
+            FreeModel = freeModel,
+            RequestApiKeyProvider = () => httpContextAccessor.HttpContext?.Request.Headers["X-Agent-Api-Key"].FirstOrDefault(),
+            HostApiKeyProvider = () =>
+                httpContextAccessor.HttpContext?.Request.Headers["X-Vercel-Oidc-Token"].FirstOrDefault()
+                ?? builder.Configuration["VERCEL_OIDC_TOKEN"],
         };
     });
-    builder.Services.AddSingleton(new AgentAdvisorStatusResponse(true, agentModel, requireRequestApiKey));
+    builder.Services.AddSingleton(new AgentAdvisorStatusResponse(true, agentModel, freeModel is null, freeModel));
     builder.Services.AddHttpClient<IAgentAdvisor, OpenAiCompatibleAgentAdvisor>(client =>
         client.Timeout = Timeout.InfiniteTimeSpan);
 }
 else
 {
     builder.Services.AddSingleton<IAgentAdvisor, HumanOnlyAgentAdvisor>();
-    builder.Services.AddSingleton(new AgentAdvisorStatusResponse(false, null, true));
+    builder.Services.AddSingleton(new AgentAdvisorStatusResponse(false, null, true, null));
 }
 
 var initiativeRepository = builder.Configuration["Initiative:Repository"];
