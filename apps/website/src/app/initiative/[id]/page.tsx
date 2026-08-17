@@ -10,6 +10,7 @@ import { StructuredFieldsSection } from '@/components/initiative/StructuredField
 import { GateSection } from '@/components/initiative/GateSection';
 import { InterventionsSection } from '@/components/initiative/InterventionsSection';
 import { FinalizeSection } from '@/components/initiative/FinalizeSection';
+import { CopyLinkButton } from '@/components/initiative/CopyLinkButton';
 
 export default function FacilitatorCockpitPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -44,7 +45,7 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
       )}
       {respondUrl && (
         <p className="hero-note">
-          Domain Expert link: <code>{respondUrl}</code>
+          Domain Expert link: <a href={respondUrl}>{respondUrl}</a> <CopyLinkButton url={respondUrl} />
         </p>
       )}
       {actionError && <p className="form-error" role="alert">{actionError}</p>}

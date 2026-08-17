@@ -9,12 +9,20 @@ export function FinalizeSection({ session, run }: { session: InitiativeSessionDt
   const [reason, setReason] = useState('');
 
   if (session.finalization) {
+    const archiveExpiresAt = new Date(
+      new Date(session.finalization.finalizedAt).getTime() + 7 * 24 * 60 * 60 * 1000,
+    );
+
     return (
       <section aria-label="Finalization">
-        <h2>Finalized</h2>
+        <h2>Archived</h2>
+        <p>
+          This Initiative is available until {archiveExpiresAt.toLocaleString()}. Use the{' '}
+          <a href={`/initiative/${session.id}`}>Facilitator link</a> to return here and reopen it during this period.
+        </p>
         <pre>{session.finalization.markdownSnapshot}</pre>
         <button className="secondary-action" onClick={() => void run(() => initiativeApi.reopen(session.id))}>
-          Reopen
+          Reopen archived Initiative
         </button>
       </section>
     );

@@ -83,6 +83,23 @@ export type GateCheck =
   | 'SelectedTechnologyInterventionsHaveRationale'
   | 'NoActionWasConsidered';
 
+export const GATE_CHECK_LABELS: Record<GateCheck, string> = {
+  OriginalChangeRequestCaptured: 'Original change request captured',
+  ProblemStatementDescribesBusinessProblem: 'Problem statement describes the business problem',
+  AffectedUsersNamed: 'Affected users named',
+  PainPointsAreConcrete: 'Pain points are concrete',
+  OutcomesAreObservable: 'Outcomes are observable',
+  SuccessCriteriaAreUnderstandable: 'Success criteria are understandable',
+  NonGoalsAreListed: 'Non-goals are listed',
+  ConstraintsAreListed: 'Constraints are listed',
+  AssumptionsAreListed: 'Assumptions are listed',
+  OpenQuestionsAreListed: 'Open questions are listed',
+  RisksAreListed: 'Risks are listed',
+  NoUnresolvedSolutionLedLanguage: 'No unresolved solution-led language',
+  SelectedTechnologyInterventionsHaveRationale: 'Selected technology interventions have a rationale',
+  NoActionWasConsidered: 'No action was considered',
+};
+
 export const CHECKS_BY_GATE: Record<GateKind, GateCheck[]> = {
   Discovery: [
     'OriginalChangeRequestCaptured',

@@ -24,6 +24,40 @@ public sealed class UpstashInitiativeSessionRepositoryTests
         Assert.Equal(session.OriginalChangeRequest, loaded.OriginalChangeRequest);
         Assert.Contains(loaded.Participants, participant =>
             participant.Role == ParticipantRole.Facilitator && participant.DisplayName == "Alex");
+        Assert.All(redis.SetCommands, command => Assert.Equal(["EX", "604800"], command[3..]));
+    }
+
+    [Fact]
+    public async Task SaveAsync_FinalizedSession_MovesItToTheSevenDayArchive()
+    {
+        var redis = new FakeUpstashHandler();
+        var session = InitiativeSession.CreateNew("Build us a new approval system");
+        var repository = CreateRepository(redis);
+
+        await repository.SaveAsync(session, TestContext.Current.CancellationToken);
+        session = session.FinalizeInitiative(DateTimeOffset.Parse("2026-08-17T00:00:00Z"), null);
+        await repository.SaveAsync(session, TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain($"modeller:initiative:{session.Id.Value:D}", redis.Keys);
+        Assert.Contains($"modeller:initiative:archive:{session.Id.Value:D}", redis.Keys);
+        Assert.NotNull((await repository.LoadAsync(session.Id, TestContext.Current.CancellationToken))?.Finalization);
+        Assert.All(redis.SetCommands, command => Assert.Equal(["EX", "604800"], command[3..]));
+    }
+
+    [Fact]
+    public async Task SaveAsync_ReopenedSession_MovesItBackToTheActiveStore()
+    {
+        var redis = new FakeUpstashHandler();
+        var repository = CreateRepository(redis);
+        var session = InitiativeSession.CreateNew("Build us a new approval system")
+            .FinalizeInitiative(DateTimeOffset.Parse("2026-08-17T00:00:00Z"), null);
+        await repository.SaveAsync(session, TestContext.Current.CancellationToken);
+
+        await repository.SaveAsync(session.Reopen(), TestContext.Current.CancellationToken);
+
+        Assert.Contains($"modeller:initiative:{session.Id.Value:D}", redis.Keys);
+        Assert.DoesNotContain($"modeller:initiative:archive:{session.Id.Value:D}", redis.Keys);
+        Assert.Null((await repository.LoadAsync(session.Id, TestContext.Current.CancellationToken))?.Finalization);
     }
 
     [Fact]
@@ -54,33 +88,53 @@ public sealed class UpstashInitiativeSessionRepositoryTests
     {
         private readonly Dictionary<string, string> _values = [];
 
+        public IEnumerable<string> Keys => _values.Keys;
+
+        public List<string[]> SetCommands { get; } = [];
+
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            var command = JsonSerializer.Deserialize<string[]>(
-                await request.Content!.ReadAsStringAsync(cancellationToken))!;
+            var content = await request.Content!.ReadAsStringAsync(cancellationToken);
             string response;
 
             if (error is not null)
             {
-                response = JsonSerializer.Serialize(new { error });
+                response = request.RequestUri!.AbsolutePath.EndsWith("multi-exec", StringComparison.Ordinal)
+                    ? JsonSerializer.Serialize(new[] { new { error } })
+                    : JsonSerializer.Serialize(new { error });
             }
-            else if (command[0] == "SET")
+            else if (request.RequestUri!.AbsolutePath.EndsWith("multi-exec", StringComparison.Ordinal))
             {
-                _values[command[1]] = command[2];
-                response = "{\"result\":\"OK\"}";
+                var commands = JsonSerializer.Deserialize<string[][]>(content)!;
+                response = JsonSerializer.Serialize(commands.Select(Execute));
             }
             else
             {
-                _values.TryGetValue(command[1], out var value);
-                response = JsonSerializer.Serialize(new { result = value });
+                response = JsonSerializer.Serialize(Execute(JsonSerializer.Deserialize<string[]>(content)!));
             }
 
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(response, Encoding.UTF8, "application/json"),
             };
+        }
+
+        private object Execute(string[] command)
+        {
+            if (command[0] == "SET")
+            {
+                SetCommands.Add(command);
+                _values[command[1]] = command[2];
+                return new { result = (object?)"OK" };
+            }
+
+            if (command[0] == "DEL")
+                return new { result = (object?)(_values.Remove(command[1]) ? 1 : 0) };
+
+            _values.TryGetValue(command[1], out var value);
+            return new { result = (object?)value };
         }
     }
 }
