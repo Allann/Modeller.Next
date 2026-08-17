@@ -39,9 +39,32 @@ else
     builder.Services.AddSingleton<IAgentAdvisor, HumanOnlyAgentAdvisor>();
 }
 
-var initiativeStorageRoot = builder.Configuration["Initiative:StorageRoot"]
-    ?? Path.Combine(AppContext.BaseDirectory, "data", "initiative");
-builder.Services.AddSingleton<IInitiativeSessionRepository>(new JsonFileInitiativeSessionRepository(initiativeStorageRoot));
+var initiativeRepository = builder.Configuration["Initiative:Repository"];
+var useUpstash = string.Equals(initiativeRepository, "Upstash", StringComparison.OrdinalIgnoreCase);
+var upstashUrl = builder.Configuration["KV_REST_API_URL"]
+    ?? builder.Configuration["UPSTASH_REDIS_REST_URL"];
+var upstashToken = builder.Configuration["KV_REST_API_TOKEN"]
+    ?? builder.Configuration["UPSTASH_REDIS_REST_TOKEN"];
+if (useUpstash && !string.IsNullOrWhiteSpace(upstashUrl) && !string.IsNullOrWhiteSpace(upstashToken))
+{
+    builder.Services.AddHttpClient<IInitiativeSessionRepository, UpstashInitiativeSessionRepository>(client =>
+    {
+        client.BaseAddress = new Uri(upstashUrl.TrimEnd('/') + "/");
+        client.Timeout = TimeSpan.FromSeconds(10);
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", upstashToken);
+    });
+}
+else
+{
+    if (useUpstash && string.Equals(builder.Configuration["VERCEL"], "1", StringComparison.Ordinal))
+        throw new InvalidOperationException(
+            "KV_REST_API_URL and KV_REST_API_TOKEN are required when Initiative:Repository is Upstash on Vercel.");
+
+    var initiativeStorageRoot = builder.Configuration["Initiative:StorageRoot"]
+        ?? Path.Combine(AppContext.BaseDirectory, "data", "initiative");
+    builder.Services.AddSingleton<IInitiativeSessionRepository>(new JsonFileInitiativeSessionRepository(initiativeStorageRoot));
+}
 builder.Services.AddScoped<InitiativePipeline>();
 builder.Services.AddSignalR();
 // ViewKind must serialize as a stable name, not an ordinal int — the ordinal is an
