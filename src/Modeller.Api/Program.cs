@@ -40,15 +40,34 @@ else
 var agentBaseUrl = builder.Configuration["Agent:BaseUrl"];
 if (!string.IsNullOrWhiteSpace(agentBaseUrl))
 {
+    var timeoutSeconds = builder.Configuration.GetValue("Agent:TimeoutSeconds", 30);
+    var maxOutputTokens = builder.Configuration.GetValue("Agent:MaxOutputTokens", 1200);
+    var maxPromptCharacters = builder.Configuration.GetValue("Agent:MaxPromptCharacters", 24_000);
+    if (timeoutSeconds is < 1 or > 120) throw new InvalidOperationException("Agent:TimeoutSeconds must be from 1 to 120.");
+    if (maxOutputTokens is < 100 or > 8_000) throw new InvalidOperationException("Agent:MaxOutputTokens must be from 100 to 8000.");
+    if (maxPromptCharacters is < 1_000 or > 200_000) throw new InvalidOperationException("Agent:MaxPromptCharacters must be from 1000 to 200000.");
+
+    var agentModel = builder.Configuration["Agent:Model"]
+        ?? throw new InvalidOperationException("Agent:Model is required when Agent:BaseUrl is set.");
     builder.Services.AddSingleton(new AgentAdvisorOptions(
         new Uri(agentBaseUrl),
-        builder.Configuration["Agent:Model"] ?? throw new InvalidOperationException("Agent:Model is required when Agent:BaseUrl is set."),
-        builder.Configuration["Agent:ApiKey"]));
-    builder.Services.AddHttpClient<IAgentAdvisor, OpenAiCompatibleAgentAdvisor>();
+        agentModel,
+        builder.Configuration["Agent:ApiKey"]
+            ?? builder.Configuration["AI_GATEWAY_API_KEY"]
+            ?? builder.Configuration["VERCEL_OIDC_TOKEN"])
+    {
+        Timeout = TimeSpan.FromSeconds(timeoutSeconds),
+        MaxOutputTokens = maxOutputTokens,
+        MaxPromptCharacters = maxPromptCharacters,
+    });
+    builder.Services.AddSingleton(new AgentAdvisorStatusResponse(true, agentModel));
+    builder.Services.AddHttpClient<IAgentAdvisor, OpenAiCompatibleAgentAdvisor>(client =>
+        client.Timeout = Timeout.InfiniteTimeSpan);
 }
 else
 {
     builder.Services.AddSingleton<IAgentAdvisor, HumanOnlyAgentAdvisor>();
+    builder.Services.AddSingleton(new AgentAdvisorStatusResponse(false, null));
 }
 
 var initiativeRepository = builder.Configuration["Initiative:Repository"];

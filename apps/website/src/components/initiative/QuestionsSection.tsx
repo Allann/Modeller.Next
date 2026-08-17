@@ -9,10 +9,12 @@ export function QuestionsSection({
   session,
   facilitatorId,
   run,
+  aiAvailable,
 }: {
   session: InitiativeSessionDto;
   facilitatorId: string | undefined;
   run: RunAction;
+  aiAvailable: boolean;
 }) {
   const [field, setField] = useState<InitiativeField>('ProblemStatement');
   const [text, setText] = useState('');
@@ -39,7 +41,12 @@ export function QuestionsSection({
               </option>
             ))}
           </select>
-          <input placeholder="Question text (leave blank to ask AI)" value={text} onChange={(event) => setText(event.target.value)} />
+          <input
+            placeholder={aiAvailable ? 'Question text (leave blank to ask AI)' : 'Question text'}
+            required={!aiAvailable}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+          />
           <button className="secondary-action" type="submit">
             Propose
           </button>

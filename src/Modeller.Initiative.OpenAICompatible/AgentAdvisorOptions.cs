@@ -9,4 +9,10 @@ namespace Modeller.Initiative.OpenAICompatible;
 public sealed record AgentAdvisorOptions(Uri BaseUrl, string Model, string? ApiKey = null)
 {
     public TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>Hard ceiling for one model response. Initiative advice is short structured JSON.</summary>
+    public int MaxOutputTokens { get; init; } = 1200;
+
+    /// <summary>Reject unexpectedly large prompts before they can create unbounded provider cost.</summary>
+    public int MaxPromptCharacters { get; init; } = 24_000;
 }

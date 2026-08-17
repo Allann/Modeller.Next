@@ -125,6 +125,13 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
     private async Task<AgentAdvisorResult<T>> CompleteAsync<T>(
         string operationName, string systemPrompt, string userPrompt, Func<JsonElement, T> parse, CancellationToken cancellationToken)
     {
+        if (systemPrompt.Length + userPrompt.Length > options.MaxPromptCharacters)
+        {
+            return AgentAdvisorResult<T>.Failure(
+                AgentEvaluationStatus.RequestFailed,
+                "The Initiative context is too large for the configured Agent Advisor limit.");
+        }
+
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(options.Timeout);
         using var activity = ActivitySource.StartActivity($"agent.{operationName}", ActivityKind.Client);
@@ -143,6 +150,8 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
             }
 
             var completion = await response.Content.ReadFromJsonAsync<ChatCompletionResponse>(JsonOptions, timeout.Token);
+            activity?.SetTag("gen_ai.usage.input_tokens", completion?.Usage?.PromptTokens);
+            activity?.SetTag("gen_ai.usage.output_tokens", completion?.Usage?.CompletionTokens);
             var content = completion?.Choices.FirstOrDefault()?.Message.Content;
             if (string.IsNullOrWhiteSpace(content))
             {
@@ -184,6 +193,7 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
             {
                 model = options.Model,
                 temperature = 0,
+                max_tokens = options.MaxOutputTokens,
                 response_format = new { type = "json_object" },
                 messages = new[]
                 {
@@ -297,7 +307,8 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
         return payload.EndsWith("```", StringComparison.Ordinal) ? payload[..^3].Trim() : payload;
     }
 
-    private sealed record ChatCompletionResponse(IReadOnlyList<ChatChoice> Choices);
+    private sealed record ChatCompletionResponse(IReadOnlyList<ChatChoice> Choices, ChatUsage? Usage = null);
     private sealed record ChatChoice(ChatMessage Message);
     private sealed record ChatMessage(string Content);
+    private sealed record ChatUsage(int PromptTokens, int CompletionTokens);
 }

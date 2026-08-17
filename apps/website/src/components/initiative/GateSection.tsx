@@ -5,7 +5,7 @@ import { CHECKS_BY_GATE, GATE_CHECK_LABELS, type GateCheckResultDto, type GateKi
 import { initiativeApi } from '@/lib/initiativeApi';
 import type { RunAction } from './types';
 
-export function GateSection({ kind, session, run }: { kind: GateKind; session: InitiativeSessionDto; run: RunAction }) {
+export function GateSection({ kind, session, run, aiAvailable }: { kind: GateKind; session: InitiativeSessionDto; run: RunAction; aiAvailable: boolean }) {
   const evaluation = kind === 'Discovery' ? session.latestDiscoveryGateEvaluation : session.latestShapeGateEvaluation;
   const [manualResults, setManualResults] = useState<Record<string, { passed: boolean; reason: string }>>({});
 
@@ -27,9 +27,10 @@ export function GateSection({ kind, session, run }: { kind: GateKind; session: I
       <div className="inline-form">
         <button
           className="secondary-action"
+          disabled={!aiAvailable}
           onClick={() => void run(() => initiativeApi.recordGateEvaluation(session.id, kind, null))}
         >
-          Ask AI to evaluate
+          {aiAvailable ? 'Ask AI to evaluate' : 'AI evaluation unavailable'}
         </button>
       </div>
 

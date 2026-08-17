@@ -77,6 +77,17 @@ public sealed class InitiativeEndpointsTests : IDisposable
     }
 
     [Fact]
+    public async Task GetAgentStatus_WithNoAgentConfigured_ReturnsUnavailableWithoutSecrets()
+    {
+        var response = await _client.GetAsync("/v1/initiative/agent-status", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var status = await response.Content.ReadFromJsonAsync<AgentAdvisorStatusResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
+        Assert.False(status!.Available);
+        Assert.Null(status.Model);
+    }
+
+    [Fact]
     public async Task Create_MissingRequiredField_Returns400WithStructuredEnvelope()
     {
         var response = await PostAsync("/v1/initiative", new CreateInitiativeRequest("", "Alex", "Jordan"), TestContext.Current.CancellationToken);

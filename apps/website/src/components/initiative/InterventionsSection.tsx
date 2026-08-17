@@ -5,7 +5,7 @@ import { ALL_INTERVENTION_TYPES, type InitiativeSessionDto, type InterventionTyp
 import { InitiativeApiError, initiativeApi } from '@/lib/initiativeApi';
 import type { RunAction } from './types';
 
-export function InterventionsSection({ id, session, run }: { id: string; session: InitiativeSessionDto; run: RunAction }) {
+export function InterventionsSection({ id, session, run, aiAvailable }: { id: string; session: InitiativeSessionDto; run: RunAction; aiAvailable: boolean }) {
   const [type, setType] = useState<InterventionType>('Process');
   const [description, setDescription] = useState('');
   const [rationale, setRationale] = useState('');
@@ -27,8 +27,8 @@ export function InterventionsSection({ id, session, run }: { id: string; session
     <section aria-label="Shape: interventions">
       <h2>Shape: interventions</h2>
       <div className="inline-form">
-        <button className="secondary-action" onClick={() => void askForSuggestions()}>
-          Ask AI for candidate interventions
+        <button className="secondary-action" disabled={!aiAvailable} onClick={() => void askForSuggestions()}>
+          {aiAvailable ? 'Ask AI for candidate interventions' : 'AI suggestions unavailable'}
         </button>
       </div>
       {suggestionsError && <p className="hero-note">{suggestionsError}</p>}

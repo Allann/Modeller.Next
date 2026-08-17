@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Modeller.Initiative;
 using Modeller.Initiative.OpenAICompatible;
 using Xunit;
@@ -21,6 +22,42 @@ public class OpenAiCompatibleAgentAdvisorTests
         Assert.True(result.Succeeded);
         Assert.Equal("What is painful about the current process?", result.Value!.Text);
         Assert.Equal(InitiativeField.PainPoints, result.Value.Field);
+    }
+
+    [Fact]
+    public async Task ProposeQuestionAsync_RequestIncludesConfiguredOutputLimit()
+    {
+        JsonElement? requestBody = null;
+        var handler = new FakeHandler(request =>
+        {
+            requestBody = request.Content!.ReadFromJsonAsync<JsonElement>().GetAwaiter().GetResult();
+            return FakeChatCompletion("""{"text": "What is painful?"}""").Response(request);
+        });
+        var advisor = new OpenAiCompatibleAgentAdvisor(new HttpClient(handler), Options with { MaxOutputTokens = 321 });
+
+        await advisor.ProposeQuestionAsync(
+            new ProposeQuestionRequest("Build a new system", EmptyFields(), InitiativeField.PainPoints), TestContext.Current.CancellationToken);
+
+        Assert.Equal(321, requestBody!.Value.GetProperty("max_tokens").GetInt32());
+    }
+
+    [Fact]
+    public async Task ProposeQuestionAsync_ContextAboveConfiguredLimit_DoesNotCallProvider()
+    {
+        var called = false;
+        var handler = new FakeHandler(_ =>
+        {
+            called = true;
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+        var advisor = new OpenAiCompatibleAgentAdvisor(new HttpClient(handler), Options with { MaxPromptCharacters = 100 });
+
+        var result = await advisor.ProposeQuestionAsync(
+            new ProposeQuestionRequest("Build a new system", EmptyFields(), InitiativeField.PainPoints), TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(AgentEvaluationStatus.RequestFailed, result.Status);
+        Assert.False(called);
     }
 
     [Fact]
@@ -153,6 +190,8 @@ public class OpenAiCompatibleAgentAdvisorTests
 
     private sealed class FakeHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
     {
+        public HttpResponseMessage Response(HttpRequestMessage request) => respond(request);
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(respond(request));
     }

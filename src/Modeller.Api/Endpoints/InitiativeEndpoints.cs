@@ -14,6 +14,8 @@ public static class InitiativeEndpoints
     {
         var group = app.MapGroup("/v1/initiative").WithTags("Initiative");
 
+        group.MapGet("/agent-status", (AgentAdvisorStatusResponse status) => Results.Ok(status));
+
         group.MapPost("/", (HttpContext context, InitiativePipeline pipeline, CancellationToken cancellationToken) =>
             RespondToBody<CreateInitiativeRequest>(context, cancellationToken, request => pipeline.CreateAsync(request, cancellationToken)));
 

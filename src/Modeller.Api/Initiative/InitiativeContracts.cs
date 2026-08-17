@@ -26,6 +26,9 @@ public sealed record AgentInterventionSuggestionDto(string Type, string Descript
 
 public sealed record AgentInterventionSuggestionsResponse(IReadOnlyList<AgentInterventionSuggestionDto> Suggestions);
 
+/// <summary>Public, secret-free state used by the cockpit to explain whether AI actions are available.</summary>
+public sealed record AgentAdvisorStatusResponse(bool Available, string? Model);
+
 /// <summary>A stable error envelope, matching the structured-diagnostic convention already used by
 /// <c>WorkspaceEndpoints</c> — never the framework's default empty-bodied 4xx.</summary>
 public sealed record InitiativeErrorResponse(string Code, string Message);

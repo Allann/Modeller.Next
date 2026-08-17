@@ -1,8 +1,8 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { buildStructuredFields } from '@/lib/initiativeTypes';
-import { InitiativeApiError } from '@/lib/initiativeApi';
+import { InitiativeApiError, initiativeApi } from '@/lib/initiativeApi';
 import { useInitiativeSession } from '@/lib/useInitiativeSession';
 import { PhaseProgress } from '@/components/initiative/PhaseProgress';
 import { QuestionsSection } from '@/components/initiative/QuestionsSection';
@@ -17,6 +17,11 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
   const { id } = use(params);
   const { session, error, loading, connectionStatus, refetch } = useInitiativeSession(id);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [agentStatus, setAgentStatus] = useState<{ available: boolean; model: string | null }>({ available: false, model: null });
+
+  useEffect(() => {
+    void initiativeApi.getAgentStatus().then(setAgentStatus).catch(() => setAgentStatus({ available: false, model: null }));
+  }, []);
 
   async function run(action: () => Promise<unknown>) {
     setActionError(null);
@@ -59,13 +64,16 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
         </>
       )}
       {actionError && <p className="form-error" role="alert">{actionError}</p>}
+      <p className="hero-note" role="status">
+        Agent Advisor: {agentStatus.available ? `available (${agentStatus.model})` : 'unavailable — manual facilitation remains available'}
+      </p>
 
       <PhaseProgress session={session} />
-      <QuestionsSection session={session} facilitatorId={facilitator?.id} run={run} />
+      <QuestionsSection session={session} facilitatorId={facilitator?.id} run={run} aiAvailable={agentStatus.available} />
       <StructuredFieldsSection structuredFields={structuredFields} />
-      <GateSection kind="Discovery" session={session} run={run} />
-      <InterventionsSection id={id} session={session} run={run} />
-      <GateSection kind="Shape" session={session} run={run} />
+      <GateSection kind="Discovery" session={session} run={run} aiAvailable={agentStatus.available} />
+      <InterventionsSection id={id} session={session} run={run} aiAvailable={agentStatus.available} />
+      <GateSection kind="Shape" session={session} run={run} aiAvailable={agentStatus.available} />
       <FinalizeSection session={session} run={run} />
     </main>
   );

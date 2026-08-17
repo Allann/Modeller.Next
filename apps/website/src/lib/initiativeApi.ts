@@ -1,5 +1,6 @@
 import type {
   AgentInterventionSuggestionsResponse,
+  AgentAdvisorStatusResponse,
   GateCheckResultDto,
   GateKind,
   InitiativeErrorResponse,
@@ -42,6 +43,8 @@ const post = <T>(path: string, body?: unknown) =>
   send<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) });
 
 export const initiativeApi = {
+  getAgentStatus: () => send<AgentAdvisorStatusResponse>('/v1/initiative/agent-status'),
+
   create: (originalChangeRequest: string, facilitatorName: string, domainExpertName: string) =>
     post<InitiativeSessionDto>('/v1/initiative', { originalChangeRequest, facilitatorName, domainExpertName }),
 

@@ -1,0 +1,48 @@
+---
+title: Production Agent Advisor
+description: Configure bounded AI advice for the Initiative cockpit with Vercel AI Gateway.
+---
+
+# Production Agent Advisor
+
+The Initiative cockpit uses a bounded Agent Advisor. It makes one model request when a Facilitator asks for a question, a gate evaluation, or intervention suggestions. It does not run an autonomous agent loop and it cannot change an Initiative without a Facilitator action.
+
+## Vercel AI Gateway
+
+The production API can use Vercel AI Gateway through its OpenAI-compatible endpoint. Set these variables on the Vercel project that hosts `Modeller.Api`:
+
+```text
+Agent__BaseUrl=https://ai-gateway.vercel.sh/v1
+Agent__Model=openai/gpt-5.4-mini
+Agent__TimeoutSeconds=30
+Agent__MaxOutputTokens=1200
+Agent__MaxPromptCharacters=24000
+```
+
+Enable Secure Backend Access with OIDC in the Vercel project settings. Vercel then supplies a short-lived `VERCEL_OIDC_TOKEN` to the deployment, so production does not need a stored AI secret. For a non-Vercel host or local development, set `AI_GATEWAY_API_KEY` or `Agent__ApiKey` in a secure local secret store. Never add either key to source control, browser variables, logs, or issue comments.
+
+Apply the non-secret variables to Production and Preview only where AI access is required, then redeploy the API.
+
+`openai/gpt-5.4-mini` is the initial production choice because the advice is short and structured. The model remains an environment setting so it can change without a code deployment.
+
+## Cost and request controls
+
+- The API limits each model response to 1,200 tokens.
+- The API rejects Initiative prompts over 24,000 characters before it calls the provider.
+- The API cancels a model request after 30 seconds.
+- Configure a small AI Gateway budget and leave automatic top-up disabled until normal usage is known.
+- Review usage by model in the AI Gateway dashboard. The API records model, endpoint, status, duration, and token counts through tracing. It does not record prompt or response content.
+
+## Failure and recovery
+
+The cockpit shows whether the Agent Advisor is available. If it is not configured, AI controls are disabled and all manual paths remain available. A provider error appears as an `initiative.agent.*` error and does not change the Initiative.
+
+To recover:
+
+1. Check the API deployment logs for the HTTP status and trace. Do not log or paste prompt content.
+2. Check AI Gateway usage, credit balance, and model availability.
+3. Confirm `Agent__BaseUrl`, `Agent__Model`, and either Vercel OIDC or a Gateway API key.
+4. Change `Agent__Model` to another available text model if needed, then redeploy.
+5. Remove `Agent__BaseUrl` to disable AI safely while manual facilitation continues.
+
+For local development, use .NET user secrets or a local environment file that Git ignores. Automated tests use fake HTTP handlers and need no provider credentials.

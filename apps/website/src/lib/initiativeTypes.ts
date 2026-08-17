@@ -229,6 +229,11 @@ export interface AgentInterventionSuggestionsResponse {
   suggestions: AgentInterventionSuggestionDto[];
 }
 
+export interface AgentAdvisorStatusResponse {
+  available: boolean;
+  model: string | null;
+}
+
 export type InitiativePhase = 'Discover' | 'Frame' | 'Shape' | 'Design';
 
 function hasReachedShape(session: InitiativeSessionDto): boolean {
