@@ -71,7 +71,7 @@ public class OpenAiCompatibleAgentAdvisorTests
         });
         var advisor = new OpenAiCompatibleAgentAdvisor(
             new HttpClient(handler),
-            Options with { ApiKey = null, RequestApiKeyProvider = () => null });
+            Options with { ApiKey = null, RequestApiKeyProvider = () => null, HostApiKeyProvider = () => "host-oidc" });
 
         var result = await advisor.ProposeQuestionAsync(
             new ProposeQuestionRequest("Build a new system", EmptyFields(), InitiativeField.PainPoints), TestContext.Current.CancellationToken);

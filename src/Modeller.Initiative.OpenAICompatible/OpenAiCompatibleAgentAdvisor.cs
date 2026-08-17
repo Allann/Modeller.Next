@@ -127,8 +127,9 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
     {
         var requestApiKey = options.RequestApiKeyProvider?.Invoke();
         var usesCallerKey = !string.IsNullOrWhiteSpace(requestApiKey);
-        var model = usesCallerKey ? options.Model : options.FreeModel ?? options.Model;
-        var apiKey = requestApiKey ?? options.HostApiKeyProvider?.Invoke() ?? options.ApiKey;
+        var usesFreeModel = !usesCallerKey && !string.IsNullOrWhiteSpace(options.FreeModel);
+        var model = usesFreeModel ? options.FreeModel! : options.Model;
+        var apiKey = requestApiKey ?? (usesFreeModel ? options.HostApiKeyProvider?.Invoke() : options.ApiKey);
         if (options.RequireApiKey && string.IsNullOrWhiteSpace(apiKey))
         {
             return AgentAdvisorResult<T>.Failure(
