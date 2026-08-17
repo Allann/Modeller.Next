@@ -5,7 +5,7 @@ import { CHECKS_BY_GATE, GATE_CHECK_LABELS, type GateCheckResultDto, type GateKi
 import { initiativeApi } from '@/lib/initiativeApi';
 import type { RunAction } from './types';
 
-export function GateSection({ kind, session, run, aiAvailable, aiRequiresKey, agentApiKey }: { kind: GateKind; session: InitiativeSessionDto; run: RunAction; aiAvailable: boolean; aiRequiresKey: boolean; agentApiKey: string }) {
+export function GateSection({ kind, session, run, aiAvailable, agentApiKey }: { kind: GateKind; session: InitiativeSessionDto; run: RunAction; aiAvailable: boolean; agentApiKey: string }) {
   const evaluation = kind === 'Discovery' ? session.latestDiscoveryGateEvaluation : session.latestShapeGateEvaluation;
   const [manualResults, setManualResults] = useState<Record<string, { passed: boolean; reason: string }>>({});
 
@@ -24,15 +24,16 @@ export function GateSection({ kind, session, run, aiAvailable, aiRequiresKey, ag
     <section aria-label={`${kind} Gate`}>
       <h2>{kind} Gate</h2>
       <p className="hero-note">Advisory only — never blocks proceeding.</p>
-      <div className="inline-form">
-        <button
-          className="secondary-action"
-          disabled={!aiAvailable}
-          onClick={() => void run(() => initiativeApi.recordGateEvaluation(session.id, kind, null, agentApiKey))}
-        >
-          {aiAvailable ? 'Ask AI to evaluate' : aiRequiresKey ? 'Enter an AI key to evaluate' : 'AI evaluation unavailable'}
-        </button>
-      </div>
+      {aiAvailable ? (
+        <div className="inline-form">
+          <button
+            className="secondary-action"
+            onClick={() => void run(() => initiativeApi.recordGateEvaluation(session.id, kind, null, agentApiKey))}
+          >
+            Ask AI to evaluate
+          </button>
+        </div>
+      ) : null}
 
       {evaluation ? (
         <ul className="item-list">

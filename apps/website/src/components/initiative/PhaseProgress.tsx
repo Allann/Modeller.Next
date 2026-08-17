@@ -1,16 +1,27 @@
-import { currentPhase, type InitiativeSessionDto } from '@/lib/initiativeTypes';
+export type CockpitStep = 'DiscoverFrame' | 'Shape' | 'Finalize';
 
-export function PhaseProgress({ session }: { session: InitiativeSessionDto }) {
-  const phase = currentPhase(session);
+const steps: { id: CockpitStep; label: string }[] = [
+  { id: 'DiscoverFrame', label: '1. Discover & Frame' },
+  { id: 'Shape', label: '2. Shape' },
+  { id: 'Finalize', label: '3. Finalize' },
+];
+
+export function PhaseProgress({ activeStep, onSelect }: { activeStep: CockpitStep; onSelect: (step: CockpitStep) => void }) {
   return (
-    <section aria-label="Phase progress">
+    <nav aria-label="Initiative steps">
       <div className="phase-progress">
-        {(['Discover', 'Frame', 'Shape', 'Design'] as const).map((step) => (
-          <span key={step} className={step === phase ? 'phase-step phase-step-active' : 'phase-step'}>
-            {step}
-          </span>
+        {steps.map((step) => (
+          <button
+            type="button"
+            key={step.id}
+            className={step.id === activeStep ? 'phase-step phase-step-active' : 'phase-step'}
+            aria-current={step.id === activeStep ? 'step' : undefined}
+            onClick={() => onSelect(step.id)}
+          >
+            {step.label}
+          </button>
         ))}
       </div>
-    </section>
+    </nav>
   );
 }

@@ -22,7 +22,8 @@ export function QuestionsSection({
   const [text, setText] = useState('');
 
   const proposed = session.questions.filter((q) => q.status === 'Proposed');
-  const sent = session.questions.filter((q) => q.status === 'Sent');
+  const respondedQuestionIds = new Set(session.responses.map((response) => response.questionId));
+  const sent = session.questions.filter((q) => q.status === 'Sent' && !respondedQuestionIds.has(q.id));
   const pendingResponses = session.responses.filter((r) => r.status === 'Pending');
 
   return (

@@ -5,6 +5,7 @@ import { InitiativeApiError, initiativeApi } from '@/lib/initiativeApi';
 import { useInitiativeSession } from '@/lib/useInitiativeSession';
 import { ConnectionStatus } from '@/components/initiative/ConnectionStatus';
 import { InitiativeDocument } from '@/components/initiative/InitiativeDocument';
+import { buildStructuredFields, INITIATIVE_FIELD_LABELS } from '@/lib/initiativeTypes';
 
 /** The Domain Expert's focused view — deliberately not the whole cockpit surface (issue #91):
  * just the current sent question and a place to answer it. Enforced on the wire, not just in what
@@ -34,6 +35,8 @@ export default function DomainExpertRespondPage({ params }: { params: Promise<{ 
 
   const answeredQuestionIds = new Set(session.responses.map((r) => r.questionId));
   const currentQuestion = session.questions.find((q) => q.status === 'Sent' && !answeredQuestionIds.has(q.id));
+  const acceptedFields = buildStructuredFields(session);
+  const acceptedEntries = Object.entries(acceptedFields).filter(([, values]) => values.length > 0);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -56,8 +59,10 @@ export default function DomainExpertRespondPage({ params }: { params: Promise<{ 
       <p className="eyebrow">Domain Expert <ConnectionStatus status={connectionStatus} /></p>
       <h1 className="initiative-session-title">{session.originalChangeRequest}</h1>
 
-      {currentQuestion ? (
-        <form className="respond-form" onSubmit={handleSubmit}>
+      <div className="domain-expert-workspace">
+        <div>
+          {currentQuestion ? (
+            <form className="respond-form" onSubmit={handleSubmit}>
           <p className="panel-kicker">Current question</p>
           <p className="respond-question">{currentQuestion.text}</p>
           <textarea
@@ -71,10 +76,30 @@ export default function DomainExpertRespondPage({ params }: { params: Promise<{ 
           <button className="primary-action" type="submit" disabled={submitting}>
             {submitting ? 'Submitting…' : 'Submit response'}
           </button>
-        </form>
-      ) : (
-        <p>Waiting for the next question from the Facilitator…</p>
-      )}
+            </form>
+          ) : (
+            <p>Waiting for the next question from the Facilitator…</p>
+          )}
+        </div>
+
+        <section className="accepted-summary" aria-label="Accepted answers">
+        <h2>Accepted so far</h2>
+        {acceptedEntries.length > 0 ? (
+          <ul className="item-list">
+            {acceptedEntries.flatMap(([field, values]) =>
+              values.map((value, index) => (
+                <li key={`${field}-${index}`}>
+                  <span className="badge">{INITIATIVE_FIELD_LABELS[field as keyof typeof INITIATIVE_FIELD_LABELS]}</span>
+                  {value}
+                </li>
+              )),
+            )}
+          </ul>
+        ) : (
+          <p className="hero-note">Nothing has been accepted yet. Accepted answers will appear here as the Initiative develops.</p>
+        )}
+        </section>
+      </div>
     </main>
   );
 }

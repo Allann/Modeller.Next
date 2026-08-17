@@ -556,17 +556,34 @@ pre {
 
 .phase-progress {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
 .phase-step {
+  appearance: none;
+  background: transparent;
   border: 1px solid var(--modeller-line);
   border-radius: 999px;
   padding: 0.35rem 0.9rem;
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--modeller-muted);
+  cursor: pointer;
+}
+
+.initiative-start-layout {
+  display: grid;
+  grid-template-columns: minmax(28rem, 1fr) minmax(20rem, 0.8fr);
+  gap: clamp(2rem, 6vw, 6rem);
+  align-items: start;
+}
+
+.initiative-start-layout .initiative-start-form,
+.initiative-start-layout .initiative-steps,
+.domain-expert-workspace .respond-form {
+  max-width: none;
 }
 
 .phase-step-active {
@@ -706,6 +723,48 @@ pre {
   margin-top: 1.5rem;
 }
 
+.cockpit-step-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(20rem, 0.85fr);
+  gap: clamp(2rem, 4vw, 4rem);
+  align-items: start;
+  margin-top: 1.5rem;
+}
+
+.cockpit-input-column,
+.cockpit-results-column {
+  min-width: 0;
+}
+
+.cockpit-results-column {
+  position: sticky;
+  top: 6rem;
+  padding: 0 1.25rem 1.25rem;
+  border: 1px solid var(--modeller-line);
+  border-radius: 0.75rem;
+  background: var(--modeller-surface);
+}
+
+.initiative-steps {
+  max-width: 36rem;
+  margin-top: 1.5rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--modeller-line);
+  border-radius: 0.75rem;
+  background: var(--modeller-surface);
+}
+
+.initiative-steps h2 {
+  font-size: 1.1rem;
+}
+
+.initiative-steps ol {
+  margin: 0.75rem 0 0;
+  padding-left: 1.25rem;
+  color: var(--modeller-muted);
+  line-height: 1.6;
+}
+
 .initiative-session-title {
   max-width: 42rem;
   font-size: clamp(1.5rem, 3vw, 2.25rem);
@@ -723,7 +782,34 @@ pre {
   color: var(--modeller-fg);
 }
 
+.accepted-summary {
+  min-width: 0;
+  margin-top: 0;
+  padding: 0 1.25rem 1.25rem;
+  border: 1px solid var(--modeller-line);
+  border-radius: 0.75rem;
+  background: var(--modeller-surface);
+}
+
+.domain-expert-workspace {
+  display: grid;
+  grid-template-columns: minmax(22rem, 1fr) minmax(20rem, 0.9fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: start;
+  margin-top: 1.5rem;
+}
+
 @media (max-width: 920px) {
+  .initiative-start-layout,
+  .cockpit-step-panel,
+  .domain-expert-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .cockpit-results-column {
+    position: static;
+  }
+
   .site-header-nav a:not([aria-current="page"]),
   .github-link {
     display: none;
@@ -744,6 +830,10 @@ pre {
 }
 
 @media (max-width: 560px) {
+  .initiative-start-form-row {
+    grid-template-columns: 1fr;
+  }
+
   .site-header-nav {
     margin-left: auto;
   }

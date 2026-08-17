@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react';
 import { buildStructuredFields } from '@/lib/initiativeTypes';
 import { InitiativeApiError, initiativeApi } from '@/lib/initiativeApi';
 import { useInitiativeSession } from '@/lib/useInitiativeSession';
-import { PhaseProgress } from '@/components/initiative/PhaseProgress';
+import { PhaseProgress, type CockpitStep } from '@/components/initiative/PhaseProgress';
 import { QuestionsSection } from '@/components/initiative/QuestionsSection';
 import { StructuredFieldsSection } from '@/components/initiative/StructuredFieldsSection';
 import { GateSection } from '@/components/initiative/GateSection';
@@ -12,6 +12,7 @@ import { InterventionsSection } from '@/components/initiative/InterventionsSecti
 import { FinalizeSection } from '@/components/initiative/FinalizeSection';
 import { CopyLinkButton } from '@/components/initiative/CopyLinkButton';
 import { ConnectionStatus } from '@/components/initiative/ConnectionStatus';
+import { loadAgentApiKey } from '@/lib/agentApiKey';
 
 export default function FacilitatorCockpitPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -19,10 +20,13 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
   const [actionError, setActionError] = useState<string | null>(null);
   const [agentStatus, setAgentStatus] = useState<{ available: boolean; model: string | null; requiresApiKey: boolean; freeModel: string | null }>({ available: false, model: null, requiresApiKey: true, freeModel: null });
   const [agentApiKey, setAgentApiKey] = useState('');
+  const [activeStep, setActiveStep] = useState<CockpitStep>('DiscoverFrame');
 
   useEffect(() => {
+    const loadKeyTimer = window.setTimeout(() => setAgentApiKey(loadAgentApiKey(id)), 0);
     void initiativeApi.getAgentStatus().then(setAgentStatus).catch(() => setAgentStatus({ available: false, model: null, requiresApiKey: true, freeModel: null }));
-  }, []);
+    return () => window.clearTimeout(loadKeyTimer);
+  }, [id]);
 
   async function run(action: () => Promise<unknown>) {
     setActionError(null);
@@ -41,7 +45,7 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
   const structuredFields = buildStructuredFields(session);
   const respondUrl = typeof window !== 'undefined' ? `${window.location.origin}/initiative/${id}/respond` : '';
   const canUseAi = agentStatus.available && (!agentStatus.requiresApiKey || agentApiKey.length > 0);
-  const aiRequiresKey = agentStatus.available && agentStatus.requiresApiKey && agentApiKey.length === 0;
+  const displayedStep = session.finalization ? 'Finalize' : activeStep;
 
   return (
     <main className="cockpit">
@@ -67,38 +71,39 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
         </>
       )}
       {actionError && <p className="form-error" role="alert">{actionError}</p>}
-      {agentStatus.available ? (
-        <div className="inline-form" role="status">
-          <label>
-            Your Vercel AI Gateway key{agentStatus.requiresApiKey ? '' : ' (optional)'}
-            <input
-              type="password"
-              autoComplete="off"
-              spellCheck={false}
-              value={agentApiKey}
-              onChange={(event) => setAgentApiKey(event.target.value)}
-              placeholder="AI Gateway API key"
-            />
-          </label>
-          <span className="hero-note">
-            {agentStatus.freeModel
-              ? `Without a key, AI uses the free ${agentStatus.freeModel} model. With your key, it uses ${agentStatus.model}.`
-              : `A key is required and uses ${agentStatus.model}.`}
-            {' '}The key is used for this page only and is not saved.
-            {' '}<a href="https://vercel.com/ai-gateway" target="_blank" rel="noreferrer">Get a Vercel AI Gateway key</a>.
-          </span>
+      <PhaseProgress activeStep={displayedStep} onSelect={setActiveStep} />
+      {displayedStep === 'DiscoverFrame' && (
+        <div className="cockpit-step-panel">
+          <div className="cockpit-input-column">
+            <QuestionsSection session={session} facilitatorId={facilitator?.id} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
+            <GateSection kind="Discovery" session={session} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
+          </div>
+          <aside className="cockpit-results-column" aria-label="Accepted Initiative record">
+            <StructuredFieldsSection structuredFields={structuredFields} />
+          </aside>
         </div>
-      ) : (
-        <p className="hero-note" role="status">Agent Advisor unavailable — manual facilitation remains available.</p>
       )}
-
-      <PhaseProgress session={session} />
-      <QuestionsSection session={session} facilitatorId={facilitator?.id} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
-      <StructuredFieldsSection structuredFields={structuredFields} />
-      <GateSection kind="Discovery" session={session} run={run} aiAvailable={canUseAi} aiRequiresKey={aiRequiresKey} agentApiKey={agentApiKey} />
-      <InterventionsSection id={id} session={session} run={run} aiAvailable={canUseAi} aiRequiresKey={aiRequiresKey} agentApiKey={agentApiKey} />
-      <GateSection kind="Shape" session={session} run={run} aiAvailable={canUseAi} aiRequiresKey={aiRequiresKey} agentApiKey={agentApiKey} />
-      <FinalizeSection session={session} run={run} />
+      {displayedStep === 'Shape' && (
+        <div className="cockpit-step-panel">
+          <div className="cockpit-input-column">
+            <InterventionsSection id={id} session={session} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
+            <GateSection kind="Shape" session={session} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
+          </div>
+          <aside className="cockpit-results-column" aria-label="Accepted Initiative record">
+            <StructuredFieldsSection structuredFields={structuredFields} />
+          </aside>
+        </div>
+      )}
+      {displayedStep === 'Finalize' && (
+        <div className="cockpit-step-panel">
+          <div className="cockpit-input-column">
+            <FinalizeSection session={session} run={run} />
+          </div>
+          <aside className="cockpit-results-column" aria-label="Accepted Initiative record">
+            <StructuredFieldsSection structuredFields={structuredFields} />
+          </aside>
+        </div>
+      )}
     </main>
   );
 }
