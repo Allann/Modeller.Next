@@ -69,7 +69,7 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
       {agentStatus.available ? (
         <div className="inline-form" role="status">
           <label>
-            Your Vercel AI Gateway key (optional)
+            Your Vercel AI Gateway key{agentStatus.requiresApiKey ? '' : ' (optional)'}
             <input
               type="password"
               autoComplete="off"
@@ -80,7 +80,10 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
             />
           </label>
           <span className="hero-note">
-            Without a key, AI uses the free {agentStatus.freeModel} model. With your key, it uses {agentStatus.model}. The key is used for this page only and is not saved.
+            {agentStatus.freeModel
+              ? `Without a key, AI uses the free ${agentStatus.freeModel} model. With your key, it uses ${agentStatus.model}.`
+              : `A key is required and uses ${agentStatus.model}.`}
+            {' '}The key is used for this page only and is not saved.
             {' '}<a href="https://vercel.com/ai-gateway" target="_blank" rel="noreferrer">Get a Vercel AI Gateway key</a>.
           </span>
         </div>
