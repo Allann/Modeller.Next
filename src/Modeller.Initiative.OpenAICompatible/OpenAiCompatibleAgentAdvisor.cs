@@ -125,6 +125,14 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
     private async Task<AgentAdvisorResult<T>> CompleteAsync<T>(
         string operationName, string systemPrompt, string userPrompt, Func<JsonElement, T> parse, CancellationToken cancellationToken)
     {
+        var apiKey = options.RequestApiKeyProvider?.Invoke() ?? options.ApiKey;
+        if (options.RequireApiKey && string.IsNullOrWhiteSpace(apiKey))
+        {
+            return AgentAdvisorResult<T>.Failure(
+                AgentEvaluationStatus.NotConfigured,
+                "Enter your own Vercel AI Gateway API key to use AI assistance.");
+        }
+
         if (systemPrompt.Length + userPrompt.Length > options.MaxPromptCharacters)
         {
             return AgentAdvisorResult<T>.Failure(
@@ -140,7 +148,7 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
 
         try
         {
-            var httpRequest = BuildRequest(systemPrompt, userPrompt);
+            var httpRequest = BuildRequest(systemPrompt, userPrompt, apiKey);
             var response = await httpClient.SendAsync(httpRequest, timeout.Token);
             activity?.SetTag("http.response.status_code", (int)response.StatusCode);
             if (!response.IsSuccessStatusCode)
@@ -185,7 +193,7 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
         }
     }
 
-    private HttpRequestMessage BuildRequest(string systemPrompt, string userPrompt)
+    private HttpRequestMessage BuildRequest(string systemPrompt, string userPrompt, string? apiKey)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, BuildEndpointUri())
         {
@@ -203,9 +211,9 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
             }, options: JsonOptions),
         };
 
-        if (!string.IsNullOrWhiteSpace(options.ApiKey))
+        if (!string.IsNullOrWhiteSpace(apiKey))
         {
-            request.Headers.Authorization = new("Bearer", options.ApiKey);
+            request.Headers.Authorization = new("Bearer", apiKey);
         }
 
         return request;

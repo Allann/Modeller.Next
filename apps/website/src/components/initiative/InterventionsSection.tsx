@@ -5,7 +5,7 @@ import { ALL_INTERVENTION_TYPES, type InitiativeSessionDto, type InterventionTyp
 import { InitiativeApiError, initiativeApi } from '@/lib/initiativeApi';
 import type { RunAction } from './types';
 
-export function InterventionsSection({ id, session, run, aiAvailable }: { id: string; session: InitiativeSessionDto; run: RunAction; aiAvailable: boolean }) {
+export function InterventionsSection({ id, session, run, aiAvailable, agentApiKey }: { id: string; session: InitiativeSessionDto; run: RunAction; aiAvailable: boolean; agentApiKey: string }) {
   const [type, setType] = useState<InterventionType>('Process');
   const [description, setDescription] = useState('');
   const [rationale, setRationale] = useState('');
@@ -16,7 +16,7 @@ export function InterventionsSection({ id, session, run, aiAvailable }: { id: st
   async function askForSuggestions() {
     setSuggestionsError(null);
     try {
-      const response = await initiativeApi.getInterventionSuggestions(id);
+      const response = await initiativeApi.getInterventionSuggestions(id, agentApiKey);
       setSuggestions(response.suggestions);
     } catch (err) {
       setSuggestionsError(err instanceof InitiativeApiError ? err.message : 'No suggestions available.');

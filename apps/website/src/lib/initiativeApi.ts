@@ -39,6 +39,10 @@ async function send<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+function withAgentKey(apiKey: string): RequestInit {
+  return { headers: { 'X-Agent-Api-Key': apiKey } };
+}
+
 const post = <T>(path: string, body?: unknown) =>
   send<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) });
 
@@ -51,8 +55,12 @@ export const initiativeApi = {
   get: (id: string, viewerRole?: 'DomainExpert') =>
     send<InitiativeSessionDto>(`/v1/initiative/${id}${viewerRole ? `?viewerRole=${viewerRole}` : ''}`),
 
-  proposeQuestion: (id: string, proposedBy: string, authorRole: ParticipantRole, field: string, text: string | null) =>
-    post<InitiativeSessionDto>(`/v1/initiative/${id}/questions`, { proposedBy, authorRole, field, text }),
+  proposeQuestion: (id: string, proposedBy: string, authorRole: ParticipantRole, field: string, text: string | null, apiKey?: string) =>
+    send<InitiativeSessionDto>(`/v1/initiative/${id}/questions`, {
+      method: 'POST',
+      body: JSON.stringify({ proposedBy, authorRole, field, text }),
+      ...(apiKey ? withAgentKey(apiKey) : {}),
+    }),
 
   sendQuestion: (id: string, questionId: string) =>
     post<InitiativeSessionDto>(`/v1/initiative/${id}/questions/${questionId}/send`),
@@ -66,8 +74,8 @@ export const initiativeApi = {
   acceptResponse: (id: string, responseId: string) =>
     post<InitiativeSessionDto>(`/v1/initiative/${id}/responses/${responseId}/accept`),
 
-  getInterventionSuggestions: (id: string) =>
-    send<AgentInterventionSuggestionsResponse>(`/v1/initiative/${id}/interventions/suggestions`),
+  getInterventionSuggestions: (id: string, apiKey: string) =>
+    send<AgentInterventionSuggestionsResponse>(`/v1/initiative/${id}/interventions/suggestions`, withAgentKey(apiKey)),
 
   selectIntervention: (id: string, type: InterventionType, description: string, rationale: string, continuesToDesignWorkspace: boolean) =>
     post<InitiativeSessionDto>(`/v1/initiative/${id}/interventions`, { type, description, rationale, continuesToDesignWorkspace }),
@@ -78,8 +86,12 @@ export const initiativeApi = {
   linkDesignWorkspace: (id: string, interventionId: string, reference: string) =>
     post<InitiativeSessionDto>(`/v1/initiative/${id}/interventions/${interventionId}/design-workspace`, { reference }),
 
-  recordGateEvaluation: (id: string, kind: GateKind, manualResults: GateCheckResultDto[] | null) =>
-    post<InitiativeSessionDto>(`/v1/initiative/${id}/gate-evaluations`, { kind, manualResults }),
+  recordGateEvaluation: (id: string, kind: GateKind, manualResults: GateCheckResultDto[] | null, apiKey?: string) =>
+    send<InitiativeSessionDto>(`/v1/initiative/${id}/gate-evaluations`, {
+      method: 'POST',
+      body: JSON.stringify({ kind, manualResults }),
+      ...(apiKey ? withAgentKey(apiKey) : {}),
+    }),
 
   dismissGateFinding: (id: string, kind: GateKind, check: string, reason: string | null) =>
     post<InitiativeSessionDto>(`/v1/initiative/${id}/gate-evaluations/${kind}/dismiss`, { check, reason }),

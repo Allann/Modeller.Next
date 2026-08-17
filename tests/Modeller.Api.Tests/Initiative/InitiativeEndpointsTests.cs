@@ -85,6 +85,7 @@ public sealed class InitiativeEndpointsTests : IDisposable
         var status = await response.Content.ReadFromJsonAsync<AgentAdvisorStatusResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
         Assert.False(status!.Available);
         Assert.Null(status.Model);
+        Assert.True(status.RequiresApiKey);
     }
 
     [Fact]

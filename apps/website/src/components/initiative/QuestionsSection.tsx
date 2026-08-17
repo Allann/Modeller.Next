@@ -10,11 +10,13 @@ export function QuestionsSection({
   facilitatorId,
   run,
   aiAvailable,
+  agentApiKey,
 }: {
   session: InitiativeSessionDto;
   facilitatorId: string | undefined;
   run: RunAction;
   aiAvailable: boolean;
+  agentApiKey: string;
 }) {
   const [field, setField] = useState<InitiativeField>('ProblemStatement');
   const [text, setText] = useState('');
@@ -31,7 +33,7 @@ export function QuestionsSection({
           className="inline-form"
           onSubmit={(event) => {
             event.preventDefault();
-            void run(() => initiativeApi.proposeQuestion(session.id, facilitatorId, 'Facilitator', field, text || null)).then(() => setText(''));
+            void run(() => initiativeApi.proposeQuestion(session.id, facilitatorId, 'Facilitator', field, text || null, text ? undefined : agentApiKey)).then(() => setText(''));
           }}
         >
           <select value={field} onChange={(event) => setField(event.target.value as InitiativeField)}>

@@ -9,7 +9,7 @@ namespace Modeller.Initiative.OpenAICompatible.Tests;
 
 public class OpenAiCompatibleAgentAdvisorTests
 {
-    private static readonly AgentAdvisorOptions Options = new(new Uri("http://localhost:1234/v1/"), "local-model");
+    private static readonly AgentAdvisorOptions Options = new(new Uri("http://localhost:1234/v1/"), "local-model", "test-key");
 
     [Fact]
     public async Task ProposeQuestionAsync_SuccessfulCompletion_ReturnsSuggestion()
@@ -57,6 +57,27 @@ public class OpenAiCompatibleAgentAdvisorTests
 
         Assert.False(result.Succeeded);
         Assert.Equal(AgentEvaluationStatus.RequestFailed, result.Status);
+        Assert.False(called);
+    }
+
+    [Fact]
+    public async Task ProposeQuestionAsync_MissingRequiredRequestKey_DoesNotCallProvider()
+    {
+        var called = false;
+        var handler = new FakeHandler(_ =>
+        {
+            called = true;
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+        var advisor = new OpenAiCompatibleAgentAdvisor(
+            new HttpClient(handler),
+            Options with { ApiKey = null, RequestApiKeyProvider = () => null });
+
+        var result = await advisor.ProposeQuestionAsync(
+            new ProposeQuestionRequest("Build a new system", EmptyFields(), InitiativeField.PainPoints), TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(AgentEvaluationStatus.NotConfigured, result.Status);
         Assert.False(called);
     }
 

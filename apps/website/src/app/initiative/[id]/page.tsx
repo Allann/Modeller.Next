@@ -17,10 +17,11 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
   const { id } = use(params);
   const { session, error, loading, connectionStatus, refetch } = useInitiativeSession(id);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [agentStatus, setAgentStatus] = useState<{ available: boolean; model: string | null }>({ available: false, model: null });
+  const [agentStatus, setAgentStatus] = useState<{ available: boolean; model: string | null; requiresApiKey: boolean }>({ available: false, model: null, requiresApiKey: true });
+  const [agentApiKey, setAgentApiKey] = useState('');
 
   useEffect(() => {
-    void initiativeApi.getAgentStatus().then(setAgentStatus).catch(() => setAgentStatus({ available: false, model: null }));
+    void initiativeApi.getAgentStatus().then(setAgentStatus).catch(() => setAgentStatus({ available: false, model: null, requiresApiKey: true }));
   }, []);
 
   async function run(action: () => Promise<unknown>) {
@@ -39,6 +40,7 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
   const facilitator = session.participants.find((p) => p.role === 'Facilitator');
   const structuredFields = buildStructuredFields(session);
   const respondUrl = typeof window !== 'undefined' ? `${window.location.origin}/initiative/${id}/respond` : '';
+  const canUseAi = agentStatus.available && (!agentStatus.requiresApiKey || agentApiKey.length > 0);
 
   return (
     <main className="cockpit">
@@ -64,16 +66,34 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
         </>
       )}
       {actionError && <p className="form-error" role="alert">{actionError}</p>}
-      <p className="hero-note" role="status">
-        Agent Advisor: {agentStatus.available ? `available (${agentStatus.model})` : 'unavailable — manual facilitation remains available'}
-      </p>
+      {agentStatus.available ? (
+        <div className="inline-form" role="status">
+          <label>
+            Your Vercel AI Gateway key
+            <input
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              value={agentApiKey}
+              onChange={(event) => setAgentApiKey(event.target.value)}
+              placeholder="AI Gateway API key"
+            />
+          </label>
+          <span className="hero-note">
+            Used for this page only. It is not saved in the Initiative or browser storage. Model: {agentStatus.model}.
+            {' '}<a href="https://vercel.com/ai-gateway" target="_blank" rel="noreferrer">Get a Vercel AI Gateway key</a>.
+          </span>
+        </div>
+      ) : (
+        <p className="hero-note" role="status">Agent Advisor unavailable — manual facilitation remains available.</p>
+      )}
 
       <PhaseProgress session={session} />
-      <QuestionsSection session={session} facilitatorId={facilitator?.id} run={run} aiAvailable={agentStatus.available} />
+      <QuestionsSection session={session} facilitatorId={facilitator?.id} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
       <StructuredFieldsSection structuredFields={structuredFields} />
-      <GateSection kind="Discovery" session={session} run={run} aiAvailable={agentStatus.available} />
-      <InterventionsSection id={id} session={session} run={run} aiAvailable={agentStatus.available} />
-      <GateSection kind="Shape" session={session} run={run} aiAvailable={agentStatus.available} />
+      <GateSection kind="Discovery" session={session} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
+      <InterventionsSection id={id} session={session} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
+      <GateSection kind="Shape" session={session} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
       <FinalizeSection session={session} run={run} />
     </main>
   );

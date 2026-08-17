@@ -14,12 +14,15 @@ The production API can use Vercel AI Gateway through its OpenAI-compatible endpo
 ```text
 Agent__BaseUrl=https://ai-gateway.vercel.sh/v1
 Agent__Model=openai/gpt-5.4-mini
+Agent__RequireRequestApiKey=true
 Agent__TimeoutSeconds=30
 Agent__MaxOutputTokens=1200
 Agent__MaxPromptCharacters=24000
 ```
 
-Enable Secure Backend Access with OIDC in the Vercel project settings. Vercel then supplies a short-lived `VERCEL_OIDC_TOKEN` to the deployment, so production does not need a stored AI secret. For a non-Vercel host or local development, set `AI_GATEWAY_API_KEY` or `Agent__ApiKey` in a secure local secret store. Never add either key to source control, browser variables, logs, or issue comments.
+The public cockpit requires each Facilitator to enter their own Vercel AI Gateway API key. The page keeps it only in component memory and sends it in the `X-Agent-Api-Key` header for explicit AI actions. The API forwards it as authorization and does not put it in Redis, logs, analytics, URLs, or the Initiative record.
+
+Do not configure `Agent__ApiKey`, `AI_GATEWAY_API_KEY`, or project OIDC as a fallback on the public deployment. That would let anonymous visitors spend the project's credits. For a private deployment, set `Agent__RequireRequestApiKey=false` and provide a server-side key only after access control and rate limits are in place.
 
 Apply the non-secret variables to Production and Preview only where AI access is required, then redeploy the API.
 
@@ -41,7 +44,7 @@ To recover:
 
 1. Check the API deployment logs for the HTTP status and trace. Do not log or paste prompt content.
 2. Check AI Gateway usage, credit balance, and model availability.
-3. Confirm `Agent__BaseUrl`, `Agent__Model`, and either Vercel OIDC or a Gateway API key.
+3. Confirm `Agent__BaseUrl`, `Agent__Model`, and `Agent__RequireRequestApiKey=true`.
 4. Change `Agent__Model` to another available text model if needed, then redeploy.
 5. Remove `Agent__BaseUrl` to disable AI safely while manual facilitation continues.
 

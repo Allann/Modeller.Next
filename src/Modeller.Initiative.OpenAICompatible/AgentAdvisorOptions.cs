@@ -15,4 +15,12 @@ public sealed record AgentAdvisorOptions(Uri BaseUrl, string Model, string? ApiK
 
     /// <summary>Reject unexpectedly large prompts before they can create unbounded provider cost.</summary>
     public int MaxPromptCharacters { get; init; } = 24_000;
+
+    /// <summary>
+    /// Resolves a short-lived or request-scoped key. Public hosts use this to require the caller's
+    /// own Gateway key instead of spending the host's credits. The value must never be logged.
+    /// </summary>
+    public Func<string?>? RequestApiKeyProvider { get; init; }
+
+    public bool RequireApiKey { get; init; } = true;
 }
