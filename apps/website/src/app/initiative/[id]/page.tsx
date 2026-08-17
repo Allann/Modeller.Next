@@ -46,7 +46,7 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
   return (
     <main className="cockpit">
       <p className="eyebrow">Facilitator cockpit <ConnectionStatus status={connectionStatus} /></p>
-      <h1>{session.originalChangeRequest}</h1>
+      <h1 className="initiative-session-title">{session.originalChangeRequest}</h1>
       {session.finalization && (
         <p className="badge badge-finalization">
           Finalized ({session.finalization.status === 'Clean' ? 'clean' : 'with open gate findings'})

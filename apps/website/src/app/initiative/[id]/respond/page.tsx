@@ -54,7 +54,7 @@ export default function DomainExpertRespondPage({ params }: { params: Promise<{ 
   return (
     <main>
       <p className="eyebrow">Domain Expert <ConnectionStatus status={connectionStatus} /></p>
-      <h1 className="respond-initiative-title">{session.originalChangeRequest}</h1>
+      <h1 className="initiative-session-title">{session.originalChangeRequest}</h1>
 
       {currentQuestion ? (
         <form className="respond-form" onSubmit={handleSubmit}>
