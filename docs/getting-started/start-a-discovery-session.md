@@ -94,6 +94,7 @@ the reason for the design travels with it.
 
 ## Related
 
+- [Worked Initiative example: delayed building variations](/docs/guides/building-variation-initiative) — follow a complete Facilitator and Domain Expert conversation.
 - [Initiatives](/docs/concepts/initiatives) — the concepts and roles behind the session.
 - [The playground](https://modeller.website/playground) — try System Design's modelling in the browser, no Initiative required.
 - [Quick start](/docs/getting-started/quick-start) — install the tooling for System Design.

@@ -401,6 +401,41 @@ pre {
   border-color: var(--modeller-teal-bright);
 }
 
+.copy-link-action {
+  display: inline-grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-left: 0.35rem;
+  padding: 0;
+  place-items: center;
+  vertical-align: middle;
+  color: var(--modeller-muted);
+  background: var(--modeller-surface);
+  border: 1px solid var(--modeller-line);
+  border-radius: 0.45rem;
+  cursor: pointer;
+}
+
+.copy-link-action:hover {
+  color: var(--modeller-fg);
+  border-color: var(--modeller-teal-bright);
+}
+
+.copy-link-action:focus-visible {
+  outline: 2px solid var(--modeller-teal-bright);
+  outline-offset: 2px;
+}
+
+.copy-link-action svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .hero-note {
   margin-top: 1rem;
   color: var(--modeller-muted);

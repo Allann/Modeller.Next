@@ -44,9 +44,18 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
         </p>
       )}
       {respondUrl && (
-        <p className="hero-note">
-          Domain Expert link: <a href={respondUrl}>{respondUrl}</a> <CopyLinkButton url={respondUrl} />
-        </p>
+        <>
+          <p className="hero-note">
+            Domain Expert link: <a href={respondUrl}>{respondUrl}</a> <CopyLinkButton url={respondUrl} />
+          </p>
+          <p className="hero-note">
+            New to Initiatives?{' '}
+            <a href="https://modeller.wiki/docs/guides/building-variation-initiative" target="_blank" rel="noreferrer">
+              Follow the worked building-variation example
+            </a>
+            .
+          </p>
+        </>
       )}
       {actionError && <p className="form-error" role="alert">{actionError}</p>}
 
