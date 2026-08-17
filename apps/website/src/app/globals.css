@@ -706,6 +706,13 @@ pre {
   margin-top: 1.5rem;
 }
 
+.respond-initiative-title {
+  max-width: 42rem;
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
 .respond-question {
   border: 1px solid var(--modeller-line);
   border-radius: 0.75rem;
