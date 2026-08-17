@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CHECKS_BY_GATE, type GateCheckResultDto, type GateKind, type InitiativeSessionDto } from '@/lib/initiativeTypes';
+import { CHECKS_BY_GATE, GATE_CHECK_LABELS, type GateCheckResultDto, type GateKind, type InitiativeSessionDto } from '@/lib/initiativeTypes';
 import { initiativeApi } from '@/lib/initiativeApi';
 import type { RunAction } from './types';
 
@@ -38,7 +38,7 @@ export function GateSection({ kind, session, run }: { kind: GateKind; session: I
           {evaluation.results.map((result) => (
             <li key={result.check}>
               <span className={result.passed ? 'badge badge-pass' : 'badge badge-fail'}>{result.passed ? 'Pass' : 'Flagged'}</span>{' '}
-              {result.check} — {result.reason}
+              {GATE_CHECK_LABELS[result.check]} — {result.reason}
               {!result.passed && (
                 <button
                   className="link-action"
@@ -63,7 +63,7 @@ export function GateSection({ kind, session, run }: { kind: GateKind; session: I
                     setManualResults((prev) => ({ ...prev, [check]: { ...prev[check], passed: event.target.checked, reason: prev[check]?.reason ?? '' } }))
                   }
                 />
-                {check}
+                <span>{GATE_CHECK_LABELS[check]}</span>
                 <input
                   placeholder="reason"
                   value={manualResults[check]?.reason ?? ''}

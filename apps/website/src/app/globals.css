@@ -9,6 +9,9 @@
   --modeller-bg: #fbfaf7;
   --modeller-fg: var(--modeller-ink);
   --modeller-muted: #4b6068;
+  /* Matches modeller.wiki's apps/docs/app/global.css tokens (issue: shared design values). */
+  --content-width: 90%;
+  --shadow-hero: 0 22px 55px rgba(5, 30, 34, 0.15);
 }
 
 .dark {
@@ -215,10 +218,10 @@ p {
   color: var(--modeller-teal-bright);
 }
 
-/* Matches modeller.wiki's marketing/content sections (min(1180px, 100% - 3rem)) —
-   narrower than the 1400px header bar, same as wiki's own hierarchy. */
+/* Matches modeller.wiki's marketing/content sections (apps/docs/app/global.css
+   --content-width: 90%) — fluid, not capped in pixels like the 1400px header bar. */
 main {
-  width: min(1180px, calc(100% - 3rem));
+  width: var(--content-width);
   margin: 0 auto;
   padding: 3.25rem 0 4rem;
 }
@@ -377,6 +380,7 @@ pre {
   background: var(--modeller-teal);
   border-color: var(--modeller-teal);
   color: white;
+  box-shadow: 0 12px 30px rgba(15, 118, 110, 0.2);
 }
 
 .primary-action:hover {
@@ -398,9 +402,9 @@ pre {
 }
 
 .hero-note {
-  margin-top: 0.75rem;
+  margin-top: 1rem;
   color: var(--modeller-muted);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
 }
 
 .form-error {
@@ -651,9 +655,5 @@ pre {
 
   .site-header-tools {
     margin-left: 0.5rem;
-  }
-
-  main {
-    width: min(100% - 2rem, 1180px);
   }
 }
