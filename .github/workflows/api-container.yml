@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "src/Modeller.Api/**"
+      - "src/Modeller.Initiative/**"
+      - "src/Modeller.Initiative.OpenAICompatible/**"
       - "src/Modeller.Workspace/**"
       - "src/Modeller.Parsing/**"
       - "src/Modeller.Configuration/**"
@@ -13,6 +15,8 @@ on:
       - "src/Modeller.Validation/**"
       - "src/Modeller.Model/**"
       - "tests/Modeller.Api.Tests/**"
+      - "tests/Modeller.Initiative.Tests/**"
+      - "tests/Modeller.Initiative.OpenAICompatible.Tests/**"
       - "Directory.Build.props"
       - "Directory.Packages.props"
       - "Modeller.slnx"
@@ -20,6 +24,8 @@ on:
   pull_request:
     paths:
       - "src/Modeller.Api/**"
+      - "src/Modeller.Initiative/**"
+      - "src/Modeller.Initiative.OpenAICompatible/**"
       - "src/Modeller.Workspace/**"
       - "src/Modeller.Parsing/**"
       - "src/Modeller.Configuration/**"
@@ -28,6 +34,8 @@ on:
       - "src/Modeller.Validation/**"
       - "src/Modeller.Model/**"
       - "tests/Modeller.Api.Tests/**"
+      - "tests/Modeller.Initiative.Tests/**"
+      - "tests/Modeller.Initiative.OpenAICompatible.Tests/**"
       - "Directory.Build.props"
       - "Directory.Packages.props"
       - "Modeller.slnx"
