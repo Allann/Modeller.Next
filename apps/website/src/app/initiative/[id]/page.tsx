@@ -41,6 +41,7 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
   const structuredFields = buildStructuredFields(session);
   const respondUrl = typeof window !== 'undefined' ? `${window.location.origin}/initiative/${id}/respond` : '';
   const canUseAi = agentStatus.available && (!agentStatus.requiresApiKey || agentApiKey.length > 0);
+  const aiRequiresKey = agentStatus.available && agentStatus.requiresApiKey && agentApiKey.length === 0;
 
   return (
     <main className="cockpit">
@@ -94,9 +95,9 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
       <PhaseProgress session={session} />
       <QuestionsSection session={session} facilitatorId={facilitator?.id} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
       <StructuredFieldsSection structuredFields={structuredFields} />
-      <GateSection kind="Discovery" session={session} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
-      <InterventionsSection id={id} session={session} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
-      <GateSection kind="Shape" session={session} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
+      <GateSection kind="Discovery" session={session} run={run} aiAvailable={canUseAi} aiRequiresKey={aiRequiresKey} agentApiKey={agentApiKey} />
+      <InterventionsSection id={id} session={session} run={run} aiAvailable={canUseAi} aiRequiresKey={aiRequiresKey} agentApiKey={agentApiKey} />
+      <GateSection kind="Shape" session={session} run={run} aiAvailable={canUseAi} aiRequiresKey={aiRequiresKey} agentApiKey={agentApiKey} />
       <FinalizeSection session={session} run={run} />
     </main>
   );
