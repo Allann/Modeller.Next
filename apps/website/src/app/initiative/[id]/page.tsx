@@ -11,10 +11,11 @@ import { GateSection } from '@/components/initiative/GateSection';
 import { InterventionsSection } from '@/components/initiative/InterventionsSection';
 import { FinalizeSection } from '@/components/initiative/FinalizeSection';
 import { CopyLinkButton } from '@/components/initiative/CopyLinkButton';
+import { ConnectionStatus } from '@/components/initiative/ConnectionStatus';
 
 export default function FacilitatorCockpitPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { session, error, loading, refetch } = useInitiativeSession(id);
+  const { session, error, loading, connectionStatus, refetch } = useInitiativeSession(id);
   const [actionError, setActionError] = useState<string | null>(null);
 
   async function run(action: () => Promise<unknown>) {
@@ -36,7 +37,7 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
 
   return (
     <main className="cockpit">
-      <p className="eyebrow">Facilitator cockpit</p>
+      <p className="eyebrow">Facilitator cockpit <ConnectionStatus status={connectionStatus} /></p>
       <h1>{session.originalChangeRequest}</h1>
       {session.finalization && (
         <p className="badge badge-finalization">

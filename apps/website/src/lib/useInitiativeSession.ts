@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import * as signalR from '@microsoft/signalr';
 import { API_BASE_URL, InitiativeApiError, initiativeApi } from './initiativeApi';
 import type { InitiativeSessionDto } from './initiativeTypes';
 
 const SESSION_UPDATED_EVENT = 'InitiativeSessionUpdated';
+export type InitiativeConnectionStatus = 'connecting' | 'live' | 'reconnecting' | 'polling';
 
 /** Loads an Initiative session and keeps it live via #90's SignalR hub — a bare "something
  * changed" notification, so this just refetches rather than trying to apply a partial delta
@@ -14,7 +15,7 @@ export function useInitiativeSession(id: string, viewerRole?: 'DomainExpert') {
   const [session, setSession] = useState<InitiativeSessionDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const connectionRef = useRef<signalR.HubConnection | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<InitiativeConnectionStatus>('connecting');
 
   const refetch = useCallback(async () => {
     try {
@@ -36,26 +37,72 @@ export function useInitiativeSession(id: string, viewerRole?: 'DomainExpert') {
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${API_BASE_URL}/hubs/initiative`)
-      .withAutomaticReconnect()
+      .withAutomaticReconnect({
+        nextRetryDelayInMilliseconds: ({ previousRetryCount }) => Math.min(1000 * 2 ** previousRetryCount, 30_000),
+      })
       .build();
-    connectionRef.current = connection;
+    let disposed = false;
+    let restartTimer: ReturnType<typeof setTimeout> | undefined;
+
+    async function joinAndRefresh() {
+      await connection.invoke('JoinSession', id);
+      if (disposed) return;
+      setConnectionStatus('live');
+      await refetch();
+    }
+
+    async function start() {
+      if (disposed || connection.state !== signalR.HubConnectionState.Disconnected) return;
+      setConnectionStatus('connecting');
+      try {
+        await connection.start();
+        await joinAndRefresh();
+      } catch {
+        if (disposed) return;
+        setConnectionStatus('polling');
+        restartTimer = setTimeout(() => void start(), 5000);
+      }
+    }
 
     connection.on(SESSION_UPDATED_EVENT, () => {
       void refetch();
     });
 
-    connection
-      .start()
-      .then(() => connection.invoke('JoinSession', id))
-      .catch(() => {
-        // Realtime is an enhancement, not a requirement — the page still works via the initial
-        // fetch and any manual refresh; a failed hub connection is silently non-fatal.
-      });
+    connection.onreconnecting(() => setConnectionStatus('reconnecting'));
+    connection.onreconnected(() => {
+      void joinAndRefresh().catch(() => setConnectionStatus('polling'));
+    });
+    connection.onclose(() => {
+      if (disposed) return;
+      setConnectionStatus('polling');
+      restartTimer = setTimeout(() => void start(), 5000);
+    });
+
+    void start();
 
     return () => {
+      disposed = true;
+      if (restartTimer) clearTimeout(restartTimer);
       void connection.stop();
     };
   }, [id, refetch]);
 
-  return { session, error, loading, refetch };
+  useEffect(() => {
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible') void refetch();
+    };
+    const interval = setInterval(
+      refreshIfVisible,
+      connectionStatus === 'live' ? 15_000 : 5000,
+    );
+    document.addEventListener('visibilitychange', refreshIfVisible);
+    window.addEventListener('online', refreshIfVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshIfVisible);
+      window.removeEventListener('online', refreshIfVisible);
+    };
+  }, [connectionStatus, refetch]);
+
+  return { session, error, loading, connectionStatus, refetch };
 }

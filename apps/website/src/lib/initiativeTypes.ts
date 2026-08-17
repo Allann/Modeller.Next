@@ -44,6 +44,19 @@ export const ALL_FIELDS: InitiativeField[] = [
   'Risks',
 ];
 
+export const INITIATIVE_FIELD_LABELS: Record<InitiativeField, string> = {
+  ProblemStatement: 'Problem statement',
+  AffectedUsers: 'Affected users',
+  PainPoints: 'Pain points',
+  Outcomes: 'Outcomes',
+  SuccessCriteria: 'Success criteria',
+  NonGoals: 'Non-goals',
+  Constraints: 'Constraints',
+  Assumptions: 'Assumptions',
+  OpenQuestions: 'Open questions',
+  Risks: 'Risks',
+};
+
 export type InterventionType =
   | 'Process'
   | 'People'

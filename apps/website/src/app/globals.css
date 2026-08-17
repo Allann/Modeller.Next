@@ -294,6 +294,35 @@ main > h1 + p {
   color: #5eead4;
 }
 
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--modeller-line);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  color: var(--modeller-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.connection-status-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #f59e0b;
+}
+
+.connection-status-live .connection-status-dot {
+  background: #22c55e;
+}
+
+.connection-status-polling .connection-status-dot {
+  background: var(--modeller-teal-bright);
+}
+
 section {
   margin-top: 2.5rem;
 }
@@ -305,6 +334,34 @@ pre {
   padding: 1rem;
   overflow-x: auto;
   font-size: 0.85rem;
+}
+
+.initiative-document {
+  margin-top: 1rem;
+  padding: 1.25rem;
+  background: var(--modeller-surface);
+  border: 1px solid var(--modeller-line);
+  border-radius: 0.75rem;
+}
+
+.initiative-document section {
+  margin-top: 1.5rem;
+}
+
+.initiative-document section:first-child {
+  margin-top: 0;
+}
+
+.initiative-document h3 {
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.initiative-document ul {
+  margin: 0.6rem 0 0;
+  padding-left: 1.25rem;
+  color: var(--modeller-fg);
+  line-height: 1.6;
 }
 
 .diagram {

@@ -3,6 +3,8 @@
 import { use, useState } from 'react';
 import { InitiativeApiError, initiativeApi } from '@/lib/initiativeApi';
 import { useInitiativeSession } from '@/lib/useInitiativeSession';
+import { ConnectionStatus } from '@/components/initiative/ConnectionStatus';
+import { InitiativeDocument } from '@/components/initiative/InitiativeDocument';
 
 /** The Domain Expert's focused view — deliberately not the whole cockpit surface (issue #91):
  * just the current sent question and a place to answer it. Enforced on the wire, not just in what
@@ -11,7 +13,7 @@ import { useInitiativeSession } from '@/lib/useInitiativeSession';
  * unsent questions, gate evaluations/overrides, and Shape's intervention curation. */
 export default function DomainExpertRespondPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { session, error, loading, refetch } = useInitiativeSession(id, 'DomainExpert');
+  const { session, error, loading, connectionStatus, refetch } = useInitiativeSession(id, 'DomainExpert');
   const [text, setText] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -22,9 +24,10 @@ export default function DomainExpertRespondPage({ params }: { params: Promise<{ 
   if (session.finalization) {
     return (
       <main>
-        <p className="eyebrow">Domain Expert</p>
+        <p className="eyebrow">Domain Expert <ConnectionStatus status={connectionStatus} /></p>
         <h1>This Initiative is finalized</h1>
-        <p>Thank you — there&rsquo;s nothing further needed from you right now.</p>
+        <p>Thank you. The final Initiative document is available below.</p>
+        <InitiativeDocument initiativeId={session.id} markdown={session.finalization.markdownSnapshot} />
       </main>
     );
   }
@@ -50,7 +53,7 @@ export default function DomainExpertRespondPage({ params }: { params: Promise<{ 
 
   return (
     <main>
-      <p className="eyebrow">Domain Expert</p>
+      <p className="eyebrow">Domain Expert <ConnectionStatus status={connectionStatus} /></p>
       <h1>{session.originalChangeRequest}</h1>
 
       {currentQuestion ? (

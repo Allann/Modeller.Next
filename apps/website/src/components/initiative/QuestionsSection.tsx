@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ALL_FIELDS, PHASE_OF_FIELD, type InitiativeField, type InitiativeSessionDto } from '@/lib/initiativeTypes';
+import { ALL_FIELDS, INITIATIVE_FIELD_LABELS, PHASE_OF_FIELD, type InitiativeField, type InitiativeSessionDto } from '@/lib/initiativeTypes';
 import { initiativeApi } from '@/lib/initiativeApi';
 import type { RunAction } from './types';
 
@@ -35,7 +35,7 @@ export function QuestionsSection({
           <select value={field} onChange={(event) => setField(event.target.value as InitiativeField)}>
             {ALL_FIELDS.map((f) => (
               <option key={f} value={f}>
-                {f} ({PHASE_OF_FIELD[f]})
+                {INITIATIVE_FIELD_LABELS[f]} ({PHASE_OF_FIELD[f]})
               </option>
             ))}
           </select>
@@ -50,7 +50,7 @@ export function QuestionsSection({
         <ul className="item-list">
           {proposed.map((q) => (
             <li key={q.id}>
-              <span className="badge">{q.field}</span> {q.text}
+              <span className="badge">{INITIATIVE_FIELD_LABELS[q.field]}</span> {q.text}
               <button className="link-action" onClick={() => void run(() => initiativeApi.sendQuestion(session.id, q.id))}>
                 Send to Domain Expert
               </button>
@@ -68,7 +68,7 @@ export function QuestionsSection({
           <ul className="item-list">
             {sent.map((q) => (
               <li key={q.id}>
-                <span className="badge">{q.field}</span> {q.text}
+                <span className="badge">{INITIATIVE_FIELD_LABELS[q.field]}</span> {q.text}
               </li>
             ))}
           </ul>
