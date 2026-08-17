@@ -35,6 +35,7 @@ const apiOrigin =
 // degrades to a slower fallback transport — the pages still work, which is exactly what makes it
 // easy to miss.
 const apiSocketOrigin = apiOrigin.replace(/^http/, 'ws');
+const postHogOrigin = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
 
 // /playground is proxied through to the apps/studio deployment (Next.js "Multi Zones" pattern,
 // issue #74) rather than living at its own subdomain — visitors only ever see modeller.website.
@@ -55,7 +56,7 @@ const SECURITY_HEADERS = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
       "font-src 'self' data:",
-      `connect-src 'self' ${apiOrigin} ${apiSocketOrigin} https://va.vercel-scripts.com https://vitals.vercel-insights.com`,
+      `connect-src 'self' ${apiOrigin} ${apiSocketOrigin} ${postHogOrigin} https://va.vercel-scripts.com https://vitals.vercel-insights.com`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

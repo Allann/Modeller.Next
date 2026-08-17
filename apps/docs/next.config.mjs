@@ -18,6 +18,7 @@ const withMDX = createMDX();
 // 'unsafe-eval' is dev-only: Fast Refresh/HMR relies on eval() to load modules; production
 // builds never need it.
 const isDev = process.env.NODE_ENV !== 'production';
+const postHogOrigin = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
 const SECURITY_HEADERS = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -30,7 +31,7 @@ const SECURITY_HEADERS = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
       "font-src 'self' data:",
-      "connect-src 'self' https://va.vercel-scripts.com https://vitals.vercel-insights.com",
+      `connect-src 'self' ${postHogOrigin} https://va.vercel-scripts.com https://vitals.vercel-insights.com`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

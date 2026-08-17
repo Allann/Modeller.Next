@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using Modeller.Api.Analytics;
 using Modeller.Initiative;
 
 namespace Modeller.Api.Initiative;
@@ -31,6 +32,7 @@ public sealed class InitiativePipeline(
     IInitiativeSessionRepository repository,
     IAgentAdvisor advisor,
     IHubContext<InitiativeHub> hub,
+    IProductAnalytics analytics,
     ILogger<InitiativePipeline> logger)
 {
     public async Task<ApiResult> CreateAsync(CreateInitiativeRequest request, CancellationToken cancellationToken)
@@ -46,6 +48,7 @@ public sealed class InitiativePipeline(
         session = session.AddParticipant(Participant.CreateNew(request.FacilitatorName, ParticipantRole.Facilitator));
         session = session.AddParticipant(Participant.CreateNew(request.DomainExpertName, ParticipantRole.DomainExpert));
         await repository.SaveAsync(session, cancellationToken);
+        await analytics.CaptureAsync(ProductEvents.InitiativeCreated, session.Id.Value, cancellationToken: cancellationToken);
         logger.LogInformation("Created Initiative {InitiativeId}", session.Id);
         return Ok(session);
     }
@@ -60,6 +63,9 @@ public sealed class InitiativePipeline(
         var session = await repository.LoadAsync(InitiativeId.FromExisting(id), cancellationToken);
         if (session is null) return NotFound(id);
 
+        await analytics.CaptureAsync(ProductEvents.InitiativeViewed, id,
+            new Dictionary<string, object?> { ["viewer_role"] = viewerRole ?? "Facilitator" }, cancellationToken);
+
         if (string.Equals(viewerRole, "DomainExpert", StringComparison.OrdinalIgnoreCase))
         {
             return new ApiResult(InitiativeSessionMapper.ToDomainExpertDto(session), StatusCodes.Status200OK);
@@ -69,7 +75,7 @@ public sealed class InitiativePipeline(
     }
 
     public Task<ApiResult> ProposeQuestionAsync(Guid id, ProposeQuestionRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, cancellationToken, async session =>
+        ExecuteAsync(id, ProductEvents.QuestionProposed, cancellationToken, async session =>
         {
             if (!Enum.TryParse<ParticipantRole>(request.AuthorRole, out var authorRole))
                 return InitiativeMutationOutcome.Early(Invalid($"'{request.AuthorRole}' is not a recognised participant role."));
@@ -91,15 +97,15 @@ public sealed class InitiativePipeline(
         });
 
     public Task<ApiResult> SendQuestionAsync(Guid id, Guid questionId, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, cancellationToken, session =>
+        ExecuteAsync(id, ProductEvents.QuestionSent, cancellationToken, session =>
             Task.FromResult(InitiativeMutationOutcome.Success(session.SendQuestion(QuestionId.FromExisting(questionId)))));
 
     public Task<ApiResult> RejectQuestionAsync(Guid id, Guid questionId, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, cancellationToken, session =>
+        ExecuteAsync(id, null, cancellationToken, session =>
             Task.FromResult(InitiativeMutationOutcome.Success(session.RejectProposedQuestion(QuestionId.FromExisting(questionId)))));
 
     public Task<ApiResult> SubmitResponseAsync(Guid id, Guid questionId, SubmitResponseRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, cancellationToken, session =>
+        ExecuteAsync(id, ProductEvents.ResponseSubmitted, cancellationToken, session =>
         {
             if (string.IsNullOrWhiteSpace(request.Text))
                 return Task.FromResult(InitiativeMutationOutcome.Early(Invalid("A response requires non-empty text.")));
@@ -109,7 +115,7 @@ public sealed class InitiativePipeline(
         });
 
     public Task<ApiResult> AcceptResponseAsync(Guid id, Guid responseId, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, cancellationToken, session =>
+        ExecuteAsync(id, ProductEvents.ResponseAccepted, cancellationToken, session =>
             Task.FromResult(InitiativeMutationOutcome.Success(session.AcceptResponse(ResponseId.FromExisting(responseId)))));
 
     public async Task<ApiResult> GetInterventionSuggestionsAsync(Guid id, CancellationToken cancellationToken)
@@ -125,7 +131,7 @@ public sealed class InitiativePipeline(
     }
 
     public Task<ApiResult> SelectInterventionAsync(Guid id, SelectInterventionRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, cancellationToken, session =>
+        ExecuteAsync(id, ProductEvents.InterventionSelected, cancellationToken, session =>
         {
             if (!Enum.TryParse<InterventionType>(request.Type, out var type))
                 return Task.FromResult(InitiativeMutationOutcome.Early(Invalid($"'{request.Type}' is not a recognised intervention type.")));
@@ -135,15 +141,15 @@ public sealed class InitiativePipeline(
         });
 
     public Task<ApiResult> WithdrawInterventionAsync(Guid id, Guid interventionId, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, cancellationToken, session =>
+        ExecuteAsync(id, null, cancellationToken, session =>
             Task.FromResult(InitiativeMutationOutcome.Success(session.WithdrawIntervention(InterventionId.FromExisting(interventionId)))));
 
     public Task<ApiResult> LinkDesignWorkspaceAsync(Guid id, Guid interventionId, LinkDesignWorkspaceRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, cancellationToken, session =>
+        ExecuteAsync(id, null, cancellationToken, session =>
             Task.FromResult(InitiativeMutationOutcome.Success(session.LinkDesignWorkspace(InterventionId.FromExisting(interventionId), request.Reference))));
 
     public Task<ApiResult> RecordGateEvaluationAsync(Guid id, RecordGateEvaluationRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, cancellationToken, async session =>
+        ExecuteAsync(id, ProductEvents.GateEvaluated, cancellationToken, async session =>
         {
             if (!Enum.TryParse<GateKind>(request.Kind, out var kind))
                 return InitiativeMutationOutcome.Early(Invalid($"'{request.Kind}' is not a recognised gate."));
@@ -179,7 +185,7 @@ public sealed class InitiativePipeline(
         });
 
     public Task<ApiResult> DismissGateFindingAsync(Guid id, string kind, DismissGateFindingRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, cancellationToken, session =>
+        ExecuteAsync(id, null, cancellationToken, session =>
         {
             if (!Enum.TryParse<GateKind>(kind, out var gateKind))
                 return Task.FromResult(InitiativeMutationOutcome.Early(Invalid($"'{kind}' is not a recognised gate.")));
@@ -191,11 +197,11 @@ public sealed class InitiativePipeline(
         });
 
     public Task<ApiResult> FinalizeAsync(Guid id, FinalizeRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, cancellationToken, session =>
+        ExecuteAsync(id, ProductEvents.InitiativeFinalized, cancellationToken, session =>
             Task.FromResult(InitiativeMutationOutcome.Success(session.FinalizeInitiative(DateTimeOffset.UtcNow, request.Reason))));
 
     public Task<ApiResult> ReopenAsync(Guid id, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, cancellationToken, session => Task.FromResult(InitiativeMutationOutcome.Success(session.Reopen())));
+        ExecuteAsync(id, ProductEvents.InitiativeReopened, cancellationToken, session => Task.FromResult(InitiativeMutationOutcome.Success(session.Reopen())));
 
     /// <summary>
     /// Loads, applies <paramref name="mutate"/>, and — only for a <see cref="InitiativeMutationOutcome.Success"/>
@@ -204,7 +210,7 @@ public sealed class InitiativePipeline(
     /// becomes a 400 rather than an unhandled 500, since these are exactly the exceptions #88's
     /// aggregate raises for a disallowed transition.
     /// </summary>
-    private async Task<ApiResult> ExecuteAsync(Guid id, CancellationToken cancellationToken, Func<InitiativeSession, Task<InitiativeMutationOutcome>> mutate)
+    private async Task<ApiResult> ExecuteAsync(Guid id, string? eventName, CancellationToken cancellationToken, Func<InitiativeSession, Task<InitiativeMutationOutcome>> mutate)
     {
         var session = await repository.LoadAsync(InitiativeId.FromExisting(id), cancellationToken);
         if (session is null) return NotFound(id);
@@ -223,6 +229,17 @@ public sealed class InitiativePipeline(
 
         var updated = outcome.Session!;
         await repository.SaveAsync(updated, cancellationToken);
+        if (eventName is not null)
+        {
+            await analytics.CaptureAsync(eventName, id, cancellationToken: cancellationToken);
+        }
+        var previousPhase = CurrentEngagementPhase(session);
+        var updatedPhase = CurrentEngagementPhase(updated);
+        if (updatedPhase > previousPhase)
+        {
+            await analytics.CaptureAsync(ProductEvents.InitiativePhaseReached, id,
+                new Dictionary<string, object?> { ["phase"] = updatedPhase.ToString() }, cancellationToken);
+        }
         await hub.Clients.Group(InitiativeHub.GroupName(id)).SendAsync(InitiativeHub.SessionUpdated, id, cancellationToken);
         return Ok(updated);
     }
@@ -240,4 +257,14 @@ public sealed class InitiativePipeline(
     private static ApiResult AgentUnavailable(AgentEvaluationStatus status, string? reason) =>
         new(new InitiativeErrorResponse($"initiative.agent.{status}", reason ?? "The Agent Advisor did not produce a suggestion."),
             StatusCodes.Status422UnprocessableEntity);
+
+    private static EngagementPhase CurrentEngagementPhase(InitiativeSession session)
+    {
+        if (session.Finalization is not null) return EngagementPhase.Finalized;
+        if (session.SelectedInterventions.Count > 0) return EngagementPhase.Shape;
+        if (session.Responses.OfType<AcceptedResponse>().Any()) return EngagementPhase.Frame;
+        return EngagementPhase.Discover;
+    }
+
+    private enum EngagementPhase { Discover, Frame, Shape, Finalized }
 }

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Modeller.Api;
 using Modeller.Api.Endpoints;
 using Modeller.Api.Initiative;
+using Modeller.Api.Analytics;
 using Modeller.Initiative;
 using Modeller.Initiative.OpenAICompatible;
 using OpenTelemetry.Metrics;
@@ -21,6 +22,17 @@ builder.Host.UseSerilog((context, loggerConfig) => loggerConfig.ReadFrom.Configu
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 builder.Services.AddSingleton<WorkspaceAnalysisPipeline>();
+builder.Services.AddHttpContextAccessor();
+var postHogKey = builder.Configuration["ProductAnalytics:ProjectKey"];
+if (!string.IsNullOrWhiteSpace(postHogKey))
+{
+    builder.Services.AddHttpClient<IProductAnalytics, PostHogProductAnalytics>(client =>
+        client.BaseAddress = new Uri((builder.Configuration["ProductAnalytics:Host"] ?? "https://us.i.posthog.com").TrimEnd('/') + "/"));
+}
+else
+{
+    builder.Services.AddSingleton<IProductAnalytics, DisabledProductAnalytics>();
+}
 
 // Initiative (issue #90): the Agent Advisor is an add-on, never a hard dependency, per #83/#86 —
 // only registered as the real OpenAI-compatible adapter when an endpoint is actually configured;
@@ -92,7 +104,7 @@ builder.Services.AddCors(options => options.AddPolicy("Playground", policy =>
     if (allowedOrigins.Length > 0)
         policy.WithOrigins(allowedOrigins)
             .WithMethods("GET", "POST")
-            .WithHeaders("Content-Type", "x-requested-with", "x-signalr-user-agent")
+            .WithHeaders("Content-Type", "x-requested-with", "x-signalr-user-agent", "x-analytics-id", "x-modeller-internal")
             .AllowCredentials();
 }));
 

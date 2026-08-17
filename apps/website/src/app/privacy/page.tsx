@@ -60,6 +60,14 @@ export default function PrivacyPage() {
           We use Vercel Analytics and Speed Insights for anonymized traffic and performance metrics (page
           views, load times) — never model content, and never tied to an account, since there isn&apos;t one.
         </p>
+        <p>
+          We also use PostHog for pseudonymous product events. These events show which site, page category,
+          and feature was used, and whether an Initiative reached a phase. A random browser identifier lets
+          us measure return use across Modeller sites. We do not record session replays, element text, model
+          source, Initiative text, questions, responses, file paths, or full Initiative links. PostHog&apos;s
+          configured plan controls event retention. Internal administrator activity is marked and excluded
+          from headline engagement results.
+        </p>
       </section>
 
       <section>

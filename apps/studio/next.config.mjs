@@ -10,6 +10,7 @@ const apiOrigin = process.env.NEXT_PUBLIC_MODELLER_API_URL || "'self'";
 // mount point to generate correct asset/route URLs. Set only via the deployed project's env vars;
 // local dev and Playwright leave it unset so the app still serves from '/'.
 const basePath = process.env.NEXT_PUBLIC_STUDIO_BASE_PATH || undefined;
+const postHogOrigin = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
 // Next.js App Router streams RSC hydration payloads via inline <script>self.__next_f.push(...)
 // tags, not src= URLs — 'unsafe-inline' is required in every environment, not just dev
 // (confirmed the hard way: without it the page hydrates to a blank body and throws "Invariant:
@@ -34,7 +35,7 @@ const SECURITY_HEADERS = [
       // 'self' for the bundled Monaco editor worker (src/lib/monaco-worker.ts), which Turbopack
       // serves as a same-origin chunk; blob: for the wrapper worker Monaco creates around it.
       "worker-src 'self' blob:",
-      `connect-src 'self' ${apiOrigin} https://va.vercel-scripts.com https://vitals.vercel-insights.com`,
+      `connect-src 'self' ${apiOrigin} ${postHogOrigin} https://va.vercel-scripts.com https://vitals.vercel-insights.com`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { InitiativeApiError, initiativeApi } from '@/lib/initiativeApi';
+import { capture } from '@/lib/productAnalytics';
 
 export default function HomePage() {
   const router = useRouter();
@@ -19,6 +20,8 @@ export default function HomePage() {
     setError(null);
     try {
       const session = await initiativeApi.create(originalChangeRequest, facilitatorName, domainExpertName);
+      capture('initiative_created');
+      capture('meaningful_use_started');
       router.push(`/initiative/${session.id}`);
     } catch (err) {
       setError(err instanceof InitiativeApiError ? err.message : 'Could not start this Initiative. Is the Modeller API running?');

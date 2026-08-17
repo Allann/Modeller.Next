@@ -42,6 +42,31 @@ public sealed class CorsTests
         }
     }
 
+    [Fact]
+    public async Task Preflight_allows_the_pseudonymous_analytics_headers()
+    {
+        Environment.SetEnvironmentVariable("Cors__AllowedOrigins__0", "https://modeller.website");
+        try
+        {
+            using var factory = new WebApplicationFactory<Program>();
+            using var client = factory.CreateClient();
+            using var request = new HttpRequestMessage(HttpMethod.Options, "/v1/initiative");
+            request.Headers.Add("Origin", "https://modeller.website");
+            request.Headers.Add("Access-Control-Request-Method", "POST");
+            request.Headers.Add("Access-Control-Request-Headers", "X-Analytics-Id,X-Modeller-Internal");
+
+            using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+            var allowed = string.Join(',', response.Headers.GetValues("Access-Control-Allow-Headers"));
+            Assert.Contains("x-analytics-id", allowed, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("x-modeller-internal", allowed, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("Cors__AllowedOrigins__0", null);
+        }
+    }
+
     /// <summary>
     /// The deployed site canonicalizes to the <c>www</c> host (the apex redirects to it), so that is
     /// the Origin every real browser sends. Listing only the apex is what took the deployed

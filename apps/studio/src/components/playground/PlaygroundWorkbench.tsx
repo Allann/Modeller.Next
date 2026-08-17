@@ -22,6 +22,7 @@ import {
 } from '@/lib/playground/api-client';
 import { decodeShareLink, encodeShareLink, type ShareDecodeResult } from '@/lib/playground/share-link';
 import { buildWorkspaceZip, downloadWorkspaceZip } from '@/lib/playground/workspace-bundle';
+import { capture } from '@/lib/productAnalytics';
 
 const VIEW_KINDS = ['Lifecycle', 'RuleDecision'] as const;
 type ViewKind = (typeof VIEW_KINDS)[number];
@@ -54,6 +55,7 @@ export function PlaygroundWorkbench() {
   const [downloading, setDownloading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const requestIdRef = useRef(0);
+  const firstEditCapturedRef = useRef(false);
 
   const loadSharedDraft = useCallback((shared: PlaygroundDraft) => {
     setDraft(shared);
@@ -100,10 +102,12 @@ export function PlaygroundWorkbench() {
       applyDiagnosticMarkers(response.diagnostics);
       setStatus('idle');
       setErrorMessage(undefined);
+      capture('analysis_completed', { outcome: 'succeeded' });
     } catch (error) {
       if (requestId !== requestIdRef.current) return;
       setStatus('error');
       setErrorMessage(error instanceof Error ? error.message : 'Failed to analyze the workspace.');
+      capture('analysis_completed', { outcome: 'failed' });
     }
   }, [draft.documents, draft.identity, draft.configuration, view, rootId]);
 
@@ -114,6 +118,11 @@ export function PlaygroundWorkbench() {
   }, [runAnalysis]);
 
   const onDocumentChange = (path: string, value: string) => {
+    if (!firstEditCapturedRef.current) {
+      firstEditCapturedRef.current = true;
+      capture('first_edit_made');
+      capture('meaningful_use_started');
+    }
     setDraft((previous) => {
       const next: PlaygroundDraft = {
         ...previous,
@@ -125,6 +134,7 @@ export function PlaygroundWorkbench() {
   };
 
   const onReset = () => {
+    capture('example_loaded');
     setUiNotice(undefined);
     setShareUrl(undefined);
     loadSharedDraft(resetToExample());
@@ -158,6 +168,7 @@ export function PlaygroundWorkbench() {
       saveDraft(nextDraft);
       setDraftRevision((revision) => revision + 1); // documents now carry embedded "# @id=" identities — remount the editor to show them
       downloadWorkspaceZip(buildWorkspaceZip(response.documents, response.identity, draft.configuration));
+      capture('workspace_downloaded');
       setUiNotice({ kind: 'info', text: 'Workspace downloaded. Documents now carry durable identities (the "# @id=" comments) — repeat downloads reuse them.' });
     } catch (error) {
       setUiNotice({ kind: 'error', text: error instanceof Error ? error.message : 'Failed to download the workspace.' });
@@ -215,7 +226,7 @@ export function PlaygroundWorkbench() {
       {shareUrl && (
         <div className="playground-share">
           <input readOnly value={shareUrl} aria-label="Share link" onFocus={(event) => event.currentTarget.select()} />
-          <button className="playground-share-btn" onClick={() => void navigator.clipboard?.writeText(shareUrl).catch(() => undefined)}>
+          <button className="playground-share-btn" onClick={() => { capture('share_link_copied'); void navigator.clipboard?.writeText(shareUrl).catch(() => undefined); }}>
             Copy
           </button>
           <button className="playground-share-btn" aria-label="Dismiss share link" onClick={() => setShareUrl(undefined)}>
@@ -246,6 +257,7 @@ export function PlaygroundWorkbench() {
                 value={view}
                 onChange={(event) => {
                   setView(event.target.value as ViewKind);
+                  capture('projection_viewed', { view: event.target.value });
                   setRootId('');
                 }}
               >

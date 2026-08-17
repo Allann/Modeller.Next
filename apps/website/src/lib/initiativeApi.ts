@@ -7,6 +7,7 @@ import type {
   InterventionType,
   ParticipantRole,
 } from './initiativeTypes';
+import { analyticsId, isInternalVisitor } from './productAnalytics';
 
 // next.config.mjs resolves this for every Next build (and keeps the CSP's connect-src in step with
 // it), so the fallback only applies outside a Next build — it matches Modeller.Api's own PORT
@@ -25,7 +26,12 @@ export class InitiativeApiError extends Error {
 async function send<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Analytics-Id': analyticsId(),
+      'X-Modeller-Internal': isInternalVisitor() ? '1' : '0',
+      ...init?.headers,
+    },
   });
   const body = await response.json();
   if (!response.ok) throw new InitiativeApiError(response.status, body as InitiativeErrorResponse);

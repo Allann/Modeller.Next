@@ -140,6 +140,22 @@ from a behaviour or report something that occurred externally, and is neither a
 request nor an instruction.
 _Avoid_: Command, notification, message
 
+**Product event**:
+A pseudonymous record that a visitor used a named Modeller capability, without submitted business content or technical identity.
+_Avoid_: Tracking event, audit event, domain event
+
+**Meaningful use**:
+The first product event in a visit that shows use of a Modeller capability beyond viewing or navigation.
+_Avoid_: Engagement, click, page view
+
+**Returning visitor**:
+A pseudonymous visitor who records meaningful use in a later measurement period.
+_Avoid_: User, account, repeat page view
+
+**Initiative phase conversion**:
+The first recorded progression of an Initiative session into a later engagement phase.
+_Avoid_: Page conversion, session completion
+
 **Evaluation result**:
 The immutable determined, indeterminate, invalid, or failed result of evaluating
 one rule or decision against one request. Cancellation is control flow and is
