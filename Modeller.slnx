@@ -46,4 +46,8 @@
     <Project Path="tests/Modeller.Validation.Tests/Modeller.Validation.Tests.csproj" />
     <Project Path="tests/Modeller.Workspace.Tests/Modeller.Workspace.Tests.csproj" />
   </Folder>
+  <Folder Name="/prototypes/">
+    <Project Path="prototypes/Modeller.SmtSpike/Modeller.SmtSpike.csproj" />
+    <Project Path="prototypes/Modeller.SmtSpike.Tests/Modeller.SmtSpike.Tests.csproj" />
+  </Folder>
 </Solution>

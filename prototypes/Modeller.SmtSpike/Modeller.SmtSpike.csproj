@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><RootNamespace>Modeller.SmtSpike</RootNamespace></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Modeller.Contexts/Modeller.Contexts.csproj" />
+    <ProjectReference Include="../../src/Modeller.Rules/Modeller.Rules.csproj" />
+    <PackageReference Include="Microsoft.Z3" />
+  </ItemGroup>
+  <ItemGroup><None Include="../../conformance/inputs/child-care-accs.context-package.v1.json" Link="Fixtures/child-care-accs.context-package.v1.json" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+</Project>
