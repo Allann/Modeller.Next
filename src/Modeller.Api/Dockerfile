@@ -2,7 +2,7 @@
 # Azure Container Apps, Google Cloud Run, or (via Dockerfile.vercel) Vercel container Functions.
 # See docs/architecture/decisions/hosted-workspace-api.mdx.
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0.302 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.400 AS build
 WORKDIR /src
 
 COPY Directory.Build.props Directory.Packages.props Modeller.slnx global.json ./
@@ -30,7 +30,7 @@ COPY src/Modeller.Validation/ src/Modeller.Validation/
 COPY src/Modeller.Model/ src/Modeller.Model/
 RUN dotnet publish src/Modeller.Api/Modeller.Api.csproj -c Release --no-restore -o /app
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.11 AS runtime
 WORKDIR /app
 COPY --from=build /app .
 

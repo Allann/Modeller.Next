@@ -13,7 +13,10 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "10.0.x"
+          dotnet-version: "10.0.400"
+
+      - name: Report .NET SDK
+        run: dotnet --info
 
       # Guarantees the Modeller.Conformance.Python.Tests toolchain tests (Python compile + FastAPI/OpenAPI
       # schema build) actually run in CI instead of silently skipping for a missing interpreter/dependencies.
