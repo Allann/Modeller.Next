@@ -10,9 +10,9 @@ namespace Modeller.Initiative.OpenAICompatible;
 /// Statement's <c>OpenAiCompatibleAgentAdvisor</c>
 /// (M:\business-statement\src\BusinessStatement.Adapters.Llm.OpenAICompatible\OpenAiCompatibleAgentAdvisor.cs),
 /// simplified: no Azure OpenAI / managed-identity path (out of scope for issue #89 — LM Studio or any
-/// OpenAI-compatible endpoint only, per the ADR this repo's decision is drawn from), and a plain
-/// <c>"json_object"</c> response format instead of a strict JSON-schema one, to keep this adapter
-/// small; the system prompt still fully specifies the required shape.
+/// OpenAI-compatible endpoint only, per the ADR this repo's decision is drawn from). The adapter
+/// does not request a provider-specific JSON response mode because some Gateway models reject it;
+/// the system prompt specifies the shape and every response is parsed and validated locally.
 ///
 /// Every public method returns an <see cref="AgentAdvisorResult{T}"/>, never throws for an
 /// AI-availability failure — <see cref="AgentAdvisorException"/> is caught internally and translated,
@@ -206,7 +206,6 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
                 model,
                 temperature = 0,
                 max_tokens = options.MaxOutputTokens,
-                response_format = new { type = "json_object" },
                 messages = new[]
                 {
                     new { role = "system", content = systemPrompt },
