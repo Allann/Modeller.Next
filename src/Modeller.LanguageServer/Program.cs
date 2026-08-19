@@ -78,12 +78,12 @@ internal sealed class RmlLspServer(Stream input, Stream output)
 
     private object Completion(JsonElement parameters)
     {
-        var uri = Uri(parameters); var position = Position(parameters); var document = documents[uri.AbsoluteUri];
-        var line = document.Text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n').ElementAtOrDefault(position.Line) ?? string.Empty;
-        var before = line[..Math.Min(position.Character, line.Length)];
-        var quote = before.LastIndexOf('"');
-        var prefix = quote >= 0 ? before[(quote + 1)..] : new string(before.Reverse().TakeWhile(char.IsLetter).Reverse().ToArray());
-        return new { isIncomplete = false, items = RmlLanguageService.Complete(Analysis(default), prefix).Select(item => new { label = item.Label, kind = item.Kind == "keyword" ? 14 : 6, detail = item.Detail }) };
+        var uri = Uri(parameters); var position = Position(parameters);
+        _ = documents[uri.AbsoluteUri];
+        return new { isIncomplete = false, items = RmlLanguageService.Complete(documents.Values, uri, position).Select(item => new {
+            label = item.Label, kind = item.Kind == "keyword" ? 14 : 6, detail = item.Detail,
+            textEdit = new { range = new { start = new { line = position.Line, character = item.ReplacementStartColumn - 1 }, end = new { line = position.Line, character = position.Character } }, newText = item.InsertText }
+        }) };
     }
     private object? Hover(JsonElement parameters)
     {

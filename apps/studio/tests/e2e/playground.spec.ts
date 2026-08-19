@@ -37,6 +37,20 @@ async function mockExport(page: Page) {
   });
 }
 
+async function mockCompletion(page: Page) {
+  await page.route('**/v1/workspace/complete', (route) => route.fulfill({ json: {
+    apiVersion: '1.0',
+    items: [{
+      label: 'Determine order readiness',
+      kind: 'Rule',
+      detail: "Reference the rule 'Determine order readiness' from this workspace.",
+      insertText: 'Determine order readiness',
+      replacementStartColumn: 13,
+    }],
+    diagnostics: [],
+  } }));
+}
+
 function cleanResponse(body: AnalyzeRequestBody) {
   const projections = (body.projections ?? []).map((request) => ({
     id: request.id,
@@ -183,6 +197,24 @@ test('editing the model re-analyzes and surfaces a source-mapped diagnostic', as
   await expect(page.locator('.problem-row')).toContainText('Unexpected token.');
   await expect(page.getByRole('status')).toContainText('1 problem');
   await expect(page.getByLabel('Model explorer')).not.toContainText('Valid');
+});
+
+test('context completion inserts a quoted workspace reference without changing indentation', async ({ page }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, cleanResponse);
+  await mockCompletion(page);
+  await page.goto('/');
+  await page.getByText('place-order.modeller', { exact: true }).click();
+
+  const editor = page.locator('.monaco-editor');
+  await editor.click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type('rml 1.0\nbehaviour Place order\n  requires "');
+  await page.keyboard.press('Control+Space');
+  await expect(page.locator('.suggest-widget')).toContainText('Determine order readiness');
+  await page.keyboard.press('Enter');
+
+  await expect(page.locator('.view-lines')).toContainText('requires "Determine order readiness');
 });
 
 test('a rejected projection shows its diagnostic without an endless loading message', async ({ page }) => {

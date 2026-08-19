@@ -1,9 +1,8 @@
 'use client';
 
-// A plain Monaco instance for the playground — no LSP: Modeller.Api exposes
-// only a batch /v1/workspace/analyze endpoint (see
-// docs/architecture/decisions/hosted-workspace-api.mdx), so there is no
-// per-keystroke language server to bridge to. One model per document is kept
+// A plain Monaco instance for the playground — no LSP. Modeller.Api exposes
+// bounded analyze and completion endpoints (see
+// docs/architecture/decisions/hosted-workspace-api.mdx). One model per document is kept
 // alive for the whole session (not lazily per open tab, unlike local Studio's
 // MonacoEditor) so diagnostics can be attached to any file regardless of
 // which tab is currently active.
@@ -65,7 +64,7 @@ export function PlaygroundEditor({
   activePath: string | undefined;
   onChange: (path: string, value: string) => void;
   navigationTarget?: { path: string; line: number; column: number; key: number };
-  provideCompletions?: (path: string, line: number, prefix: string, signal: AbortSignal) => Promise<readonly { label: string; kind: string; detail: string }[]>;
+  provideCompletions?: (path: string, line: number, column: number, signal: AbortSignal) => Promise<readonly { label: string; kind: string; detail: string; insertText: string; replacementStartColumn: number }[]>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | undefined>(undefined);
@@ -92,18 +91,22 @@ export function PlaygroundEditor({
       watchMonacoTheme(monaco);
       editorRef.current = monaco.editor.create(container, { automaticLayout: true, wordBasedSuggestions: 'off' });
       completion = monaco.languages.registerCompletionItemProvider('modeller-rml', {
-        triggerCharacters: [' '],
+        triggerCharacters: [' ', '"'],
         provideCompletionItems: async (model, position, _context, token) => {
           if (!provideCompletionsRef.current) return { suggestions: [] };
           const controller = new AbortController();
           token.onCancellationRequested(() => controller.abort());
-          const word = model.getWordUntilPosition(position);
           const path = model.uri.path.replace(/^\/workspace\//, '');
-          const items = await provideCompletionsRef.current(path, position.lineNumber, word.word, controller.signal);
+          await new Promise<void>((resolve) => {
+            const timeout = setTimeout(resolve, 120);
+            controller.signal.addEventListener('abort', () => { clearTimeout(timeout); resolve(); }, { once: true });
+          });
+          if (controller.signal.aborted) return { suggestions: [] };
+          const items = await provideCompletionsRef.current(path, position.lineNumber, position.column, controller.signal);
           return { suggestions: items.map((item) => ({
-            label: item.label, detail: item.detail, insertText: item.label,
+            label: item.label, detail: item.detail, insertText: item.insertText,
             kind: item.kind === 'keyword' ? monaco.languages.CompletionItemKind.Keyword : monaco.languages.CompletionItemKind.Reference,
-            range: { startLineNumber: position.lineNumber, endLineNumber: position.lineNumber, startColumn: word.startColumn, endColumn: word.endColumn },
+            range: { startLineNumber: position.lineNumber, endLineNumber: position.lineNumber, startColumn: item.replacementStartColumn, endColumn: position.column },
           })) };
         },
       });

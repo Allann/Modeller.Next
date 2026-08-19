@@ -167,16 +167,27 @@ export async function fetchSupportedViews(): Promise<string[]> {
   return data.views;
 }
 
-export interface CompletionItemDto { label: string; kind: string; detail: string }
+export interface CompletionItemDto {
+  label: string;
+  kind: string;
+  detail: string;
+  insertText: string;
+  replacementStartColumn: number;
+}
 
 export async function completeWorkspace(
   documents: readonly WorkspaceDocumentDto[], identity: IdentityDto, configuration: ConfigurationDto,
-  path: string, line: number, prefix: string, signal?: AbortSignal,
+  path: string, line: number, column: number, signal?: AbortSignal,
 ): Promise<CompletionItemDto[]> {
-  const response = await fetch(`${API_BASE}/v1/workspace/complete`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
-    body: JSON.stringify({ workspace: { documents, identity, configuration, projections: [] }, path, line, prefix }),
-  });
-  if (!response.ok) return [];
-  return ((await response.json()) as { items: CompletionItemDto[] }).items;
+  try {
+    const response = await fetch(`${API_BASE}/v1/workspace/complete`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
+      body: JSON.stringify({ workspace: { documents, identity, configuration, projections: [] }, path, line, column }),
+    });
+    if (!response.ok) return [];
+    return ((await response.json()) as { items: CompletionItemDto[] }).items;
+  } catch (error) {
+    if (signal?.aborted) return [];
+    throw error;
+  }
 }

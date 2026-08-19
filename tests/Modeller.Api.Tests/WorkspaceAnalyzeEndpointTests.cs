@@ -317,14 +317,66 @@ public sealed class WorkspaceAnalyzeEndpointTests : IClassFixture<WebApplication
     public async Task Complete_returns_only_context_valid_keywords_and_workspace_symbols()
     {
         using var client = _factory.CreateClient();
-        var request = new WorkspaceCompletionRequest(ReferenceWorkspaceRequest(), "model/context.rml", 8, "");
+        var request = new WorkspaceCompletionRequest(ReferenceWorkspaceRequest(), "model/context.rml", 8, 3);
         using var response = await client.PostAsJsonAsync("/v1/workspace/complete", request, ApiJson.Options, TestContext.Current.CancellationToken);
         var body = await response.Content.ReadFromJsonAsync<WorkspaceCompletionResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
 
         Assert.NotNull(body);
         Assert.Contains(body.Items, item => item.Label == "lifecycle" && item.Kind == "keyword");
         Assert.DoesNotContain(body.Items, item => item.Label == "entity" && item.Kind == "keyword");
-        Assert.Contains(body.Items, item => item.Label == "ACCS determination application" && item.Kind == "Entity");
+        Assert.DoesNotContain(body.Items, item => item.Kind != "keyword");
+    }
+
+    [Fact]
+    public async Task Complete_filters_semantic_references_and_works_with_an_incomplete_current_document()
+    {
+        var request = ReferenceWorkspaceRequest();
+        request.Documents.Add(new("model/behaviour.modeller", "rml 1.0\nbehaviour Place order\n  for \"ACCS determination application\"\n  requires \""));
+        using var client = _factory.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/v1/workspace/complete",
+            new WorkspaceCompletionRequest(request, "model/behaviour.modeller", 4, 13), ApiJson.Options, TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadFromJsonAsync<WorkspaceCompletionResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(body);
+        var rule = Assert.Single(body.Items);
+        Assert.Equal("Determine ACCS eligibility", rule.Label);
+        Assert.Equal("Rule", rule.Kind);
+        Assert.Equal("Determine ACCS eligibility", rule.InsertText);
+        Assert.Equal(13, rule.ReplacementStartColumn);
+        Assert.Empty(body.Diagnostics);
+    }
+
+    [Fact]
+    public async Task Complete_returns_a_structured_error_for_malformed_json()
+    {
+        using var client = _factory.CreateClient();
+        using var content = new StringContent("{not-json", System.Text.Encoding.UTF8, "application/json");
+
+        using var response = await client.PostAsync("/v1/workspace/complete", content, TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadFromJsonAsync<WorkspaceCompletionResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.NotNull(body);
+        Assert.Contains(body.Diagnostics, item => item.Code == "api.request.malformed");
+        Assert.Empty(body.Items);
+    }
+
+    [Fact]
+    public async Task Complete_applies_workspace_request_limits_before_scanning_source()
+    {
+        var request = ReferenceWorkspaceRequest();
+        request.Documents[0] = request.Documents[0] with { Content = new string('x', RequestLimits.MaximumDocumentCharacters + 1) };
+        using var client = _factory.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/v1/workspace/complete",
+            new WorkspaceCompletionRequest(request, request.Documents[0].Path, 1, 1), ApiJson.Options, TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadFromJsonAsync<WorkspaceCompletionResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.NotNull(body);
+        Assert.NotEmpty(body.Diagnostics);
+        Assert.Empty(body.Items);
     }
 
     [Theory]
