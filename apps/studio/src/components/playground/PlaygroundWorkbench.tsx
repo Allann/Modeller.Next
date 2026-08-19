@@ -14,17 +14,20 @@ import { StatusBanner, type Notice } from './StatusBanner';
 import { loadDraft, resetToExample, saveDraft, type PlaygroundDraft } from '@/lib/playground/session-store';
 import {
   analyzeWorkspace,
+  completeWorkspace,
   exportWorkspace,
   fetchSupportedViews,
   EPHEMERAL_IDENTITY,
   type ProjectionResponseDto,
   type RootSummaryDto,
+  type SemanticOutlineItemDto,
+  type SemanticCountDto,
 } from '@/lib/playground/api-client';
 import { decodeShareLink, encodeShareLink, type ShareDecodeResult } from '@/lib/playground/share-link';
 import { buildWorkspaceZip, downloadWorkspaceZip } from '@/lib/playground/workspace-bundle';
 import { capture } from '@/lib/productAnalytics';
 
-const VIEW_KINDS = ['Lifecycle', 'RuleDecision'] as const;
+const VIEW_KINDS = ['Lifecycle', 'RuleDecision', 'Structural'] as const;
 type ViewKind = (typeof VIEW_KINDS)[number];
 const ANALYZE_DEBOUNCE_MS = 500;
 
@@ -38,6 +41,12 @@ function shareDecodeErrorNotice(reason: Exclude<ShareDecodeResult, { ok: true }>
   return { kind: 'error', text };
 }
 
+function countLabel(item: SemanticCountDto): string {
+  const kind = item.kind.toLowerCase();
+  const noun = item.count === 1 ? kind : kind.endsWith('y') ? `${kind.slice(0, -1)}ies` : `${kind}s`;
+  return `${item.count} ${noun}`;
+}
+
 export function PlaygroundWorkbench() {
   const [draft, setDraft] = useState<PlaygroundDraft>(() => loadDraft());
   const [draftRevision, setDraftRevision] = useState(0);
@@ -46,9 +55,13 @@ export function PlaygroundWorkbench() {
   const [view, setView] = useState<ViewKind>('Lifecycle');
   const [rootId, setRootId] = useState('');
   const [roots, setRoots] = useState<RootSummaryDto[]>([]);
+  const [outline, setOutline] = useState<SemanticOutlineItemDto[]>([]);
+  const [summary, setSummary] = useState<SemanticCountDto[]>([]);
+  const [navigationTarget, setNavigationTarget] = useState<{ path: string; line: number; column: number; key: number }>();
   const [projection, setProjection] = useState<ProjectionResponseDto | undefined>();
   const [supportedViews, setSupportedViews] = useState<string[]>([]);
   const [status, setStatus] = useState<'idle' | 'analyzing' | 'error'>('idle');
+  const [diagnosticCount, setDiagnosticCount] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [uiNotice, setUiNotice] = useState<Notice | undefined>();
   const [shareUrl, setShareUrl] = useState<string | undefined>();
@@ -56,6 +69,7 @@ export function PlaygroundWorkbench() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const requestIdRef = useRef(0);
   const firstEditCapturedRef = useRef(false);
+  const navigationKeyRef = useRef(0);
 
   const loadSharedDraft = useCallback((shared: PlaygroundDraft) => {
     setDraft(shared);
@@ -98,8 +112,19 @@ export function PlaygroundWorkbench() {
       const response = await analyzeWorkspace(draft.documents, draft.identity, draft.configuration, projections);
       if (requestId !== requestIdRef.current) return; // superseded by a newer edit
       setRoots(response.roots);
+      setOutline(response.outline ?? []);
+      setSummary(response.summary ?? []);
+      if (!rootId) setRootId(response.roots.find((root) => root.kind === view)?.id ?? '');
+      if (draft.identity.kind === 'ephemeral' && response.identity) {
+        setDraft((previous) => {
+          const next = { ...previous, identity: response.identity! };
+          saveDraft(next);
+          return next;
+        });
+      }
       setProjection(response.projections[0]);
       applyDiagnosticMarkers(response.diagnostics);
+      setDiagnosticCount(response.diagnostics.length);
       setStatus('idle');
       setErrorMessage(undefined);
       capture('analysis_completed', { outcome: 'succeeded' });
@@ -110,6 +135,10 @@ export function PlaygroundWorkbench() {
       capture('analysis_completed', { outcome: 'failed' });
     }
   }, [draft.documents, draft.identity, draft.configuration, view, rootId]);
+
+  const provideCompletions = useCallback((path: string, line: number, prefix: string, signal: AbortSignal) =>
+    completeWorkspace(draft.documents, draft.identity, draft.configuration, path, line, prefix, signal),
+  [draft.documents, draft.identity, draft.configuration]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -126,11 +155,14 @@ export function PlaygroundWorkbench() {
     setDraft((previous) => {
       const next: PlaygroundDraft = {
         ...previous,
+        identity: EPHEMERAL_IDENTITY,
         documents: previous.documents.map((document) => (document.path === path ? { ...document, content: value } : document)),
       };
       saveDraft(next);
       return next;
     });
+    setRootId('');
+    setProjection(undefined);
   };
 
   const onReset = () => {
@@ -192,6 +224,12 @@ export function PlaygroundWorkbench() {
     if (draft.documents.some((document) => document.path === path)) openDocument(path);
   };
 
+  const navigateToConcept = (item: SemanticOutlineItemDto) => {
+    openDocument(item.location.document);
+    navigationKeyRef.current += 1;
+    setNavigationTarget({ path: item.location.document, line: item.location.line, column: item.location.column, key: navigationKeyRef.current });
+  };
+
   const tree = buildTree(draft.documents.map((document) => document.path));
   const availableViews = VIEW_KINDS.filter((kind) => supportedViews.length === 0 || supportedViews.includes(kind));
   const analysisStatus: Notice =
@@ -199,7 +237,9 @@ export function PlaygroundWorkbench() {
       ? { kind: 'analyzing', text: 'Analysing…' }
       : status === 'error'
         ? { kind: 'error', text: 'Analysis failed' }
-        : { kind: 'info', text: 'Ready' };
+        : diagnosticCount > 0
+          ? { kind: 'error', text: `${diagnosticCount} ${diagnosticCount === 1 ? 'problem' : 'problems'}` }
+          : { kind: 'info', text: summary.length === 0 ? 'Valid' : `Valid · ${summary.map(countLabel).join(' · ')}` };
   const messageNotice: Notice | undefined =
     uiNotice ??
     (status === 'error'
@@ -208,6 +248,12 @@ export function PlaygroundWorkbench() {
           text: `Couldn't reach the analysis service${errorMessage ? ` (${errorMessage})` : ''}. Your draft is unaffected — it will retry on your next edit.`,
         }
       : undefined);
+  const renderConcept = (item: SemanticOutlineItemDto, depth = 0): React.ReactNode => (
+    <div key={item.id} className="model-outline-group">
+      <button style={{ paddingLeft: `${depth}rem` }} onClick={() => navigateToConcept(item)}>{item.kind.toLowerCase()} {item.name}</button>
+      {outline.filter((child) => child.ownerId === item.id).map((child) => renderConcept(child, depth + 1))}
+    </div>
+  );
 
   return (
     <div className="shell playground-shell">
@@ -216,6 +262,9 @@ export function PlaygroundWorkbench() {
           <span className="mark">M</span> Modeller Playground
         </div>
         <div className="playground-actions">
+          <a className="playground-docs-link" href="https://modeller.wiki/docs/reference/readable-modelling-language" target="_blank" rel="noreferrer">
+            RML syntax reference
+          </a>
           <button className="playground-share-btn" onClick={() => void onShare()}>
             Share
           </button>
@@ -244,13 +293,17 @@ export function PlaygroundWorkbench() {
         <Panel defaultSize="20" minSize="12">
           <div className="explorer">
             <Explorer nodes={tree} activePath={activePath} onOpenDocument={openDocument} />
+            <div className="model-outline" aria-label="Model explorer">
+              <h2>Model</h2>
+              {outline.filter((item) => !item.ownerId).map((item) => renderConcept(item))}
+            </div>
           </div>
         </Panel>
         <Separator className="resize-handle" />
         <Panel defaultSize="55" minSize="25">
           <div className="center">
             <EditorTabs openPaths={openPaths} activePath={activePath} onSelect={setActivePath} onClose={closeDocument} />
-            <PlaygroundEditor key={draftRevision} documents={draft.documents} activePath={activePath} onChange={onDocumentChange} />
+            <PlaygroundEditor key={draftRevision} documents={draft.documents} activePath={activePath} onChange={onDocumentChange} navigationTarget={navigationTarget} provideCompletions={provideCompletions} />
             <ProblemsPanel onNavigate={navigateToProblem} />
           </div>
         </Panel>
@@ -289,7 +342,7 @@ export function PlaygroundWorkbench() {
               </div>
             ))}
             {!rootId && <div className="diagram-placeholder">Pick a root to view its diagram.</div>}
-            {rootId && !projection?.graph && <div className="diagram-placeholder">Loading…</div>}
+            {rootId && (!projection || projection.succeeded) && !projection?.graph && <div className="diagram-placeholder">Loading…</div>}
             <GraphCanvas graph={projection?.graph} />
           </div>
         </Panel>

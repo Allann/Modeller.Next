@@ -12,7 +12,7 @@ import nextConfig from 'eslint-config-next';
 const config = [
   ...nextConfig,
   {
-    ignores: ['server-bin/**', '.next/**', '.next-playground/**', 'tests/**'],
+    ignores: ['server-bin/**', '.next/**', '.next-playground/**', '.next-playground-local/**', 'tests/**'],
   },
 ];
 

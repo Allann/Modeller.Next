@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Modeller.Api.Contracts;
 using Modeller.Workspace;
+using Modeller.Parsing;
 
 namespace Modeller.Api.Endpoints;
 
@@ -10,7 +11,7 @@ namespace Modeller.Api.Endpoints;
 public static class WorkspaceEndpoints
 {
     private static readonly WorkspaceAnalyzeResponse MalformedRequestResponse = new(
-        "1.0", [new("api.request.malformed", "The request body could not be parsed as a workspace analyze request.")], [], []);
+        "1.0", [new("api.request.malformed", "The request body could not be parsed as a workspace analyze request.")], [], [], [], [], null);
 
     private static readonly WorkspaceExportResponse MalformedExportRequestResponse = new(
         "1.0", [new("api.request.malformed", "The request body could not be parsed as a workspace export request.")], [], null);
@@ -46,6 +47,21 @@ public static class WorkspaceEndpoints
 
         group.MapGet("/supported-views", () =>
             Results.Ok(new SupportedViewsResponse("1.0", [.. ModellerWorkspace.SupportedViewKinds])));
+
+        group.MapPost("/complete", (WorkspaceCompletionRequest request, WorkspaceAnalysisPipeline pipeline, CancellationToken cancellationToken) =>
+        {
+            var source = request.Workspace.Documents.FirstOrDefault(item => item.Path == request.Path)?.Content ?? string.Empty;
+            var parent = RmlGrammar.ParentAt(source, request.Line);
+            var analyzed = pipeline.Handle(request.Workspace with { Projections = [] }, cancellationToken).Body;
+            var keywords = RmlGrammar.AllowedStatements(parent)
+                .Select(label => new CompletionItemDto(label, "keyword", $"Valid inside {parent ?? "the document root"}."));
+            var symbols = analyzed.Outline.Select(item => new CompletionItemDto(item.Name, item.Kind, $"Resolved {item.Kind} in this workspace."));
+            var items = keywords.Concat(symbols)
+                .Where(item => request.Prefix.Length == 0 || item.Label.StartsWith(request.Prefix, StringComparison.OrdinalIgnoreCase))
+                .DistinctBy(item => item.Label, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(item => item.Label, StringComparer.OrdinalIgnoreCase).ToArray();
+            return Results.Ok(new WorkspaceCompletionResponse("1.0", items));
+        });
 
         return app;
     }

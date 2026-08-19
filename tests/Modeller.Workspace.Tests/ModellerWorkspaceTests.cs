@@ -181,7 +181,6 @@ public sealed class ModellerWorkspaceTests
     [InlineData(ViewKind.BehaviourMap)]
     [InlineData(ViewKind.CausalityAndEventFlow)]
     [InlineData(ViewKind.ContextMap)]
-    [InlineData(ViewKind.Structural)]
     public void Project_rejects_a_view_kind_DiagramProjector_does_not_implement_yet(ViewKind unsupported)
     {
         var analyzed = Assert.IsType<WorkspaceOutcome<AnalyzedWorkspace>.Success>(ModellerWorkspace.Analyze(EphemeralWorkspace(), TestContext.Current.CancellationToken)).Value;
@@ -195,7 +194,7 @@ public sealed class ModellerWorkspaceTests
     [Fact]
     public void SupportedViewKinds_lists_exactly_the_view_kinds_DiagramProjector_implements()
     {
-        Assert.Equal([ViewKind.Lifecycle, ViewKind.RuleDecision], ModellerWorkspace.SupportedViewKinds);
+        Assert.Equal([ViewKind.Lifecycle, ViewKind.RuleDecision, ViewKind.Structural], ModellerWorkspace.SupportedViewKinds);
     }
 
     [Fact]

@@ -4,11 +4,12 @@ import { expect, test, type Page } from '@playwright/test';
 // deterministic, offline-safe, and the only reliable way to trigger the
 // service-failure path on demand. See docs/architecture/decisions/
 // hosted-workspace-api.mdx for the request/response shape being mocked.
-const SUPPORTED_VIEWS_RESPONSE = { apiVersion: '1.0', views: ['Lifecycle', 'RuleDecision'] };
+const SUPPORTED_VIEWS_RESPONSE = { apiVersion: '1.0', views: ['Lifecycle', 'RuleDecision', 'Structural'] };
 const ORDER_LIFECYCLE_ROOT = { id: 'order-lifecycle-root', kind: 'Lifecycle', name: 'Order lifecycle', slug: 'order-lifecycle' };
 
 interface AnalyzeRequestBody {
   documents: { path: string; content: string }[];
+  identity: { kind: 'ephemeral' } | { kind: 'durable'; version: string; documents: Record<string, string[]> };
   projections?: { id: string; kind: string; roots: string[] }[];
 }
 
@@ -43,7 +44,12 @@ function cleanResponse(body: AnalyzeRequestBody) {
     graph: { sourceRevision: 1, kind: request.kind, nodes: [{ id: 'stage:draft', role: 'stage', label: 'Draft', semanticIds: [] }], edges: [] },
     diagnostics: [],
   }));
-  return { apiVersion: '1.0', diagnostics: [], roots: [ORDER_LIFECYCLE_ROOT], projections };
+  const hasOrderline = body.documents.some((document) => document.content.includes('entity Orderline'));
+  const outline = [
+    { id: 'order', kind: 'Entity', name: 'Order', location: { document: 'entities/order.modeller', line: 2, column: 1, length: 12 } },
+    ...(hasOrderline ? [{ id: 'orderline', kind: 'Entity', name: 'Orderline', location: { document: 'entities/order.modeller', line: 9, column: 1, length: 16 } }] : []),
+  ];
+  return { apiVersion: '1.0', diagnostics: [], roots: [ORDER_LIFECYCLE_ROOT], outline, summary: [{ kind: 'Entity', count: outline.length }], projections };
 }
 
 test('playground loads with the Ordering example, not a blank workbench', async ({ page }) => {
@@ -56,7 +62,51 @@ test('playground loads with the Ordering example, not a blank workbench', async 
   await expect(page.locator('.monaco-editor')).toBeVisible();
   await expect(page.locator('.view-lines')).toContainText('context Ordering');
   await expect(page.getByText('browser draft')).toBeVisible();
-  await expect(page.getByRole('status')).toContainText('Ready');
+  await expect(page.getByRole('link', { name: 'RML syntax reference' })).toHaveAttribute(
+    'href',
+    'https://modeller.wiki/docs/reference/readable-modelling-language',
+  );
+  await expect(page.getByRole('status')).toContainText('Valid');
+});
+
+test('a second entity in one file appears in the model explorer and summary', async ({ page }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, cleanResponse);
+  await page.goto('/');
+
+  await page.getByText('order.modeller', { exact: true }).click();
+  const editor = page.locator('.monaco-editor');
+  await editor.click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type('rml 1.0\nentity Order\nend\nentity Orderline\nend');
+
+  await expect(page.getByRole('button', { name: 'entity Orderline' })).toBeVisible();
+  await expect(page.getByRole('status')).toContainText('2 entities');
+});
+
+test('playground shows the Ordering lifecycle without requiring a root selection', async ({ page }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, cleanResponse);
+
+  await page.goto('/');
+
+  await expect(page.getByRole('combobox').nth(1)).toHaveValue(ORDER_LIFECYCLE_ROOT.id);
+  await expect(page.locator('.react-flow__node')).toContainText('Draft');
+});
+
+test('playground reuses discovered identities when it requests the selected projection', async ({ page }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, (body) => {
+    const identity = { kind: 'durable' as const, version: '1.0', documents: {} };
+    if (body.identity.kind === 'ephemeral') {
+      return { apiVersion: '1.0', diagnostics: [], roots: [ORDER_LIFECYCLE_ROOT], projections: [], identity };
+    }
+    return cleanResponse(body);
+  });
+
+  await page.goto('/');
+
+  await expect(page.locator('.react-flow__node')).toContainText('Draft');
 });
 
 test('analysis status stays in the fixed footer while a request is running', async ({ page }) => {
@@ -72,7 +122,7 @@ test('analysis status stays in the fixed footer while a request is running', asy
   const statusLine = page.locator('.playground-status-line');
   await expect(statusLine).toContainText('Analysing…');
   await expect(statusLine).toContainText('browser draft');
-  await expect(statusLine).toContainText('Ready');
+  await expect(statusLine).toContainText('Valid');
 });
 
 test('editing the model re-analyzes and surfaces a source-mapped diagnostic', async ({ page }) => {
@@ -96,6 +146,25 @@ test('editing the model re-analyzes and surfaces a source-mapped diagnostic', as
   await page.keyboard.type('INVALID_MARKER');
 
   await expect(page.locator('.problem-row')).toContainText('Unexpected token.');
+  await expect(page.getByRole('status')).toContainText('1 problem');
+});
+
+test('a rejected projection shows its diagnostic without an endless loading message', async ({ page }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, (body) => {
+    if (!(body.projections ?? []).length) return cleanResponse(body);
+    return {
+      apiVersion: '1.0',
+      diagnostics: [],
+      roots: [ORDER_LIFECYCLE_ROOT],
+      projections: [{ id: 'active', succeeded: false, diagnostics: [{ code: 'project.root.invalid', message: 'The selected root is invalid.' }] }],
+    };
+  });
+
+  await page.goto('/');
+
+  await expect(page.getByText('The selected root is invalid.')).toBeVisible();
+  await expect(page.getByText('Loading…')).not.toBeVisible();
 });
 
 test('selecting a projection root renders its graph', async ({ page }) => {

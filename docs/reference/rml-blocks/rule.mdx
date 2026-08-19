@@ -1,0 +1,21 @@
+---
+title: rule block
+description: Declare an explained business decision.
+---
+
+A `rule` is a document-root block. RML 1.0 requires a `when all` block and one `conclusion`. Use `input` for each referenced fact and `finding` for stable explanation codes.
+
+```text
+rule Determine order readiness
+  input "Payment confirmed"
+  when all
+    fact "Payment confirmed"
+  end
+  conclusion Ready
+  end
+  finding "Payment confirmed" missing order.payment-required
+  export
+end
+```
+
+A finding disposition is `true`, `false`, or `missing`.

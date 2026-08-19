@@ -84,3 +84,12 @@
   color: #b3261e;
   background: color-mix(in srgb, #b3261e 10%, transparent);
 }
+
+.model-outline { border-top: 1px solid var(--modeller-line); margin-top: 1rem; padding: .5rem .75rem; }
+.model-outline h2 { font-size: .75rem; margin: 0 0 .4rem; text-transform: uppercase; }
+.model-outline button { background: transparent; border: 0; color: inherit; cursor: pointer; display: block; padding: .2rem 0; text-align: left; width: 100%; }
+.model-outline button:hover { color: var(--modeller-accent); }
+.model-outline-child { padding-left: 1rem !important; }
+
+.playground-docs-link { align-self: center; color: inherit; font-size: .8rem; opacity: .8; text-decoration: none; }
+.playground-docs-link:hover { opacity: 1; text-decoration: underline; }

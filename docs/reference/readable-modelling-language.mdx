@@ -47,19 +47,21 @@ silently changing canonical continuity.
 
 ## RML 1.0 blocks
 
+For complete syntax and examples, use the [RML block syntax reference](/docs/reference/rml-blocks).
+
 | Declaration | Nested statements |
 | --- | --- |
-| `context` | `version` |
-| `entity` | optional `lifecycle`, `field`, and `relationship` declarations |
-| `lifecycle` | `stage` declarations |
-| `field` | one `type`, optional `optional` |
-| `relationship` | one `target`, one `cardinality`, optional `optional` |
-| `enumeration` | `member` declarations |
-| `member` | one integer `value` |
-| `fact` | `type`, optional `export` |
-| `rule` | `input`, `when all`, `conclusion`, `finding`, optional `export` |
-| `behaviour` | `for`, `requires`, `outcome`, `transition` |
-| `transition` | `lifecycle`, `from`, `to`, `outcome` |
+| [`context`](/docs/reference/rml-blocks/context) | `version` |
+| [`entity`](/docs/reference/rml-blocks/entity) | optional `lifecycle`, `field`, and `relationship` declarations |
+| [`lifecycle`](/docs/reference/rml-blocks/lifecycle) | `stage` declarations |
+| [`field`](/docs/reference/rml-blocks/field) | one `type`, optional `optional` |
+| [`relationship`](/docs/reference/rml-blocks/relationship) | one `target`, one `cardinality`, optional `optional` |
+| [`enumeration`](/docs/reference/rml-blocks/enumeration) | `member` declarations |
+| [`member`](/docs/reference/rml-blocks/member) | one integer `value` |
+| [`fact`](/docs/reference/rml-blocks/fact) | `type`, optional `export` |
+| [`rule`](/docs/reference/rml-blocks/rule) | `input`, `when all`, `conclusion`, `finding`, optional `export` |
+| [`behaviour`](/docs/reference/rml-blocks/behaviour) | `for`, `requires`, `outcome`, `transition` |
+| [`transition`](/docs/reference/rml-blocks/transition) | `lifecycle`, `from`, `to`, `outcome` |
 
 Field types include `boolean`, `text`, `byte`, `int16`, `int32`, `int64`,
 `decimal(precision,scale)`, `date`, `time`, `datetime`, `datetimeoffset`,

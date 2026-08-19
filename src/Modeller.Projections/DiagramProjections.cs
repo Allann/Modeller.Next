@@ -42,8 +42,45 @@ public static class DiagramProjector
         {
             ViewKind.Lifecycle => Lifecycle(revision, view, cancellationToken),
             ViewKind.RuleDecision => RuleDecision(revision, view, cancellationToken),
+            ViewKind.Structural => Structural(revision, view, cancellationToken),
             _ => new(new(revision.Revision, view.Kind, [], []), [])
         };
+    }
+
+    private static ProjectionResult Structural(AuthoredContextRevision revision, ViewDefinition view, CancellationToken cancellationToken)
+    {
+        if (!view.Roots.Contains(revision.Id))
+            return new(null, [new("projection.root.invalid", "A structural view requires a context root.")]);
+
+        var nodes = ImmutableArray.CreateBuilder<ProjectionNode>();
+        var edges = ImmutableArray.CreateBuilder<ProjectionEdge>();
+        foreach (var definition in revision.Definitions)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            switch (definition)
+            {
+                case EntityDefinition entity:
+                    nodes.Add(new(ElementId("entity", entity.Id), "entity", entity.Name.Value, [entity.Id]));
+                    foreach (var field in entity.Fields)
+                    {
+                        nodes.Add(new(ElementId("field", field.Id), "field", field.Name.Value, [field.Id]));
+                        edges.Add(new(ElementId("owns", field.Id), "owns", "", ElementId("entity", entity.Id), ElementId("field", field.Id), [entity.Id, field.Id]));
+                    }
+                    foreach (var relationship in entity.Relationships)
+                        edges.Add(new(ElementId("relationship", relationship.Id), "relationship", $"{relationship.Name.Value} ({relationship.Cardinality.ToString().ToLowerInvariant()})",
+                            ElementId("entity", entity.Id), ElementId("entity", relationship.TargetId), [relationship.Id]));
+                    break;
+                case EnumerationDefinition enumeration:
+                    nodes.Add(new(ElementId("enumeration", enumeration.Id), "enumeration", enumeration.Name.Value, [enumeration.Id]));
+                    foreach (var member in enumeration.Members)
+                    {
+                        nodes.Add(new(ElementId("enumeration-member", member.Id), "enumeration-member", member.Name.Value, [member.Id]));
+                        edges.Add(new(ElementId("owns", member.Id), "owns", "", ElementId("enumeration", enumeration.Id), ElementId("enumeration-member", member.Id), [enumeration.Id, member.Id]));
+                    }
+                    break;
+            }
+        }
+        return new(new(revision.Revision, view.Kind, nodes.ToImmutable(), edges.ToImmutable()), []);
     }
 
     private static ProjectionResult RuleDecision(AuthoredContextRevision revision, ViewDefinition view, CancellationToken cancellationToken)

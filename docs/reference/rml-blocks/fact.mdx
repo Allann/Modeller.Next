@@ -1,0 +1,13 @@
+---
+title: fact block
+description: Declare information used by rules.
+---
+
+A `fact` is a document-root block. It requires a `type`. Supported fact types are `truth`, `text`, `number`, and `date`. Add `export` to expose it outside its package.
+
+```text
+fact Payment confirmed
+  type truth
+  export
+end
+```

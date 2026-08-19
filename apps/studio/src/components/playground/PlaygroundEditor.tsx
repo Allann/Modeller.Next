@@ -58,24 +58,32 @@ export function PlaygroundEditor({
   documents,
   activePath,
   onChange,
+  navigationTarget,
+  provideCompletions,
 }: {
   documents: readonly WorkspaceDocumentDto[];
   activePath: string | undefined;
   onChange: (path: string, value: string) => void;
+  navigationTarget?: { path: string; line: number; column: number; key: number };
+  provideCompletions?: (path: string, line: number, prefix: string, signal: AbortSignal) => Promise<readonly { label: string; kind: string; detail: string }[]>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | undefined>(undefined);
   const modelsRef = useRef<Map<string, monaco.editor.ITextModel>>(new Map());
   const onChangeRef = useRef(onChange);
+  const provideCompletionsRef = useRef(provideCompletions);
   useEffect(() => {
     onChangeRef.current = onChange;
+    provideCompletionsRef.current = provideCompletions;
   });
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    const models = modelsRef.current;
     let cancelled = false;
+    let completion: monaco.IDisposable | undefined;
 
     void registerModellerLanguages(monaco).then(() => {
       // See the isCancelled-after-every-await note in languageclient-setup.ts —
@@ -83,15 +91,32 @@ export function PlaygroundEditor({
       if (cancelled) return;
       watchMonacoTheme(monaco);
       editorRef.current = monaco.editor.create(container, { automaticLayout: true, wordBasedSuggestions: 'off' });
+      completion = monaco.languages.registerCompletionItemProvider('modeller-rml', {
+        triggerCharacters: [' '],
+        provideCompletionItems: async (model, position, _context, token) => {
+          if (!provideCompletionsRef.current) return { suggestions: [] };
+          const controller = new AbortController();
+          token.onCancellationRequested(() => controller.abort());
+          const word = model.getWordUntilPosition(position);
+          const path = model.uri.path.replace(/^\/workspace\//, '');
+          const items = await provideCompletionsRef.current(path, position.lineNumber, word.word, controller.signal);
+          return { suggestions: items.map((item) => ({
+            label: item.label, detail: item.detail, insertText: item.label,
+            kind: item.kind === 'keyword' ? monaco.languages.CompletionItemKind.Keyword : monaco.languages.CompletionItemKind.Reference,
+            range: { startLineNumber: position.lineNumber, endLineNumber: position.lineNumber, startColumn: word.startColumn, endColumn: word.endColumn },
+          })) };
+        },
+      });
       setReady(true);
     });
 
     return () => {
       cancelled = true;
+      completion?.dispose();
       editorRef.current?.dispose();
       editorRef.current = undefined;
-      for (const model of modelsRef.current.values()) model.dispose();
-      modelsRef.current.clear();
+      for (const model of models.values()) model.dispose();
+      models.clear();
     };
   }, []);
 
@@ -108,6 +133,13 @@ export function PlaygroundEditor({
       if (model && editorRef.current && editorRef.current.getModel() !== model) editorRef.current.setModel(model);
     }
   }, [ready, documents, activePath]);
+
+  useEffect(() => {
+    if (!ready || !navigationTarget || activePath !== navigationTarget.path) return;
+    editorRef.current?.setPosition({ lineNumber: navigationTarget.line, column: navigationTarget.column });
+    editorRef.current?.revealLineInCenter(navigationTarget.line);
+    editorRef.current?.focus();
+  }, [ready, activePath, navigationTarget]);
 
   return <div ref={containerRef} className="editor-container" />;
 }

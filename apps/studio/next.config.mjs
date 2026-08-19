@@ -20,6 +20,7 @@ const postHogOrigin = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.post
 // 'unsafe-eval' is dev-only: Fast Refresh/HMR relies on eval() to load modules; production
 // builds never need it.
 const isDev = process.env.NODE_ENV !== 'production';
+const configuredDistDir = process.env.MODELLER_STUDIO_DIST_DIR;
 const SECURITY_HEADERS = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -56,9 +57,9 @@ const nextConfig = {
   // there for the deployed app, but Vercel's build wrapper expects output at
   // the standard `.next`, not `.next-playground`.
   distDir:
-    process.env.NEXT_PUBLIC_MODELLER_STUDIO_MODE === 'playground' && !process.env.VERCEL
+    configuredDistDir ?? (process.env.NEXT_PUBLIC_MODELLER_STUDIO_MODE === 'playground' && !process.env.VERCEL
       ? '.next-playground'
-      : '.next',
+      : '.next'),
   async headers() {
     return [{ source: '/:path*', headers: SECURITY_HEADERS }];
   },

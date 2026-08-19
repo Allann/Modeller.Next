@@ -30,13 +30,13 @@ public sealed record SemanticConceptAddress(
     string QualifiedName,
     IReadOnlyList<string> FormerQualifiedNames);
 
-internal static class SemanticNavigation
+public static class SemanticNavigation
 {
-    internal static IEnumerable<SemanticConceptAddress> Concepts(
+    public static IEnumerable<SemanticConceptAddress> Concepts(
         AuthoredContextRevision revision) =>
         Concepts(revision.Id, revision.Slug, revision.Definitions);
 
-    internal static IEnumerable<SemanticConceptAddress> Concepts(
+    public static IEnumerable<SemanticConceptAddress> Concepts(
         SemanticId contextId,
         SemanticSlug contextSlug,
         IEnumerable<SemanticDefinition> definitions)
