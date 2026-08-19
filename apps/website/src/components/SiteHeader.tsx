@@ -10,11 +10,11 @@ export function SiteHeader() {
         </Link>
         <nav className="site-header-nav">
           <a href="https://modeller.wiki/#why-modeller">Why Modeller</a>
-          <a href="https://modeller.wiki/#how-it-works">How it works</a>
-          <a href="https://modeller.wiki">Docs</a>
-          <Link href="/examples">Examples</Link>
+          <a href="https://modeller.wiki/#journey">The journey</a>
+          <a href="https://modeller.wiki/#system-design">System Design</a>
+          <a href="https://modeller.wiki/docs">Docs</a>
           <Link href="/playground">Playground</Link>
-          <a className="site-header-cta" href="https://modeller.wiki/docs/getting-started">Get started</a>
+          <Link className="site-header-cta" href="/playground">Start a Discovery Session</Link>
         </nav>
         <div className="site-header-tools">
           <ThemeToggle />
