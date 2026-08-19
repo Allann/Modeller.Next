@@ -4,7 +4,7 @@
   border: 1px solid var(--modeller-line);
   border-radius: 0.4rem;
   background: transparent;
-  color: var(--modeller-ink);
+  color: inherit;
   padding: 0.3rem 0.75rem;
   font-size: 0.8rem;
   cursor: pointer;
@@ -85,10 +85,16 @@
   background: color-mix(in srgb, #b3261e 10%, transparent);
 }
 
-.model-outline { border-top: 1px solid var(--modeller-line); margin-top: 1rem; padding: .5rem .75rem; }
-.model-outline h2 { font-size: .75rem; margin: 0 0 .4rem; text-transform: uppercase; }
+.explorer { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+.file-explorer { flex: 0 1 42%; min-height: 5rem; overflow: auto; padding: .8rem; }
+.file-explorer h2, .model-outline h2 { font-size: .75rem; margin: 0 0 .4rem; text-transform: uppercase; }
+.model-outline { border-top: 1px solid var(--modeller-line); flex: 1 1 58%; min-height: 0; overflow: auto; padding: .8rem; }
+.model-summary { display: flex; flex-wrap: wrap; gap: .25rem; margin: .25rem 0 .75rem; }
+.model-summary span { background: color-mix(in srgb, var(--modeller-mint) 14%, transparent); border: 1px solid var(--modeller-line); border-radius: 999px; font-size: .68rem; padding: .15rem .4rem; }
+.model-kind-group { margin-top: .7rem; }
+.model-kind-group h3 { font-size: .72rem; margin: 0 0 .2rem; opacity: .72; text-transform: uppercase; }
 .model-outline button { background: transparent; border: 0; color: inherit; cursor: pointer; display: block; padding: .2rem 0; text-align: left; width: 100%; }
-.model-outline button:hover { color: var(--modeller-accent); }
+.model-outline button:hover { color: var(--modeller-teal-bright); }
 .model-outline-child { padding-left: 1rem !important; }
 
 .playground-docs-link { align-self: center; color: inherit; font-size: .8rem; opacity: .8; text-decoration: none; }

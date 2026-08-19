@@ -9,6 +9,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --modeller-ink: #edfdf9;
     --modeller-line: rgba(226, 252, 246, 0.13);
   }
 }

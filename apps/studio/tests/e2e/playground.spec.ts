@@ -46,10 +46,19 @@ function cleanResponse(body: AnalyzeRequestBody) {
   }));
   const hasOrderline = body.documents.some((document) => document.content.includes('entity Orderline'));
   const outline = [
-    { id: 'order', kind: 'Entity', name: 'Order', location: { document: 'entities/order.modeller', line: 2, column: 1, length: 12 } },
-    ...(hasOrderline ? [{ id: 'orderline', kind: 'Entity', name: 'Orderline', location: { document: 'entities/order.modeller', line: 9, column: 1, length: 16 } }] : []),
+    { id: 'behaviour', kind: 'Behaviour', name: 'Place order', location: { document: 'model/behaviours/place-order.modeller', line: 2, column: 1, length: 21 } },
+    { id: 'order', kind: 'Entity', name: 'Order', location: { document: 'model/entities/order.modeller', line: 2, column: 1, length: 12 } },
+    ...(hasOrderline ? [{ id: 'orderline', kind: 'Entity', name: 'Orderline', location: { document: 'model/entities/order.modeller', line: 4, column: 1, length: 16 } }] : []),
+    { id: 'fact', kind: 'Fact', name: 'Payment is confirmed', location: { document: 'model/facts/payment-confirmation.modeller', line: 2, column: 1, length: 25 } },
+    { id: 'lifecycle', kind: 'Lifecycle', name: 'Order lifecycle', ownerId: 'order', location: { document: 'model/entities/order.modeller', line: 3, column: 3, length: 27 } },
+    { id: 'draft', kind: 'LifecycleStage', name: 'Draft', ownerId: 'lifecycle', location: { document: 'model/entities/order.modeller', line: 4, column: 5, length: 15 } },
+    { id: 'placed', kind: 'LifecycleStage', name: 'Placed', ownerId: 'lifecycle', location: { document: 'model/entities/order.modeller', line: 5, column: 5, length: 16 } },
+    { id: 'rule', kind: 'Rule', name: 'Determine order readiness', location: { document: 'model/rules/determine-order-readiness.modeller', line: 2, column: 1, length: 31 } },
   ];
-  return { apiVersion: '1.0', diagnostics: [], roots: [ORDER_LIFECYCLE_ROOT], outline, summary: [{ kind: 'Entity', count: outline.length }], projections };
+  return { apiVersion: '1.0', diagnostics: [], roots: [ORDER_LIFECYCLE_ROOT], outline, summary: [
+    { kind: 'Behaviour', count: 1 }, { kind: 'Entity', count: hasOrderline ? 2 : 1 }, { kind: 'Fact', count: 1 },
+    { kind: 'Lifecycle', count: 1 }, { kind: 'LifecycleStage', count: 2 }, { kind: 'Rule', count: 1 },
+  ], projections };
 }
 
 test('playground loads with the Ordering example, not a blank workbench', async ({ page }) => {
@@ -66,13 +75,18 @@ test('playground loads with the Ordering example, not a blank workbench', async 
     'href',
     'https://modeller.wiki/docs/reference/readable-modelling-language',
   );
-  await expect(page.getByRole('status')).toContainText('Valid');
+  await expect(page.getByRole('status')).toContainText('Ready');
+  await expect(page.getByLabel('Model explorer')).toContainText('Valid');
+  await expect(page.getByRole('heading', { name: 'Entities' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'lifecycle Order lifecycle' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'lifecycle stage Draft' })).toBeVisible();
 });
 
 test('a second entity in one file appears in the model explorer and summary', async ({ page }) => {
   await mockSupportedViews(page);
   await mockAnalyze(page, cleanResponse);
   await page.goto('/');
+  const footerHeight = await page.locator('.playground-status-line').evaluate((element) => element.getBoundingClientRect().height);
 
   await page.getByText('order.modeller', { exact: true }).click();
   const editor = page.locator('.monaco-editor');
@@ -81,7 +95,28 @@ test('a second entity in one file appears in the model explorer and summary', as
   await page.keyboard.type('rml 1.0\nentity Order\nend\nentity Orderline\nend');
 
   await expect(page.getByRole('button', { name: 'entity Orderline' })).toBeVisible();
-  await expect(page.getByRole('status')).toContainText('2 entities');
+  await expect(page.getByLabel('Model explorer')).toContainText('2 entities');
+  await expect(page.getByRole('status')).toContainText('Ready');
+  await expect.poll(() => page.locator('.playground-status-line').evaluate((element) => element.getBoundingClientRect().height)).toBe(footerHeight);
+});
+
+test('model explorer groups nested concepts, scrolls independently, and navigates to a declaration', async ({ page }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, cleanResponse);
+  await page.goto('/');
+
+  const model = page.getByLabel('Model explorer');
+  await expect(model).toHaveCSS('overflow-y', 'auto');
+  await expect(page.getByRole('heading', { name: 'Entities' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Facts' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'lifecycle Order lifecycle' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'lifecycle stage Draft' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'fact Payment is confirmed' }).click();
+  await expect(page.locator('.tab.active')).toContainText('payment-confirmation.modeller');
+  await page.keyboard.press('End');
+  await page.keyboard.type(' NAVIGATED');
+  await expect(page.locator('.view-lines')).toContainText('fact Payment is confirmed NAVIGATED');
 });
 
 test('playground shows the Ordering lifecycle without requiring a root selection', async ({ page }) => {
@@ -122,7 +157,7 @@ test('analysis status stays in the fixed footer while a request is running', asy
   const statusLine = page.locator('.playground-status-line');
   await expect(statusLine).toContainText('Analysing…');
   await expect(statusLine).toContainText('browser draft');
-  await expect(statusLine).toContainText('Valid');
+  await expect(statusLine).toContainText('Ready');
 });
 
 test('editing the model re-analyzes and surfaces a source-mapped diagnostic', async ({ page }) => {
@@ -147,6 +182,7 @@ test('editing the model re-analyzes and surfaces a source-mapped diagnostic', as
 
   await expect(page.locator('.problem-row')).toContainText('Unexpected token.');
   await expect(page.getByRole('status')).toContainText('1 problem');
+  await expect(page.getByLabel('Model explorer')).not.toContainText('Valid');
 });
 
 test('a rejected projection shows its diagnostic without an endless loading message', async ({ page }) => {
