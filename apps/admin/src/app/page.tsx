@@ -1,4 +1,4 @@
-import { signOut } from '@/auth';
+import { AdminMenu } from '@/components/AdminMenu';
 import { getDashboard, type DateRange } from '@/lib/dashboard';
 
 function iso(date: Date) { return date.toISOString().slice(0, 10); }
@@ -13,8 +13,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const includeInternal = params.internal === '1';
   const dashboard = await getDashboard(range, includeInternal);
   return <main>
-    <header><div><p className="eyebrow">Private product analytics</p><h1>Modeller engagement</h1></div><form action={async () => { 'use server'; await signOut({ redirectTo: '/sign-in' }); }}><button>Sign out</button></form></header>
-    <nav>{[7,30,90].map((days) => <a key={days} href={`/?days=${days}${includeInternal ? '&internal=1' : ''}`}>{days} days</a>)}</nav>
+    <header><div><p className="eyebrow">Private product analytics</p><h1>Modeller engagement</h1></div></header>
+    <AdminMenu />
+    <nav aria-label="Date range">{[7,30,90].map((days) => <a key={days} href={`/?days=${days}${includeInternal ? '&internal=1' : ''}`}>{days} days</a>)}</nav>
     <form className="filters"><label>From <input name="from" type="date" defaultValue={range.from}/></label><label>To <input name="to" type="date" defaultValue={range.to}/></label><label><input name="internal" type="checkbox" value="1" defaultChecked={includeInternal}/> Include internal use</label><button>Apply</button></form>
     <section className="cards"><article><span>Visitors</span><strong>{dashboard.headline.visitors}</strong></article><article><span>Meaningful use</span><strong>{percent(dashboard.headline.meaningfulRate)}</strong></article><article><span>7-day return</span><strong>{percent(dashboard.headline.return7)}</strong></article><article><span>30-day return</span><strong>{percent(dashboard.headline.return30)}</strong></article></section>
     <section className="grid"><Panel title="Initiative funnel" rows={dashboard.funnel.map((x) => [x.name, x.visitors])}/><Panel title="Cross-site journey" rows={dashboard.journeys.map((x) => [x.source, x.initiatives])}/><Panel title="Feature engagement" rows={dashboard.features.map((x) => [x.event, x.uses])}/><Panel title="Retention cohorts" rows={dashboard.retention.map((x) => [x.period, percent(x.rate)])}/></section>
