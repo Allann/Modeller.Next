@@ -38,7 +38,9 @@
     ".next-playground/types/**/*.ts",
     ".next-playground/dev/types/**/*.ts",
     ".next-playground-local/types/**/*.ts",
-    ".next-playground-local/dev/types/**/*.ts"
+    ".next-playground-local/dev/types/**/*.ts",
+    ".next/case-study/types/**/*.ts",
+    ".next/case-study/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

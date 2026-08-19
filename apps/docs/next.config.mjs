@@ -42,6 +42,7 @@ const SECURITY_HEADERS = [
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  distDir: process.env.MODELLER_DOCS_DIST_DIR || '.next',
   async headers() {
     return [{ source: '/:path*', headers: SECURITY_HEADERS }];
   },
