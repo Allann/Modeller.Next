@@ -26,6 +26,7 @@ public static class RequestLimits
     public const int MaximumGraphElements = 2_000;
     public const int MaximumAggregateGraphElements = 5_000;
     public const int MaximumRoots = 500;
+    public const int MaximumOutlineItems = 10_000;
 
     /// <summary>The node-count ceiling on an <em>analyzed</em> workspace's own definitions,
     /// checked before any projection runs. <c>DiagramProjector</c> (Modeller.Projections) now

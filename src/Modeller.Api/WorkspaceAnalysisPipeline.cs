@@ -184,7 +184,11 @@ public sealed class WorkspaceAnalysisPipeline(ILogger<WorkspaceAnalysisPipeline>
                 return new SemanticOutlineItemDto(item.Id.ToString(), item.Kind.ToString(), item.Name.Value,
                     item.OwnerId == analyzed.Package.AuthoredRevision.Id ? null : item.OwnerId.ToString(),
                     new ApiSourceSpan(span.Document, span.Line, span.Column, span.Length));
-            })];
+            })
+            .OrderBy(item => item.Kind, StringComparer.Ordinal)
+            .ThenBy(item => item.Name, StringComparer.Ordinal)
+            .ThenBy(item => item.Id, StringComparer.Ordinal)
+            .Take(RequestLimits.MaximumOutlineItems)];
     }
 
     /// <summary>Mirrors the CLI's <c>project --view &lt;kind&gt;</c> (no root) root-listing

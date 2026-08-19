@@ -41,11 +41,24 @@ function shareDecodeErrorNotice(reason: Exclude<ShareDecodeResult, { ok: true }>
   return { kind: 'error', text };
 }
 
+function kindLabel(kind: string): string {
+  return kind.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+}
+
 function countLabel(item: SemanticCountDto): string {
-  const kind = item.kind.toLowerCase();
+  const kind = kindLabel(item.kind);
   const noun = item.count === 1 ? kind : kind.endsWith('y') ? `${kind.slice(0, -1)}ies` : `${kind}s`;
   return `${item.count} ${noun}`;
 }
+
+const MODEL_GROUPS: ReadonlyArray<{ label: string; kinds: readonly string[] }> = [
+  { label: 'Entities', kinds: ['Entity'] },
+  { label: 'Enumerations', kinds: ['Enumeration'] },
+  { label: 'Facts', kinds: ['Fact'] },
+  { label: 'Rules', kinds: ['Rule'] },
+  { label: 'Decisions', kinds: ['Decision'] },
+  { label: 'Behaviours', kinds: ['Behaviour'] },
+];
 
 export function PlaygroundWorkbench() {
   const [draft, setDraft] = useState<PlaygroundDraft>(() => loadDraft());
@@ -239,7 +252,7 @@ export function PlaygroundWorkbench() {
         ? { kind: 'error', text: 'Analysis failed' }
         : diagnosticCount > 0
           ? { kind: 'error', text: `${diagnosticCount} ${diagnosticCount === 1 ? 'problem' : 'problems'}` }
-          : { kind: 'info', text: summary.length === 0 ? 'Valid' : `Valid · ${summary.map(countLabel).join(' · ')}` };
+          : { kind: 'info', text: 'Ready' };
   const messageNotice: Notice | undefined =
     uiNotice ??
     (status === 'error'
@@ -250,7 +263,7 @@ export function PlaygroundWorkbench() {
       : undefined);
   const renderConcept = (item: SemanticOutlineItemDto, depth = 0): React.ReactNode => (
     <div key={item.id} className="model-outline-group">
-      <button style={{ paddingLeft: `${depth}rem` }} onClick={() => navigateToConcept(item)}>{item.kind.toLowerCase()} {item.name}</button>
+      <button style={{ paddingLeft: `${depth}rem` }} onClick={() => navigateToConcept(item)}>{kindLabel(item.kind)} {item.name}</button>
       {outline.filter((child) => child.ownerId === item.id).map((child) => renderConcept(child, depth + 1))}
     </div>
   );
@@ -292,10 +305,27 @@ export function PlaygroundWorkbench() {
       <Group orientation="horizontal" className="panel-group">
         <Panel defaultSize="20" minSize="12">
           <div className="explorer">
-            <Explorer nodes={tree} activePath={activePath} onOpenDocument={openDocument} />
+            <section className="file-explorer" aria-label="Files">
+              <h2>Files</h2>
+              <Explorer nodes={tree} activePath={activePath} onOpenDocument={openDocument} />
+            </section>
             <div className="model-outline" aria-label="Model explorer">
               <h2>Model</h2>
-              {outline.filter((item) => !item.ownerId).map((item) => renderConcept(item))}
+              {status === 'idle' && diagnosticCount === 0 && summary.length > 0 && (
+                <p className="model-summary" aria-label={`Valid model: ${summary.map(countLabel).join(', ')}`}>
+                  <span>Valid</span>
+                  {summary.map((item) => <span key={item.kind}>{countLabel(item)}</span>)}
+                </p>
+              )}
+              {MODEL_GROUPS.map((group) => {
+                const items = outline.filter((item) => !item.ownerId && group.kinds.includes(item.kind));
+                return items.length > 0 ? (
+                  <section key={group.label} className="model-kind-group">
+                    <h3>{group.label}</h3>
+                    {items.map((item) => renderConcept(item))}
+                  </section>
+                ) : null;
+              })}
             </div>
           </div>
         </Panel>

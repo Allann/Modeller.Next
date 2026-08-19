@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Modeller.Api.Contracts;
 using Modeller.Projections;
@@ -260,6 +261,56 @@ public sealed class WorkspaceAnalyzeEndpointTests : IClassFixture<WebApplication
         Assert.Contains(body.Outline, item => item.Kind == "Entity" && item.Name == "ACCS determination application");
         Assert.Contains(body.Summary, item => item.Kind == "Entity" && item.Count == 1);
         Assert.Contains(body.Roots, item => item.Kind == ViewKind.Structural && item.Name == "Child Care");
+    }
+
+    [Fact]
+    public async Task Analyze_returns_a_deterministic_owned_outline_without_echoing_source_content()
+    {
+        const string source = """
+            rml 1.0
+            # SECRET-SOURCE-COMMENT
+            # @id=0191f6d4-4ea0-7000-8000-000000000101
+            context Ordering
+              version 1.0.0
+            end
+            # @id=0191f6d4-4ea0-7000-8000-000000000102
+            entity Order
+              # @id=0191f6d4-4ea0-7000-8000-000000000103
+              lifecycle Order lifecycle
+                # @id=0191f6d4-4ea0-7000-8000-000000000104
+                stage Draft
+                # @id=0191f6d4-4ea0-7000-8000-000000000105
+                stage Placed
+              end
+            end
+            # @id=0191f6d4-4ea0-7000-8000-000000000106
+            entity Orderline
+            end
+            """;
+        var request = new WorkspaceAnalyzeRequest(
+            [new("model/entities/order.modeller", source)], new EphemeralIdentityDto(), new ConfigurationDto("1.0", "generated/"), []);
+        using var client = _factory.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/v1/workspace/analyze", request, ApiJson.Options, TestContext.Current.CancellationToken);
+        var json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var body = JsonSerializer.Deserialize<WorkspaceAnalyzeResponse>(json, ApiJson.Options);
+
+        Assert.NotNull(body);
+        Assert.Equal(body.Outline.OrderBy(item => item.Kind, StringComparer.Ordinal).ThenBy(item => item.Name, StringComparer.Ordinal).ThenBy(item => item.Id, StringComparer.Ordinal), body.Outline);
+        var order = Assert.Single(body.Outline, item => item.Kind == "Entity" && item.Name == "Order");
+        var orderline = Assert.Single(body.Outline, item => item.Kind == "Entity" && item.Name == "Orderline");
+        var lifecycle = Assert.Single(body.Outline, item => item.Kind == "Lifecycle");
+        Assert.Null(order.OwnerId);
+        Assert.Null(orderline.OwnerId);
+        Assert.NotEqual(order.Id, orderline.Id);
+        Assert.Equal(order.Id, lifecycle.OwnerId);
+        Assert.All(body.Outline.Where(item => item.Kind == "LifecycleStage"), stage => Assert.Equal(lifecycle.Id, stage.OwnerId));
+        Assert.Equal("model/entities/order.modeller", orderline.Location.Document);
+        Assert.Equal(18, orderline.Location.Line);
+        Assert.Equal(1, orderline.Location.Column);
+        Assert.True(orderline.Location.Length > 0);
+        Assert.DoesNotContain("SECRET-SOURCE-COMMENT", json, StringComparison.Ordinal);
+        Assert.True(body.Outline.Count <= RequestLimits.MaximumOutlineItems);
     }
 
     [Fact]
