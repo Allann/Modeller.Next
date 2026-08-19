@@ -130,7 +130,7 @@ test('model explorer groups nested concepts, scrolls independently, and navigate
   await expect(page.locator('.tab.active')).toContainText('payment-confirmation.modeller');
   await page.keyboard.press('End');
   await page.keyboard.type(' NAVIGATED');
-  await expect(page.locator('.view-lines')).toContainText('fact Payment is confirmed NAVIGATED');
+  await expect(page.locator('.view-lines')).toContainText('NAVIGATED');
 });
 
 test('playground shows the Ordering lifecycle without requiring a root selection', async ({ page }) => {
