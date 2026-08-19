@@ -17,10 +17,18 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: apps/studio/package-lock.json
+          cache-dependency-path: |
+            apps/studio/package-lock.json
+            apps/docs/package-lock.json
 
       - name: Install dependencies
         working-directory: apps/studio
+        run: npm ci
+
+      # The published case-study journey starts the docs app and follows its
+      # call to action into Studio. Install both applications before Playwright.
+      - name: Install docs dependencies
+        working-directory: apps/docs
         run: npm ci
 
       - name: Lint
