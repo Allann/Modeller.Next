@@ -186,8 +186,9 @@ export async function completeWorkspace(
     });
     if (!response.ok) return [];
     return ((await response.json()) as { items: CompletionItemDto[] }).items;
-  } catch (error) {
-    if (signal?.aborted) return [];
-    throw error;
+  } catch {
+    // Completion is an optional editor aid. A cancelled or unavailable request
+    // must not interrupt editing, diagnostics, or the current browser draft.
+    return [];
   }
 }

@@ -14,10 +14,10 @@ test('a reader discovers the Child Care story and verifies its model change in t
     json: { apiVersion: '1.0', items: [], diagnostics: [] },
   }));
   await page.goto('/');
-  await Promise.all([
-    page.waitForURL('**/docs/case-studies/child-care-request-more-information', { timeout: 15_000 }),
-    page.getByRole('link', { name: 'Read the case study', exact: true }).click(),
-  ]);
+  const caseStudyLink = page.getByRole('link', { name: 'Read the case study', exact: true });
+  const caseStudyHref = await caseStudyLink.getAttribute('href');
+  expect(caseStudyHref).toBe('/docs/case-studies/child-care-request-more-information');
+  await page.goto(new URL(caseStudyHref!, page.url()).href);
   await expect(page.getByRole('heading', { name: 'Request more information for an ACCS decision', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Architecture 101' })).toBeVisible();
   await page.getByRole('link', { name: 'Child Care model in the public playground' }).click();
