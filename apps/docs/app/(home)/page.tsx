@@ -218,6 +218,7 @@ const outcomes = [
 ];
 
 export default function HomePage() {
+  const playgroundUrl = process.env.NEXT_PUBLIC_PLAYGROUND_URL ?? 'https://modeller.website/playground?example=child-care';
   return (
     <div className="modeller-home">
       <section className="marketing-hero">
@@ -350,6 +351,28 @@ export default function HomePage() {
           </p>
         </div>
         <Grid items={capabilities} columns={3} />
+      </section>
+
+      <section className="marketing-section" id="case-studies">
+        <div className="section-heading">
+          <p className="eyebrow"><Blocks size={15} /> Case studies</p>
+          <h2>See one change travel from a user need to a working model.</h2>
+          <p>
+            Real examples show where Modeller helps today and where the product still needs work.
+            More case studies can join this collection as the public workflows grow.
+          </p>
+        </div>
+        <div className="case-study-grid">
+          <article>
+            <p className="block-kicker">Child Care</p>
+            <h3>Request more evidence before an ACCS eligibility decision</h3>
+            <p>Follow a case worker need through the lifecycle, rule, validation, diagram, and safe generation workflow.</p>
+            <div className="hero-actions">
+              <Link className="primary-action" href="/docs/case-studies/child-care-request-more-information">Read the case study <ArrowRight size={17} /></Link>
+              <a className="secondary-action" href={playgroundUrl}>Open the Child Care model</a>
+            </div>
+          </article>
+        </div>
       </section>
 
       <section className="workflow-section">

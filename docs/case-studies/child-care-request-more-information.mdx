@@ -1,0 +1,76 @@
+---
+title: Request more information for an ACCS decision
+description: Follow one Child Care feature from a case worker need to a validated model and safe generated output.
+---
+
+export const playgroundUrl = process.env.NEXT_PUBLIC_PLAYGROUND_URL ?? 'https://modeller.website/playground?example=child-care';
+
+# Request more information for an ACCS decision
+
+A case worker reviews an Additional Child Care Subsidy (ACCS) determination application. The application does not contain enough evidence for an eligibility decision. The case worker needs to request more information without rejecting the application or losing its place in the process.
+
+This is a focused product need: **pause the eligibility decision, tell the case worker what evidence is missing, and let the application continue when that evidence arrives.**
+
+## Start from the affected behaviour
+
+The canonical Child Care sample already has a **Submit ACCS determination application** behaviour. It binds the **Determine ACCS eligibility** rule to an application that moves from `Draft` to `Submitted`.
+
+The feature affects three connected parts of that model:
+
+1. The behaviour needs a `More information requested` outcome.
+2. The application lifecycle needs an `Awaiting information` stage and a transition to it.
+3. The rule binding must keep its two required facts: active enrolment and supporting evidence.
+
+This keeps the case worker action, application state, and decision evidence in one model. The deeper reasons for this structure are in [Architecture 101](/docs/architecture/architecture-101).
+
+## Make the model change
+
+Open the <a href={playgroundUrl}>Child Care model in the public playground</a>. Select `accs-determination-application.modeller`, then add the new stage inside its lifecycle:
+
+```text
+stage Awaiting information
+```
+
+Select `submit-accs-determination-application.modeller`. Add the new outcome and a transition from `Draft` to `Awaiting information`:
+
+```text
+outcome More information requested
+end
+transition Request more information
+  lifecycle "ACCS determination application lifecycle"
+  from "Draft"
+  to "Awaiting information"
+  outcome "More information requested"
+end
+```
+
+The playground analyzes the draft after each edit. A valid change adds `Awaiting information` to the Lifecycle diagram. Invalid syntax appears in the Problems panel with its source position.
+
+## Explain missing evidence
+
+The current rule declares `Active enrolment exists` and `Supporting evidence is held` as inputs. Its missing findings identify the evidence that the application still needs. The implemented rules runtime can evaluate these facts and return an indeterminate result with missing-fact findings. The public playground shows and validates the rule text, but it does **not yet run an interactive case-worker decision simulation**.
+
+This distinction matters. The model and runtime support missing-fact explanations; the current browser experience does not yet present the full explanation workflow.
+
+## Inspect the updated view
+
+Choose **Lifecycle** in the right panel. The diagram is a projection of the model, not a second copy. After the model is valid, it shows the new stage and transition. If the diagram does not change, check the Problems panel before you continue.
+
+## Generate without overwriting handwritten work
+
+The playground can download the edited workspace with its durable identities and template pack. Generation itself currently runs through the CLI, not in the public browser:
+
+```powershell
+modeller generate --workspace samples/child-care --dry-run
+modeller generate --workspace samples/child-care
+```
+
+The dry run shows the planned files first. The output manifest marks generated files, and the writer preserves files owned by developers. Run generation again to confirm that unchanged files are reported as `Unchanged`.
+
+The [canonical Child Care sample on GitHub](https://github.com/Allann/Modeller.Next/tree/main/samples/child-care) contains the model, templates, and expected output.
+
+## Verify the observable result
+
+For the public workflow, verification is direct: the draft has no problems and the Lifecycle diagram contains `Awaiting information`. For a local workspace, also generate, build the output, and run the domain-level rules tests. A complete product workflow that lets a case worker submit the request and later resume the decision is planned work; this case study does not claim that application UI exists today.
+
+<a href={playgroundUrl}>Open the Child Care model in the playground</a>
