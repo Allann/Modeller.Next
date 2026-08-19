@@ -41,7 +41,7 @@ export default defineConfig({
       },
     },
     {
-      command: 'npm run dev -- --port 3114',
+      command: 'npm run build && npm run start -- --port 3114',
       cwd: '../docs',
       url: 'http://localhost:3114',
       reuseExistingServer: true,
