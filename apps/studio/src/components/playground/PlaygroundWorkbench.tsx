@@ -194,19 +194,23 @@ export function PlaygroundWorkbench() {
 
   const tree = buildTree(draft.documents.map((document) => document.path));
   const availableViews = VIEW_KINDS.filter((kind) => supportedViews.length === 0 || supportedViews.includes(kind));
-  const notice: Notice | undefined =
-    uiNotice ??
-    (status === 'analyzing'
-      ? { kind: 'analyzing', text: 'Analyzing…' }
+  const analysisStatus: Notice =
+    status === 'analyzing'
+      ? { kind: 'analyzing', text: 'Analysing…' }
       : status === 'error'
-        ? {
-            kind: 'error',
-            text: `Couldn't reach the analysis service${errorMessage ? ` (${errorMessage})` : ''}. Your draft is unaffected — it will retry on your next edit.`,
-          }
-        : undefined);
+        ? { kind: 'error', text: 'Analysis failed' }
+        : { kind: 'info', text: 'Ready' };
+  const messageNotice: Notice | undefined =
+    uiNotice ??
+    (status === 'error'
+      ? {
+          kind: 'error',
+          text: `Couldn't reach the analysis service${errorMessage ? ` (${errorMessage})` : ''}. Your draft is unaffected — it will retry on your next edit.`,
+        }
+      : undefined);
 
   return (
-    <div className="shell">
+    <div className="shell playground-shell">
       <div className="ribbon">
         <div className="brand">
           <span className="mark">M</span> Modeller Playground
@@ -223,18 +227,19 @@ export function PlaygroundWorkbench() {
           </button>
         </div>
       </div>
-      {shareUrl && (
-        <div className="playground-share">
-          <input readOnly value={shareUrl} aria-label="Share link" onFocus={(event) => event.currentTarget.select()} />
-          <button className="playground-share-btn" onClick={() => { capture('share_link_copied'); void navigator.clipboard?.writeText(shareUrl).catch(() => undefined); }}>
-            Copy
-          </button>
-          <button className="playground-share-btn" aria-label="Dismiss share link" onClick={() => setShareUrl(undefined)}>
-            ×
-          </button>
-        </div>
-      )}
-      <StatusBanner notice={notice} />
+      <div className="playground-share-slot">
+        {shareUrl && (
+          <div className="playground-share">
+            <input readOnly value={shareUrl} aria-label="Share link" onFocus={(event) => event.currentTarget.select()} />
+            <button className="playground-share-btn" onClick={() => { capture('share_link_copied'); void navigator.clipboard?.writeText(shareUrl).catch(() => undefined); }}>
+              Copy
+            </button>
+            <button className="playground-share-btn" aria-label="Dismiss share link" onClick={() => setShareUrl(undefined)}>
+              ×
+            </button>
+          </div>
+        )}
+      </div>
       <Group orientation="horizontal" className="panel-group">
         <Panel defaultSize="20" minSize="12">
           <div className="explorer">
@@ -289,10 +294,17 @@ export function PlaygroundWorkbench() {
           </div>
         </Panel>
       </Group>
-      <p className="playground-explainer">
-        This is a browser draft, not a durable local workspace — it lives only in this tab until you download it.{' '}
-        <a href="https://modeller.website/privacy">Privacy</a>
-      </p>
+      <footer className="playground-status-line" role="status">
+        <StatusBanner notice={analysisStatus} />
+        {messageNotice ? (
+          <div className={`playground-message playground-message-${messageNotice.kind}`}>{messageNotice.text}</div>
+        ) : (
+          <p className="playground-message">
+            This is a browser draft, not a durable local workspace — it lives only in this tab until you download it.{' '}
+            <a href="https://modeller.website/privacy">Privacy</a>
+          </p>
+        )}
+      </footer>
     </div>
   );
 }

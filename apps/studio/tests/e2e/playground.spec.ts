@@ -56,6 +56,23 @@ test('playground loads with the Ordering example, not a blank workbench', async 
   await expect(page.locator('.monaco-editor')).toBeVisible();
   await expect(page.locator('.view-lines')).toContainText('context Ordering');
   await expect(page.getByText('browser draft')).toBeVisible();
+  await expect(page.getByRole('status')).toContainText('Ready');
+});
+
+test('analysis status stays in the fixed footer while a request is running', async ({ page }) => {
+  await mockSupportedViews(page);
+  await page.route('**/v1/workspace/analyze', async (route) => {
+    const body = route.request().postDataJSON() as AnalyzeRequestBody;
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await route.fulfill({ json: cleanResponse(body) });
+  });
+
+  await page.goto('/');
+
+  const statusLine = page.locator('.playground-status-line');
+  await expect(statusLine).toContainText('Analysing…');
+  await expect(statusLine).toContainText('browser draft');
+  await expect(statusLine).toContainText('Ready');
 });
 
 test('editing the model re-analyzes and surfaces a source-mapped diagnostic', async ({ page }) => {
