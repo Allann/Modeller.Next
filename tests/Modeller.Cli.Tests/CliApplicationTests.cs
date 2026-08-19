@@ -453,12 +453,30 @@ public sealed class CliApplicationTests
         var host = new RecordingCliHost(await WorkspaceFiles());
 
         var exit = await CliApplication.RunAsync(
-            ["project", "--workspace", "samples/child-care", "--view", "Structural", "--format", "json"],
+            ["project", "--workspace", "samples/child-care", "--view", "ContextMap", "--format", "json"],
             host, TestContext.Current.CancellationToken);
 
         Assert.Equal(CliExitCode.Configuration, exit);
         using var json = JsonDocument.Parse(host.StandardOutput);
         Assert.Equal("project.view.unsupported", json.RootElement.GetProperty("diagnostics")[0].GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task Project_renders_a_structural_view_from_the_context_root()
+    {
+        var host = new RecordingCliHost(await WorkspaceFiles());
+
+        var exit = await CliApplication.RunAsync(
+            ["project", "--workspace", "samples/child-care", "--view", "Structural",
+                "--root", "0191f6d4-4ea0-7000-8000-000000000001", "--format", "json"],
+            host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Success, exit);
+        using var json = JsonDocument.Parse(host.StandardOutput);
+        var graph = json.RootElement.GetProperty("graph");
+        Assert.Equal("Structural", graph.GetProperty("kind").GetString());
+        Assert.Contains(graph.GetProperty("nodes").EnumerateArray(),
+            node => node.GetProperty("role").GetString() == "entity");
     }
 
     [Fact]
