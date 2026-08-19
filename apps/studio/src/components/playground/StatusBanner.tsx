@@ -7,13 +7,10 @@ export interface Notice {
   text: string;
 }
 
-// Shared by the live analyze status (idle/analyzing/error) and one-off share/export/decode
-// notices — PlaygroundWorkbench decides which single notice takes priority at any given moment.
-export function StatusBanner({ notice }: { notice: Notice | undefined }) {
-  if (!notice) return null;
-
+// The analysis status is always present so analysis requests do not change the workbench height.
+export function StatusBanner({ notice }: { notice: Notice }) {
   return (
-    <div className={`playground-status playground-status-${notice.kind}`} role="status">
+    <div className={`playground-status playground-status-${notice.kind}`}>
       {notice.text}
     </div>
   );

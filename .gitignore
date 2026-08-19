@@ -25,6 +25,9 @@ editors/vscode-modeller/server/
 # misc
 .DS_Store
 *.pem
+/.claude/settings.local.json
+/.tmp/
+/.worktrees/
 /.pnp
 .pnp.js
 npm-debug.log*
