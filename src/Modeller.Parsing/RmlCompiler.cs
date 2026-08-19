@@ -194,13 +194,15 @@ public static partial class RmlCompiler
                 var split = text.IndexOf(' ');
                 var keyword = split < 0 ? text : text[..split];
                 var value = split < 0 ? string.Empty : Unquote(text[(split + 1)..].Trim());
+                var parentKeyword = stack.TryPeek(out var parent) ? parent.Keyword : null;
+                if (!RmlGrammar.IsAllowedStatement(keyword, parentKeyword))
+                    return ([], new("rml.statement.unexpected", $"'{keyword}' is not valid inside '{parentKeyword ?? "the document root"}'.", new(source.Name, index + 1, 1, raw.Length)));
                 var nodeId = pendingId;
                 if (nodeId is null && options.AllowTransientRmlIdentities && IdentityDeclarations.Contains(keyword) && !value.StartsWith('"'))
                     nodeId = Guid.CreateVersion7().ToString();
                 var node = new Node(keyword, value, nodeId, source.Name, index + 1,
                     raw.IndexOf(keyword, StringComparison.Ordinal) + 1, raw.Length, []);
                 pendingId = null;
-                var parentKeyword = stack.TryPeek(out var parent) ? parent.Keyword : null;
                 if (parent is not null) parent.Children.Add(node); else roots.Add(node);
                 if (OpensBlock(keyword, parentKeyword)) stack.Push(node);
             }

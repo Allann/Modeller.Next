@@ -44,13 +44,24 @@ public sealed record ProjectionResponseDto(string Id, bool Succeeded, ApiProject
 /// valid <see cref="ProjectionRequestDto.Roots"/> values without the response echoing full source.</summary>
 public sealed record RootSummaryDto(string Id, ViewKind Kind, string Name, string Slug);
 
+public sealed record SemanticOutlineItemDto(string Id, string Kind, string Name, string? OwnerId, ApiSourceSpan Location);
+
+public sealed record SemanticCountDto(string Kind, int Count);
+
 public sealed record WorkspaceAnalyzeResponse(
     string ApiVersion,
     IReadOnlyList<ApiDiagnostic> Diagnostics,
     IReadOnlyList<RootSummaryDto> Roots,
-    IReadOnlyList<ProjectionResponseDto> Projections);
+    IReadOnlyList<SemanticOutlineItemDto> Outline,
+    IReadOnlyList<SemanticCountDto> Summary,
+    IReadOnlyList<ProjectionResponseDto> Projections,
+    IdentityDto? Identity);
 
 public sealed record SupportedViewsResponse(string ApiVersion, IReadOnlyList<ViewKind> Views);
+
+public sealed record WorkspaceCompletionRequest(WorkspaceAnalyzeRequest Workspace, string Path, int Line, string Prefix);
+public sealed record CompletionItemDto(string Label, string Kind, string Detail);
+public sealed record WorkspaceCompletionResponse(string ApiVersion, IReadOnlyList<CompletionItemDto> Items);
 
 /// <summary>Response for <c>POST /v1/workspace/export</c> (issue #73): the post-identity-application
 /// document text and the durable registry harvested from it, so a caller (the playground) can turn

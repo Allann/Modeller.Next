@@ -1,0 +1,15 @@
+---
+title: lifecycle block
+description: Declare the valid stages of an entity.
+---
+
+A `lifecycle` is valid inside an `entity`. Add one or more `stage` statements.
+
+```text
+entity Order
+  lifecycle Order lifecycle
+    stage Draft
+    stage Placed
+  end
+end
+```

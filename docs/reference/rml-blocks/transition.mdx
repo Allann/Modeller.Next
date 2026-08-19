@@ -1,0 +1,15 @@
+---
+title: transition block
+description: Declare a lifecycle change caused by a behaviour.
+---
+
+A `transition` is valid inside a `behaviour`. It requires `lifecycle`, `from`, `to`, and `outcome` references.
+
+```text
+transition Place order
+  lifecycle "Order lifecycle"
+  from "Draft"
+  to "Placed"
+  outcome "Order placed"
+end
+```

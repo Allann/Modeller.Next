@@ -29,15 +29,22 @@ follow here (see workspace-application-service.mdx's Non-goals).
 directly — no subprocess, no per-user process, no session state. It depends only on
 `Modeller.Workspace`.
 
-**One endpoint, one round trip.** `POST /v1/workspace/analyze` accepts a full workspace
+**One endpoint, one analyzed workspace per round trip.** `POST /v1/workspace/analyze` accepts a full workspace
 (documents, identity, configuration) plus zero or more projection requests, and returns
-diagnostics, discoverable projection roots, and a projection result per requested view — all in
-one response. A second call cannot reuse an `AnalyzedWorkspace` from a first call (nothing is
-kept between requests), and for an `Ephemeral` identity strategy specifically, a second call
-would mint different random identities anyway — so analysis and projection must happen
-together, in the same call, against the same in-memory `AnalyzedWorkspace`. `GET
+diagnostics, a semantic outline, semantic-kind counts, discoverable projection roots, the effective identity registry, and a projection
+result per requested view. A response to an ephemeral request returns the identities minted for
+that analysis. A stateless client must send that registry as a durable identity strategy on a
+follow-up request if it uses a discovered root ID. This keeps root IDs stable without server-side
+session state. A projection requested in the original call still runs against the same in-memory
+`AnalyzedWorkspace`. `GET
 /v1/workspace/supported-views` exposes `ModellerWorkspace.SupportedViewKinds` so a client doesn't
 have to hardcode the issue #64 allowlist.
+
+`POST /v1/workspace/complete` accepts the same bounded workspace plus a document and cursor line.
+It returns statements from the parser's shared `RmlGrammar` catalog for the current block and
+semantic names from that analyzed workspace. Thus, completion and parsing use one grammar authority.
+The supported projections are Lifecycle, RuleDecision, and Structural. A Structural projection uses
+the context as its root and includes entities, fields, relationships, enumerations, and members.
 
 **Response shape distinguishes three cases**, matching the acceptance criteria's "stable, bounded
 responses" requirement:
@@ -211,6 +218,9 @@ credentials are configured — that wiring is explicit future work once a platfo
   rule) is a small, deliberate addition beyond the issue's literal wording, mirroring the CLI's
   `project --view <kind>` (no root) root-listing behavior — without it, a client has no way to
   discover a valid projection root without already knowing the semantic id in advance.
+- `WorkspaceAnalyzeResponse.Identity` carries the effective registry for the analyzed documents.
+  This is browser session state, not server persistence or an implicit workspace export. It lets
+  a stateless client reuse discovered semantic IDs in later analysis requests.
 - Actually provisioning a cloud account, wiring the website frontend to call this API, and
   exposing `Export`/generation over HTTP are explicit non-goals of this decision; see
   workspace-application-service.mdx and the open items above.

@@ -1,0 +1,17 @@
+---
+title: entity block
+description: Declare an entity and its structure.
+---
+
+An `entity` is a document-root block. It can contain one `lifecycle` and any number of `field` and `relationship` blocks. An empty entity is valid.
+
+```text
+entity Order
+  field Order number
+    type text
+  end
+end
+
+entity Orderline
+end
+```

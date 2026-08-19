@@ -1,6 +1,7 @@
 node_modules
 .next
 .next-playground
+.next-playground-local
 server-bin
 public/grammars
 *.tsbuildinfo

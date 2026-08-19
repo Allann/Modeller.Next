@@ -88,11 +88,27 @@ export interface RootSummaryDto {
   slug: string;
 }
 
+export interface SemanticOutlineItemDto {
+  id: string;
+  kind: string;
+  name: string;
+  ownerId?: string;
+  location: ApiSourceSpan;
+}
+
+export interface SemanticCountDto {
+  kind: string;
+  count: number;
+}
+
 export interface WorkspaceAnalyzeResponse {
   apiVersion: string;
   diagnostics: ApiDiagnostic[];
   roots: RootSummaryDto[];
+  outline: SemanticOutlineItemDto[];
+  summary: SemanticCountDto[];
   projections: ProjectionResponseDto[];
+  identity: DurableIdentityDto | null;
 }
 
 // Response of POST /v1/workspace/export (issue #73): the post-identity-application document text
@@ -149,4 +165,18 @@ export async function fetchSupportedViews(): Promise<string[]> {
   if (!response.ok) throw new Error(`Failed to load supported views (status ${response.status}).`);
   const data = (await response.json()) as SupportedViewsResponse;
   return data.views;
+}
+
+export interface CompletionItemDto { label: string; kind: string; detail: string }
+
+export async function completeWorkspace(
+  documents: readonly WorkspaceDocumentDto[], identity: IdentityDto, configuration: ConfigurationDto,
+  path: string, line: number, prefix: string, signal?: AbortSignal,
+): Promise<CompletionItemDto[]> {
+  const response = await fetch(`${API_BASE}/v1/workspace/complete`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
+    body: JSON.stringify({ workspace: { documents, identity, configuration, projections: [] }, path, line, prefix }),
+  });
+  if (!response.ok) return [];
+  return ((await response.json()) as { items: CompletionItemDto[] }).items;
 }

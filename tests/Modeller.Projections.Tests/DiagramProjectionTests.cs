@@ -42,11 +42,26 @@ public sealed class DiagramProjectionTests
     }
 
     [Fact]
+    public void Structural_view_contains_entities_for_a_context_root()
+    {
+        var revision = ChildCare.Revision();
+        var result = DiagramProjector.Project(revision, new("structure", 1, ViewKind.Structural, [ChildCare.ContextId]), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.True(result.Succeeded);
+        Assert.Contains(result.Graph!.Nodes, node => node.Role == "entity" && node.Label == "ACCS determination application");
+    }
+
+    [Fact]
     public void Every_initial_view_kind_uses_the_same_projection_interface()
     {
         foreach (var kind in Enum.GetValues<ViewKind>())
         {
-            var roots = kind == ViewKind.Lifecycle ? ImmutableArray.Create(ChildCare.ApplicationId) : [];
+            var roots = kind switch
+            {
+                ViewKind.Lifecycle => ImmutableArray.Create(ChildCare.ApplicationId),
+                ViewKind.Structural => ImmutableArray.Create(ChildCare.ContextId),
+                _ => [],
+            };
             var result = DiagramProjector.Project(ChildCare.Revision(), new($"view-{kind}", 1, kind, roots), cancellationToken: TestContext.Current.CancellationToken);
             Assert.True(result.Succeeded);
             Assert.Equal(kind, result.Graph!.Kind);

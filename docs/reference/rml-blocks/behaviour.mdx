@@ -1,0 +1,21 @@
+---
+title: behaviour block
+description: Declare an action for an entity.
+---
+
+A `behaviour` is a document-root block. It requires `for`, can bind rules with `requires`, and can contain `outcome` and `transition` blocks.
+
+```text
+behaviour Place order
+  for "Order"
+  requires "Determine order readiness"
+  outcome Order placed
+  end
+  transition Place order
+    lifecycle "Order lifecycle"
+    from "Draft"
+    to "Placed"
+    outcome "Order placed"
+  end
+end
+```

@@ -1,0 +1,15 @@
+---
+title: relationship block
+description: Declare a relationship between entities.
+---
+
+A `relationship` is valid inside an `entity`. It requires `target` and `cardinality`. Cardinality is `one` or `many`.
+
+```text
+relationship Lines
+  target "Orderline"
+  cardinality many
+end
+```
+
+Add `optional` when the relationship is not required.

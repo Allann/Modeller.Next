@@ -28,7 +28,7 @@ public sealed class WorkspaceAnalysisPipeline(ILogger<WorkspaceAnalysisPipeline>
         if (violations.Count > 0)
         {
             logger.LogInformation("Workspace analyze request rejected: {DiagnosticCodes}", string.Join(',', violations.Select(v => v.Code)));
-            return new(new("1.0", violations, [], []), StatusCodes.Status400BadRequest);
+            return new(new("1.0", violations, [], [], [], [], null), StatusCodes.Status400BadRequest);
         }
 
         var stopwatch = Stopwatch.StartNew();
@@ -157,7 +157,34 @@ public sealed class WorkspaceAnalysisPipeline(ILogger<WorkspaceAnalysisPipeline>
             totalGraphElements = candidateTotal;
             projections.Add(projected);
         }
-        return WorkspaceOutcome.Success(new WorkspaceAnalyzeResponse("1.0", [], ComputeRoots(analyzed), projections));
+        var exported = ModellerWorkspace.Export(analyzed);
+        if (exported is WorkspaceOutcome<WorkspaceIdentityRegistry>.Failed failed)
+            return WorkspaceOutcome.Failed<WorkspaceAnalyzeResponse>(failed.Diagnostics);
+        if (exported is WorkspaceOutcome<WorkspaceIdentityRegistry>.Cancelled)
+            return WorkspaceOutcome.Cancelled<WorkspaceAnalyzeResponse>();
+        var identity = ((WorkspaceOutcome<WorkspaceIdentityRegistry>.Success)exported).Value.ToDto();
+        var outline = ComputeOutline(analyzed);
+        var summary = outline.GroupBy(item => item.Kind, StringComparer.Ordinal)
+            .Select(group => new SemanticCountDto(group.Key, group.Count()))
+            .OrderBy(item => item.Kind, StringComparer.Ordinal).ToArray();
+        return WorkspaceOutcome.Success(new WorkspaceAnalyzeResponse("1.0", [], ComputeRoots(analyzed), outline, summary, projections, identity));
+    }
+
+    private static IReadOnlyList<SemanticOutlineItemDto> ComputeOutline(AnalyzedWorkspace analyzed)
+    {
+        var provenance = analyzed.Provenance
+            .Where(item => item.SemanticPath is null)
+            .GroupBy(item => item.SemanticId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First().Span, StringComparer.Ordinal);
+        return [.. SemanticNavigation.Concepts(analyzed.Package.AuthoredRevision)
+            .Where(item => provenance.ContainsKey(item.Id.ToString()))
+            .Select(item =>
+            {
+                var span = provenance[item.Id.ToString()];
+                return new SemanticOutlineItemDto(item.Id.ToString(), item.Kind.ToString(), item.Name.Value,
+                    item.OwnerId == analyzed.Package.AuthoredRevision.Id ? null : item.OwnerId.ToString(),
+                    new ApiSourceSpan(span.Document, span.Line, span.Column, span.Length));
+            })];
     }
 
     /// <summary>Mirrors the CLI's <c>project --view &lt;kind&gt;</c> (no root) root-listing
@@ -167,10 +194,11 @@ public sealed class WorkspaceAnalysisPipeline(ILogger<WorkspaceAnalysisPipeline>
     private static IReadOnlyList<RootSummaryDto> ComputeRoots(AnalyzedWorkspace analyzed)
     {
         var revision = analyzed.Package.AuthoredRevision;
-        return [.. revision.Definitions.OfType<EntityDefinition>().Where(entity => entity.Lifecycle is not null)
+        return [.. new[] { new RootSummaryDto(revision.Id.ToString(), ViewKind.Structural, revision.Name.Value, revision.Slug.Value) }
+            .Concat(revision.Definitions.OfType<EntityDefinition>().Where(entity => entity.Lifecycle is not null)
             .Select(entity => new RootSummaryDto(entity.Id.ToString(), ViewKind.Lifecycle, entity.Name.Value, entity.Slug.Value))
             .Concat(revision.Definitions.OfType<RuleDefinition>()
-                .Select(rule => new RootSummaryDto(rule.Id.ToString(), ViewKind.RuleDecision, rule.Name.Value, rule.Slug.Value)))
+                .Select(rule => new RootSummaryDto(rule.Id.ToString(), ViewKind.RuleDecision, rule.Name.Value, rule.Slug.Value))))
             .OrderBy(root => root.Slug, StringComparer.Ordinal)
             .Take(RequestLimits.MaximumRoots)];
     }
@@ -206,9 +234,9 @@ public sealed class WorkspaceAnalysisPipeline(ILogger<WorkspaceAnalysisPipeline>
     {
         WorkspaceOutcome<WorkspaceAnalyzeResponse>.Success success => new(success.Value, StatusCodes.Status200OK),
         WorkspaceOutcome<WorkspaceAnalyzeResponse>.Failed failed =>
-            new(new("1.0", [.. failed.Diagnostics.Select(WorkspaceContractMappings.ToApiDiagnostic)], [], []), StatusCodes.Status200OK),
+            new(new("1.0", [.. failed.Diagnostics.Select(WorkspaceContractMappings.ToApiDiagnostic)], [], [], [], [], null), StatusCodes.Status200OK),
         _ => new(
-            new("1.0", [new("api.request.timeout", "The request was cancelled or exceeded the server-side time budget.")], [], []),
+            new("1.0", [new("api.request.timeout", "The request was cancelled or exceeded the server-side time budget.")], [], [], [], [], null),
             StatusCodes.Status503ServiceUnavailable),
     };
 }

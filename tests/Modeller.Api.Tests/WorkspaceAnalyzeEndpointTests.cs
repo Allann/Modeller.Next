@@ -79,6 +79,9 @@ public sealed class WorkspaceAnalyzeEndpointTests : IClassFixture<WebApplication
         new ConfigurationDto("1.0", "generated/"),
         projections);
 
+    private static string WithoutEmbeddedIdentities(string source) => string.Join('\n',
+        source.Split('\n').Where(line => !line.TrimStart().StartsWith("# @id=", StringComparison.Ordinal)));
+
     [Fact]
     public async Task Analyze_a_valid_multi_document_workspace_returns_no_diagnostics()
     {
@@ -114,6 +117,39 @@ public sealed class WorkspaceAnalyzeEndpointTests : IClassFixture<WebApplication
             Assert.True(projection.Succeeded, string.Join(",", projection.Diagnostics.Select(d => d.Code)));
             Assert.NotEmpty(projection.Graph!.Nodes);
         }
+    }
+
+    [Fact]
+    public async Task Analyze_returns_effective_identities_that_keep_discovered_roots_valid()
+    {
+        using var client = _factory.CreateClient();
+        var documents = new List<WorkspaceDocumentDto>
+        {
+            new("model/context.rml", WithoutEmbeddedIdentities(ContextAndEntityDocument)),
+            new("model/rules.rml", WithoutEmbeddedIdentities(FactsAndRuleDocument)),
+        };
+        var discoveryRequest = new WorkspaceAnalyzeRequest(
+            documents, new EphemeralIdentityDto(), new ConfigurationDto("1.0", "generated/"), []);
+
+        using var discoveryResponse = await client.PostAsJsonAsync(
+            "/v1/workspace/analyze", discoveryRequest, ApiJson.Options, TestContext.Current.CancellationToken);
+        var discovery = await discoveryResponse.Content.ReadFromJsonAsync<WorkspaceAnalyzeResponse>(
+            ApiJson.Options, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(discovery);
+        var identity = Assert.IsType<DurableIdentityDto>(discovery.Identity);
+        var root = Assert.Single(discovery.Roots, candidate => candidate.Kind == ViewKind.Lifecycle);
+        var projectionRequest = new WorkspaceAnalyzeRequest(
+            documents, identity, new ConfigurationDto("1.0", "generated/"),
+            [new("lifecycle:root", ViewKind.Lifecycle, [root.Id])]);
+
+        using var projectionResponse = await client.PostAsJsonAsync(
+            "/v1/workspace/analyze", projectionRequest, ApiJson.Options, TestContext.Current.CancellationToken);
+        var projected = await projectionResponse.Content.ReadFromJsonAsync<WorkspaceAnalyzeResponse>(
+            ApiJson.Options, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(projected);
+        Assert.True(Assert.Single(projected.Projections).Succeeded);
     }
 
     [Fact]
@@ -165,10 +201,30 @@ public sealed class WorkspaceAnalyzeEndpointTests : IClassFixture<WebApplication
     }
 
     [Fact]
+    public async Task Analyze_reports_an_unknown_Rml_statement_at_its_source_line()
+    {
+        using var client = _factory.CreateClient();
+        var request = new WorkspaceAnalyzeRequest(
+            [new("model/context.modeller", "rml 1.0\ncontext Ordering\n  version 1.0.0\n  asdf\nend\n")],
+            new EphemeralIdentityDto(), new ConfigurationDto("1.0", "generated/"), null);
+
+        using var response = await client.PostAsJsonAsync(
+            "/v1/workspace/analyze", request, ApiJson.Options, TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadFromJsonAsync<WorkspaceAnalyzeResponse>(
+            ApiJson.Options, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(body);
+        var diagnostic = Assert.Single(body.Diagnostics);
+        Assert.Equal("rml.statement.unexpected", diagnostic.Code);
+        Assert.Equal("model/context.modeller", diagnostic.Location!.Document);
+        Assert.Equal(4, diagnostic.Location.Line);
+    }
+
+    [Fact]
     public async Task Analyze_rejects_an_unsupported_view_kind_as_a_per_projection_diagnostic()
     {
         using var client = _factory.CreateClient();
-        var request = ReferenceWorkspaceRequest([new("v", ViewKind.Structural, [])]);
+        var request = ReferenceWorkspaceRequest([new("v", ViewKind.ContextMap, [])]);
 
         using var response = await client.PostAsJsonAsync("/v1/workspace/analyze", request, ApiJson.Options, TestContext.Current.CancellationToken);
 
@@ -190,7 +246,34 @@ public sealed class WorkspaceAnalyzeEndpointTests : IClassFixture<WebApplication
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<SupportedViewsResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
         Assert.NotNull(body);
-        Assert.Equal([ViewKind.Lifecycle, ViewKind.RuleDecision], body.Views);
+        Assert.Equal([ViewKind.Lifecycle, ViewKind.RuleDecision, ViewKind.Structural], body.Views);
+    }
+
+    [Fact]
+    public async Task Analyze_returns_a_semantic_outline_summary_and_structural_context_root()
+    {
+        using var client = _factory.CreateClient();
+        using var response = await client.PostAsJsonAsync("/v1/workspace/analyze", ReferenceWorkspaceRequest(), ApiJson.Options, TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadFromJsonAsync<WorkspaceAnalyzeResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(body);
+        Assert.Contains(body.Outline, item => item.Kind == "Entity" && item.Name == "ACCS determination application");
+        Assert.Contains(body.Summary, item => item.Kind == "Entity" && item.Count == 1);
+        Assert.Contains(body.Roots, item => item.Kind == ViewKind.Structural && item.Name == "Child Care");
+    }
+
+    [Fact]
+    public async Task Complete_returns_only_context_valid_keywords_and_workspace_symbols()
+    {
+        using var client = _factory.CreateClient();
+        var request = new WorkspaceCompletionRequest(ReferenceWorkspaceRequest(), "model/context.rml", 8, "");
+        using var response = await client.PostAsJsonAsync("/v1/workspace/complete", request, ApiJson.Options, TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadFromJsonAsync<WorkspaceCompletionResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(body);
+        Assert.Contains(body.Items, item => item.Label == "lifecycle" && item.Kind == "keyword");
+        Assert.DoesNotContain(body.Items, item => item.Label == "entity" && item.Kind == "keyword");
+        Assert.Contains(body.Items, item => item.Label == "ACCS determination application" && item.Kind == "Entity");
     }
 
     [Theory]

@@ -23,6 +23,21 @@ public sealed class RmlCompilerTests
     }
 
     [Fact]
+    public void Compile_rejects_an_unknown_statement_inside_a_context()
+    {
+        const string source = "rml 1.0\ncontext Ordering\n  version 1.0.0\n  asdf\nend\n";
+
+        var result = DefinitionParser.Parse(
+            [new SourceDocument("model/context.modeller", source)],
+            ParseOptions.EditorLanguage1,
+            TestContext.Current.CancellationToken);
+
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("rml.statement.unexpected", diagnostic.Code);
+        Assert.Equal(4, diagnostic.Location!.Line);
+    }
+
+    [Fact]
     public void Rename_updates_a_matching_declaration_line_and_preserves_indentation_and_kind()
     {
         var edit = RmlCompiler.Rename("  context Child Care\nend\n", "Child Care", "Family Care");

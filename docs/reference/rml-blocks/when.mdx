@@ -1,0 +1,13 @@
+---
+title: when block
+description: Combine facts in a rule expression.
+---
+
+A `when` block is valid inside a `rule`. RML 1.0 supports only `when all`. Each nested `fact` is a quoted reference to a declared fact.
+
+```text
+when all
+  fact "Payment confirmed"
+  fact "Stock allocated"
+end
+```

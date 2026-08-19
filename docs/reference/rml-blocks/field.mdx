@@ -1,0 +1,19 @@
+---
+title: field block
+description: Declare typed data owned by an entity.
+---
+
+A `field` is valid inside an `entity`. It requires one `type`. Add `optional` when a value is not required.
+
+```text
+field Total
+  type decimal(12,2)
+end
+
+field Customer note
+  type text
+  optional
+end
+```
+
+Primitive types are `boolean`, `text`, `byte`, `int16`, `int32`, `int64`, `decimal`, `date`, `time`, `datetime`, `datetimeoffset`, `identifier`, and `coordinate`. Named types use `enumeration "Name"`, `entity "Name"`, or `value "Name"`.

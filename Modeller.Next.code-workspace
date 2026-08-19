@@ -123,6 +123,77 @@
         "problemMatcher": "$msCompile"
       },
       {
+        "label": "playground: api",
+        "type": "process",
+        "command": "dotnet",
+        "args": ["run", "--project", "src/Modeller.Api/Modeller.Api.csproj"],
+        "options": {
+          "cwd": "${workspaceFolder}",
+          "env": {
+            "PORT": "8080",
+            "ASPNETCORE_ENVIRONMENT": "Development",
+            "Cors__AllowedOrigins__0": "http://localhost:3110"
+          }
+        },
+        "isBackground": true,
+        "problemMatcher": {
+          "owner": "modeller-playground-api",
+          "pattern": {
+            "regexp": "^(.*)$",
+            "message": 1
+          },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": ".*Building.*",
+            "endsPattern": ".*Now listening on.*"
+          }
+        },
+        "presentation": {
+          "group": "development",
+          "reveal": "always",
+          "panel": "dedicated"
+        }
+      },
+      {
+        "label": "playground: web",
+        "type": "process",
+        "command": "npm.cmd",
+        "args": ["run", "dev"],
+        "options": {
+          "cwd": "${workspaceFolder}/apps/studio",
+          "env": {
+            "PORT": "3110",
+            "NEXT_PUBLIC_MODELLER_STUDIO_MODE": "playground",
+            "NEXT_PUBLIC_MODELLER_API_URL": "http://localhost:8080",
+            "MODELLER_STUDIO_DIST_DIR": ".next-playground-local"
+          }
+        },
+        "isBackground": true,
+        "problemMatcher": {
+          "owner": "modeller-playground-web",
+          "pattern": {
+            "regexp": "^(.*)$",
+            "message": 1
+          },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": ".*Starting.*",
+            "endsPattern": ".*ready.*"
+          }
+        },
+        "presentation": {
+          "group": "development",
+          "reveal": "always",
+          "panel": "dedicated"
+        }
+      },
+      {
+        "label": "playground: dev",
+        "dependsOrder": "parallel",
+        "dependsOn": ["playground: api", "playground: web"],
+        "problemMatcher": []
+      },
+      {
         "label": "model: test",
         "type": "process",
         "command": "dotnet",
@@ -169,6 +240,14 @@
         "request": "launch",
         "command": "npm run dev",
         "cwd": "${workspaceFolder}/apps/studio"
+      },
+      {
+        "name": "Modeller Playground",
+        "type": "pwa-chrome",
+        "request": "launch",
+        "url": "http://localhost:3110",
+        "webRoot": "${workspaceFolder}/apps/studio",
+        "preLaunchTask": "playground: dev"
       }
     ]
   }

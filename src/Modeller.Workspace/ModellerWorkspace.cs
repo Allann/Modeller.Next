@@ -31,7 +31,7 @@ public static class ModellerWorkspace
     /// view kinds silently return an empty graph in the library today; this seam rejects them with
     /// a diagnostic instead. See issue #64.
     /// </summary>
-    public static readonly ImmutableArray<ViewKind> SupportedViewKinds = [ViewKind.Lifecycle, ViewKind.RuleDecision];
+    public static readonly ImmutableArray<ViewKind> SupportedViewKinds = [ViewKind.Lifecycle, ViewKind.RuleDecision, ViewKind.Structural];
 
     public static WorkspaceOutcome<AnalyzedWorkspace> Analyze(WorkspaceInput input, CancellationToken cancellationToken = default)
     {
@@ -64,9 +64,38 @@ public static class ModellerWorkspace
         if (parsed.IsCancelled) return WorkspaceOutcome.Cancelled<AnalyzedWorkspace>();
         if (!parsed.IsSuccess)
             return WorkspaceOutcome.Failed<AnalyzedWorkspace>(
-                parsed.Diagnostics.Select(diagnostic => new WorkspaceDiagnostic(diagnostic.Code, diagnostic.Message, diagnostic.Location)).ToImmutableArray());
+                parsed.Diagnostics.Select(diagnostic => new WorkspaceDiagnostic(
+                    diagnostic.Code,
+                    diagnostic.Message,
+                    RemapLocation(diagnostic.Location, input.Documents, identified))).ToImmutableArray());
 
-        return WorkspaceOutcome.Success(new AnalyzedWorkspace(identified.ToImmutable(), parsed.Package!, configured.Configuration!, parsed.Provenance, input.Identity));
+        var remappedProvenance = parsed.Provenance.Select(item => item with
+        {
+            Span = RemapLocation(item.Span, input.Documents, identified) ?? item.Span
+        }).ToImmutableArray();
+        return WorkspaceOutcome.Success(new AnalyzedWorkspace(identified.ToImmutable(), parsed.Package!, configured.Configuration!, remappedProvenance, input.Identity));
+    }
+
+    private static SourceSpan? RemapLocation(
+        SourceSpan? location,
+        ImmutableArray<WorkspaceDocument> submittedDocuments,
+        ImmutableArray<WorkspaceDocument>.Builder identifiedDocuments)
+    {
+        if (location is null) return null;
+        var submitted = submittedDocuments.SingleOrDefault(document => document.Path.Value == location.Document);
+        var identified = identifiedDocuments.SingleOrDefault(document => document.Path.Value == location.Document);
+        if (submitted is null || identified is null) return location;
+
+        var submittedLines = submitted.Content.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        var identifiedLines = identified.Content.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        var submittedIndex = 0;
+        for (var identifiedIndex = 0; identifiedIndex < location.Line - 1 && identifiedIndex < identifiedLines.Length; identifiedIndex++)
+        {
+            if (submittedIndex < submittedLines.Length &&
+                string.Equals(identifiedLines[identifiedIndex], submittedLines[submittedIndex], StringComparison.Ordinal))
+                submittedIndex++;
+        }
+        return location with { Line = Math.Min(submittedIndex + 1, submittedLines.Length) };
     }
 
     /// <summary>Applies one document's identity per <paramref name="strategy"/> — minting via
