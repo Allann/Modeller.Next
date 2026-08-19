@@ -7,7 +7,10 @@ namespace Modeller.Editor;
 public sealed record RmlWorkspaceDocument(Uri Uri, long Version, string Text);
 public sealed record RmlLocation(Uri Uri, EditorRange Range);
 public sealed record RmlSymbol(string Id, string Name, string Kind, RmlLocation Declaration, ImmutableArray<RmlLocation> References);
-public sealed record RmlCompletion(string Label, string Kind, string Detail);
+public sealed record RmlCompletion(string Label, string Kind, string Detail, string InsertText, int ReplacementStartColumn)
+{
+    public RmlCompletion(string label, string kind, string detail) : this(label, kind, detail, label, 1) { }
+}
 public sealed record RmlHover(string Title, string Detail, EditorRange Range);
 public sealed record RmlSemanticToken(Uri Uri, EditorRange Range, string Kind);
 public sealed record RmlLocatedDiagnostic(Uri Uri, EditorDiagnostic Diagnostic);
@@ -20,24 +23,6 @@ public sealed record RmlWorkspaceAnalysis(
 
 public static class RmlLanguageService
 {
-    private static readonly ImmutableArray<RmlCompletion> Keywords =
-    [
-        new("context", "keyword", "Declare the owning bounded context."),
-        new("entity", "keyword", "Declare a domain concept with stable identity."),
-        new("field", "keyword", "Declare typed data owned by an Entity."),
-        new("relationship", "keyword", "Declare a cardinality-aware reference between Entities."),
-        new("enumeration", "keyword", "Declare a closed set of named values."),
-        new("member", "keyword", "Declare an Enumeration value."),
-        new("lifecycle", "keyword", "Declare the governed stages of an Entity."),
-        new("stage", "keyword", "Declare a Lifecycle stage."),
-        new("fact", "keyword", "Declare typed information used by Rules."),
-        new("rule", "keyword", "Declare a reusable explained decision."),
-        new("behaviour", "keyword", "Declare an action and its Outcomes."),
-        new("outcome", "keyword", "Declare a business result of a Behaviour."),
-        new("transition", "keyword", "Declare an Outcome-linked Lifecycle change."),
-        new("requires", "keyword", "Bind a Rule as a Behaviour requirement.")
-    ];
-
     public static RmlWorkspaceAnalysis Analyze(
         IEnumerable<RmlWorkspaceDocument> documents,
         CancellationToken cancellationToken = default)
@@ -67,8 +52,21 @@ public static class RmlLanguageService
     public static ImmutableArray<RmlCompletion> Complete(RmlWorkspaceAnalysis analysis, string linePrefix)
     {
         var semantic = analysis.Symbols.Select(symbol => new RmlCompletion(symbol.Name, symbol.Kind, $"Resolved {symbol.Kind} in this workspace."));
-        return Keywords.Concat(semantic).Where(item => linePrefix.Length == 0 || item.Label.StartsWith(linePrefix, StringComparison.OrdinalIgnoreCase))
+        var keywords = RmlGrammar.AllowedStatements(null).Select(label => new RmlCompletion(label, "keyword", "Valid at the document root."));
+        return keywords.Concat(semantic).Where(item => linePrefix.Length == 0 || item.Label.StartsWith(linePrefix, StringComparison.OrdinalIgnoreCase))
             .DistinctBy(item => item.Label, StringComparer.OrdinalIgnoreCase).OrderBy(item => item.Label, StringComparer.OrdinalIgnoreCase).ToImmutableArray();
+    }
+
+    public static ImmutableArray<RmlCompletion> Complete(
+        IEnumerable<RmlWorkspaceDocument> documents,
+        Uri uri,
+        EditorPosition position,
+        CancellationToken cancellationToken = default)
+    {
+        var documentArray = documents.ToArray();
+        var sources = documentArray.Select(document => new SourceDocument(Name(document.Uri), document.Text));
+        return [.. RmlGrammar.Complete(sources, Name(uri), position.Line + 1, position.Character + 1, cancellationToken)
+            .Select(item => new RmlCompletion(item.Label, item.Kind, item.Detail, item.InsertText, item.ReplacementStartColumn))];
     }
 
     public static RmlHover? Hover(RmlWorkspaceAnalysis analysis, Uri uri, EditorPosition position)

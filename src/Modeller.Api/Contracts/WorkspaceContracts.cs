@@ -59,9 +59,9 @@ public sealed record WorkspaceAnalyzeResponse(
 
 public sealed record SupportedViewsResponse(string ApiVersion, IReadOnlyList<ViewKind> Views);
 
-public sealed record WorkspaceCompletionRequest(WorkspaceAnalyzeRequest Workspace, string Path, int Line, string Prefix);
-public sealed record CompletionItemDto(string Label, string Kind, string Detail);
-public sealed record WorkspaceCompletionResponse(string ApiVersion, IReadOnlyList<CompletionItemDto> Items);
+public sealed record WorkspaceCompletionRequest(WorkspaceAnalyzeRequest Workspace, string Path, int Line, int Column);
+public sealed record CompletionItemDto(string Label, string Kind, string Detail, string InsertText, int ReplacementStartColumn);
+public sealed record WorkspaceCompletionResponse(string ApiVersion, IReadOnlyList<CompletionItemDto> Items, IReadOnlyList<ApiDiagnostic> Diagnostics);
 
 /// <summary>Response for <c>POST /v1/workspace/export</c> (issue #73): the post-identity-application
 /// document text and the durable registry harvested from it, so a caller (the playground) can turn

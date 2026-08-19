@@ -59,6 +59,22 @@ public sealed class RmlLanguageServiceTests
         Assert.Equal(Position(text, "rule Determine ACCS eligibility").Line, definition.Range.Start.Line);
     }
 
+    [Fact]
+    public async Task Contextual_completion_filters_reference_kinds_and_returns_quote_safe_text_edits()
+    {
+        var document = await ChildCare();
+        var position = Position(document.Text, "requires \"Determine");
+        position = position with { Character = position.Character + "requires \"Det".Length };
+
+        var items = RmlLanguageService.Complete([document], document.Uri, position, TestContext.Current.CancellationToken);
+
+        var rule = Assert.Single(items);
+        Assert.Equal("Determine ACCS eligibility", rule.Label);
+        Assert.Equal("Rule", rule.Kind);
+        Assert.Equal("Determine ACCS eligibility", rule.InsertText);
+        Assert.DoesNotContain(items, item => item.Kind == "Entity");
+    }
+
     private static async Task<RmlWorkspaceDocument> ChildCare() => new(
         new("file:///workspace/accs-eligibility.modeller"),
         1,

@@ -149,8 +149,8 @@ export function PlaygroundWorkbench() {
     }
   }, [draft.documents, draft.identity, draft.configuration, view, rootId]);
 
-  const provideCompletions = useCallback((path: string, line: number, prefix: string, signal: AbortSignal) =>
-    completeWorkspace(draft.documents, draft.identity, draft.configuration, path, line, prefix, signal),
+  const provideCompletions = useCallback((path: string, line: number, column: number, signal: AbortSignal) =>
+    completeWorkspace(draft.documents, draft.identity, draft.configuration, path, line, column, signal),
   [draft.documents, draft.identity, draft.configuration]);
 
   useEffect(() => {

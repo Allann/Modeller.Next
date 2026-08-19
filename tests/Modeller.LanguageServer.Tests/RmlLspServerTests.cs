@@ -231,7 +231,7 @@ public sealed class RmlLspServerTests
     [Fact]
     public async Task Completion_returns_a_well_formed_response()
     {
-        var (line, character) = Position(FixtureText, "rule Determine");
+        var (line, character) = Position(FixtureText, "requires \"Determine");
         var frames = await RunAsync(InputOf(
             DidOpenNotification(),
             new
@@ -239,12 +239,14 @@ public sealed class RmlLspServerTests
                 jsonrpc = "2.0",
                 id = 2,
                 method = "textDocument/completion",
-                @params = new { textDocument = new { uri = FixtureUri }, position = new { line, character = character + "rule Det".Length } }
+                @params = new { textDocument = new { uri = FixtureUri }, position = new { line, character = character + "requires \"Det".Length } }
             }));
 
         var result = ResponseFor(frames, 2).GetProperty("result");
         Assert.False(result.GetProperty("isIncomplete").GetBoolean());
-        Assert.Contains(result.GetProperty("items").EnumerateArray(), item => item.GetProperty("label").GetString() == "Determine ACCS eligibility");
+        var completion = Assert.Single(result.GetProperty("items").EnumerateArray());
+        Assert.Equal("Determine ACCS eligibility", completion.GetProperty("label").GetString());
+        Assert.Equal("Determine ACCS eligibility", completion.GetProperty("textEdit").GetProperty("newText").GetString());
     }
 
     [Fact]
