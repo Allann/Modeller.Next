@@ -21,6 +21,10 @@ jobs:
             apps/studio/package-lock.json
             apps/docs/package-lock.json
 
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.400"
+
       - name: Install dependencies
         working-directory: apps/studio
         run: npm ci
@@ -42,6 +46,12 @@ jobs:
       - name: Build
         working-directory: apps/studio
         run: npm run build
+
+      # Playwright drives the real Monaco/LSP integration, so the language server
+      # dll must exist on disk (server-bin/) before the e2e tests start the app.
+      - name: Build language server
+        working-directory: apps/studio
+        run: npm run server:build
 
       - name: Install Playwright browsers
         working-directory: apps/studio
