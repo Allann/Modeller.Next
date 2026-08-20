@@ -22,6 +22,7 @@ public sealed class WorkspaceAnalyzeEndpointTests : IClassFixture<WebApplication
     // (from a prior discovery call against the exact same source) can rely on it here — a
     // genuinely fresh-every-time ephemeral draft cannot do this two-call discovery dance, since
     // each Analyze call would otherwise mint different random ids.
+    private const string ContextId = "0191f6d4-4ea0-7000-8000-000000000001";
     private const string EntityId = "0191f6d4-4ea0-7000-8000-000000000002";
     private const string RuleId = "0191f6d4-4ea0-7000-8000-000000000008";
 
@@ -222,7 +223,7 @@ public sealed class WorkspaceAnalyzeEndpointTests : IClassFixture<WebApplication
     }
 
     [Fact]
-    public async Task Analyze_rejects_an_unsupported_view_kind_as_a_per_projection_diagnostic()
+    public async Task Analyze_rejects_a_projection_with_a_missing_root_as_a_per_projection_diagnostic()
     {
         using var client = _factory.CreateClient();
         var request = ReferenceWorkspaceRequest([new("v", ViewKind.ContextMap, [])]);
@@ -234,7 +235,23 @@ public sealed class WorkspaceAnalyzeEndpointTests : IClassFixture<WebApplication
         Assert.NotNull(body);
         var projection = Assert.Single(body.Projections);
         Assert.False(projection.Succeeded);
-        Assert.Contains(projection.Diagnostics, d => d.Code == "project.view.unsupported");
+        Assert.Contains(projection.Diagnostics, d => d.Code == "projection.root.invalid");
+    }
+
+    [Fact]
+    public async Task Analyze_projects_a_context_map_rooted_at_the_context()
+    {
+        using var client = _factory.CreateClient();
+        var request = ReferenceWorkspaceRequest([new("context-map:root", ViewKind.ContextMap, [ContextId])]);
+
+        using var response = await client.PostAsJsonAsync("/v1/workspace/analyze", request, ApiJson.Options, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<WorkspaceAnalyzeResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
+        Assert.NotNull(body);
+        var projection = Assert.Single(body.Projections);
+        Assert.True(projection.Succeeded);
+        Assert.Contains(projection.Graph!.Nodes, node => node.Role == "context");
     }
 
     [Fact]
@@ -247,7 +264,7 @@ public sealed class WorkspaceAnalyzeEndpointTests : IClassFixture<WebApplication
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<SupportedViewsResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
         Assert.NotNull(body);
-        Assert.Equal([ViewKind.Lifecycle, ViewKind.RuleDecision, ViewKind.Structural], body.Views);
+        Assert.Equal(Enum.GetValues<ViewKind>().ToHashSet(), body.Views.ToHashSet());
     }
 
     [Fact]

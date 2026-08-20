@@ -43,8 +43,78 @@ public static class DiagramProjector
             ViewKind.Lifecycle => Lifecycle(revision, view, cancellationToken),
             ViewKind.RuleDecision => RuleDecision(revision, view, cancellationToken),
             ViewKind.Structural => Structural(revision, view, cancellationToken),
+            ViewKind.BehaviourMap => BehaviourMap(revision, view, cancellationToken),
+            ViewKind.CausalityAndEventFlow => CausalityAndEventFlow(revision, view, cancellationToken),
+            ViewKind.ContextMap => ContextMap(revision, view, cancellationToken),
             _ => new(new(revision.Revision, view.Kind, [], []), [])
         };
+    }
+
+    private static ProjectionResult BehaviourMap(AuthoredContextRevision revision, ViewDefinition view, CancellationToken cancellationToken)
+    {
+        var entity = revision.Definitions.OfType<EntityDefinition>().FirstOrDefault(item => view.Roots.Contains(item.Id));
+        if (entity is null)
+            return new(null, [new("projection.root.invalid", "A behaviour map requires an entity root.")]);
+
+        var nodes = ImmutableArray.CreateBuilder<ProjectionNode>();
+        var edges = ImmutableArray.CreateBuilder<ProjectionEdge>();
+        nodes.Add(new(ElementId("entity", entity.Id), "entity", entity.Name.Value, [entity.Id]));
+        foreach (var behaviour in revision.Definitions.OfType<BehaviourDefinition>().Where(item => item.Entity.TargetId == entity.Id))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            nodes.Add(new(ElementId("behaviour", behaviour.Id), "behaviour", behaviour.Name.Value, [behaviour.Id]));
+            edges.Add(new(ElementId("acts-on", behaviour.Id), "behaviour", "", ElementId("entity", entity.Id), ElementId("behaviour", behaviour.Id), [entity.Id, behaviour.Id]));
+            foreach (var outcome in behaviour.Outcomes)
+            {
+                nodes.Add(new(ElementId("outcome", outcome.Id), "outcome", outcome.Name.Value, [outcome.Id]));
+                edges.Add(new(ElementId("outcome", outcome.Id), "outcome", "", ElementId("behaviour", behaviour.Id), ElementId("outcome", outcome.Id), [behaviour.Id, outcome.Id]));
+            }
+            foreach (var effect in behaviour.Effects)
+            {
+                nodes.Add(new(ElementId("effect", effect.Id), "effect", effect.Name.Value, [effect.Id]));
+                edges.Add(new(ElementId("effect", effect.Id), "effect", "", ElementId("behaviour", behaviour.Id), ElementId("effect", effect.Id), [behaviour.Id, effect.Id]));
+            }
+            foreach (var @event in behaviour.PublishedEvents)
+            {
+                nodes.Add(new(ElementId("event", @event.Id), "event", @event.Name.Value, [@event.Id]));
+                edges.Add(new(ElementId("publishes", @event.Id), "publishes", "", ElementId("behaviour", behaviour.Id), ElementId("event", @event.Id), [behaviour.Id, @event.Id]));
+            }
+        }
+        return new(new(revision.Revision, view.Kind, nodes.ToImmutable(), edges.ToImmutable()), []);
+    }
+
+    private static ProjectionResult CausalityAndEventFlow(AuthoredContextRevision revision, ViewDefinition view, CancellationToken cancellationToken)
+    {
+        if (!view.Roots.Contains(revision.Id))
+            return new(null, [new("projection.root.invalid", "A causality and event-flow view requires a context root.")]);
+
+        var nodes = ImmutableArray.CreateBuilder<ProjectionNode>();
+        var edges = ImmutableArray.CreateBuilder<ProjectionEdge>();
+        var seenBehaviours = new HashSet<SemanticId>();
+        var seenEvents = new HashSet<SemanticId>();
+        foreach (var behaviour in revision.Definitions.OfType<BehaviourDefinition>())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            foreach (var @event in behaviour.PublishedEvents)
+            {
+                if (seenBehaviours.Add(behaviour.Id))
+                    nodes.Add(new(ElementId("behaviour", behaviour.Id), "behaviour", behaviour.Name.Value, [behaviour.Id]));
+                if (seenEvents.Add(@event.Id))
+                    nodes.Add(new(ElementId("event", @event.Id), "event", @event.Name.Value, [@event.Id]));
+                edges.Add(new(ElementId("publishes", @event.Id), "publishes", "", ElementId("behaviour", behaviour.Id), ElementId("event", @event.Id), [behaviour.Id, @event.Id]));
+            }
+        }
+        return new(new(revision.Revision, view.Kind, nodes.ToImmutable(), edges.ToImmutable()), []);
+    }
+
+    private static ProjectionResult ContextMap(AuthoredContextRevision revision, ViewDefinition view, CancellationToken cancellationToken)
+    {
+        if (!view.Roots.Contains(revision.Id))
+            return new(null, [new("projection.root.invalid", "A context map requires a context root.")]);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        ProjectionNode[] nodes = [new(ElementId("context", revision.Id), "context", revision.Name.Value, [revision.Id])];
+        return new(new(revision.Revision, view.Kind, [.. nodes], []), []);
     }
 
     private static ProjectionResult Structural(AuthoredContextRevision revision, ViewDefinition view, CancellationToken cancellationToken)

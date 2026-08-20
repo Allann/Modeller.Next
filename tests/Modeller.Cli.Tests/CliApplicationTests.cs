@@ -428,6 +428,49 @@ public sealed class CliApplicationTests
     }
 
     [Fact]
+    public async Task Project_lists_behaviour_map_roots_when_no_root_is_given()
+    {
+        var host = new RecordingCliHost(await WorkspaceFiles());
+
+        var exit = await CliApplication.RunAsync(
+            ["project", "--workspace", "samples/child-care", "--view", "BehaviourMap", "--format", "json"], host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Success, exit);
+        using var json = JsonDocument.Parse(host.StandardOutput);
+        var roots = json.RootElement.GetProperty("roots").EnumerateArray().ToArray();
+        Assert.Single(roots);
+        Assert.Equal("ACCS determination application", roots[0].GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task Project_lists_the_context_as_the_single_root_for_context_scoped_views()
+    {
+        var host = new RecordingCliHost(await WorkspaceFiles());
+
+        var exit = await CliApplication.RunAsync(
+            ["project", "--workspace", "samples/child-care", "--view", "ContextMap", "--format", "json"], host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Success, exit);
+        using var json = JsonDocument.Parse(host.StandardOutput);
+        var roots = json.RootElement.GetProperty("roots").EnumerateArray().ToArray();
+        Assert.Single(roots);
+        Assert.Equal("Child Care", roots[0].GetProperty("name").GetString());
+        Assert.Equal("0191f6d4-4ea0-7000-8000-000000000001", roots[0].GetProperty("id").GetString());
+    }
+
+    [Fact]
+    public async Task Project_lists_roots_as_human_readable_lines_without_the_format_flag()
+    {
+        var host = new RecordingCliHost(await WorkspaceFiles());
+
+        var exit = await CliApplication.RunAsync(
+            ["project", "--workspace", "samples/child-care", "--view", "Lifecycle"], host, TestContext.Current.CancellationToken);
+
+        Assert.Equal(CliExitCode.Success, exit);
+        Assert.Contains("ACCS determination application (0191f6d4-4ea0-7000-8000-000000000002)", host.StandardOutput);
+    }
+
+    [Fact]
     public async Task Project_projects_a_lifecycle_graph_for_a_given_root()
     {
         var host = new RecordingCliHost(await WorkspaceFiles());
@@ -448,17 +491,21 @@ public sealed class CliApplicationTests
     }
 
     [Fact]
-    public async Task Project_rejects_an_unimplemented_view_kind_with_a_diagnostic_rather_than_an_empty_graph()
+    public async Task Project_renders_a_context_map_view_from_the_context_root()
     {
         var host = new RecordingCliHost(await WorkspaceFiles());
 
         var exit = await CliApplication.RunAsync(
-            ["project", "--workspace", "samples/child-care", "--view", "ContextMap", "--format", "json"],
+            ["project", "--workspace", "samples/child-care", "--view", "ContextMap",
+                "--root", "0191f6d4-4ea0-7000-8000-000000000001", "--format", "json"],
             host, TestContext.Current.CancellationToken);
 
-        Assert.Equal(CliExitCode.Configuration, exit);
+        Assert.Equal(CliExitCode.Success, exit);
         using var json = JsonDocument.Parse(host.StandardOutput);
-        Assert.Equal("project.view.unsupported", json.RootElement.GetProperty("diagnostics")[0].GetProperty("code").GetString());
+        var graph = json.RootElement.GetProperty("graph");
+        Assert.Equal("ContextMap", graph.GetProperty("kind").GetString());
+        Assert.Contains(graph.GetProperty("nodes").EnumerateArray(),
+            node => node.GetProperty("role").GetString() == "context");
     }
 
     [Fact]

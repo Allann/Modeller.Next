@@ -27,11 +27,10 @@ public sealed record AnalyzedWorkspace(
 public static class ModellerWorkspace
 {
     /// <summary>
-    /// The <see cref="ViewKind"/>s <see cref="DiagramProjector"/> currently implements. The other
-    /// view kinds silently return an empty graph in the library today; this seam rejects them with
-    /// a diagnostic instead. See issue #64.
+    /// The <see cref="ViewKind"/>s <see cref="DiagramProjector"/> currently implements. See issue #64.
     /// </summary>
-    public static readonly ImmutableArray<ViewKind> SupportedViewKinds = [ViewKind.Lifecycle, ViewKind.RuleDecision, ViewKind.Structural];
+    public static readonly ImmutableArray<ViewKind> SupportedViewKinds =
+        [ViewKind.Lifecycle, ViewKind.RuleDecision, ViewKind.Structural, ViewKind.BehaviourMap, ViewKind.CausalityAndEventFlow, ViewKind.ContextMap];
 
     public static WorkspaceOutcome<AnalyzedWorkspace> Analyze(WorkspaceInput input, CancellationToken cancellationToken = default)
     {
