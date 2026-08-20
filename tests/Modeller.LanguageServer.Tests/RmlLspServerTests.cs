@@ -58,10 +58,10 @@ public sealed class RmlLspServerTests
         return frames;
     }
 
-    private static async Task<List<JsonElement>> RunAsync(MemoryStream input)
+    private static async Task<List<JsonElement>> RunAsync(MemoryStream input, string? workspaceRoot = null)
     {
         var output = new MemoryStream();
-        var server = new global::RmlLspServer(input, output);
+        var server = new global::RmlLspServer(input, output, workspaceRoot);
         await server.RunAsync();
         return ReadFrames(output);
     }
@@ -137,6 +137,35 @@ public sealed class RmlLspServerTests
         var notification = Assert.Single(frames);
         Assert.Equal("textDocument/publishDiagnostics", notification.GetProperty("method").GetString());
         Assert.Equal(FixtureUri, notification.GetProperty("params").GetProperty("uri").GetString());
+    }
+
+    [Fact]
+    public async Task DidOpen_loads_sibling_sources_declared_by_the_workspace_configuration_so_a_shared_context_is_visible()
+    {
+        var workspaceRoot = Directory.CreateTempSubdirectory().FullName;
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(workspaceRoot, ".modeller"));
+            Directory.CreateDirectory(Path.Combine(workspaceRoot, "model"));
+            await File.WriteAllTextAsync(Path.Combine(workspaceRoot, ".modeller", "config.json"),
+                """{ "sources": ["model/context.modeller", "model/booking.modeller"] }""", TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(Path.Combine(workspaceRoot, "model", "context.modeller"),
+                "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n", TestContext.Current.CancellationToken);
+            const string bookingText = "rml 1.0\nentity Booking\n  field Booking date\n    type date\n  end\nend\n";
+            await File.WriteAllTextAsync(Path.Combine(workspaceRoot, "model", "booking.modeller"), bookingText, TestContext.Current.CancellationToken);
+
+            // Only booking.modeller is didOpen'd — never context.modeller — mirroring opening a
+            // single entity file from a multi-file package without its context tab ever being open.
+            var frames = await RunAsync(InputOf(DidOpenNotification("file:///workspace/model/booking.modeller", bookingText)), workspaceRoot);
+
+            var notification = Assert.Single(frames);
+            var diagnostics = notification.GetProperty("params").GetProperty("diagnostics").EnumerateArray().ToArray();
+            Assert.DoesNotContain(diagnostics, diagnostic => diagnostic.GetProperty("message").GetString()!.Contains("context", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(workspaceRoot, recursive: true);
+        }
     }
 
     [Fact]

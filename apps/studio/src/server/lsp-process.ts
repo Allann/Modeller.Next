@@ -1,5 +1,6 @@
 import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import { dotnetArgsFor, resolveDotnetTool } from './dotnet-tool';
+import { resolveWorkspaceRoot } from './workspace';
 
 const LANGUAGE_SERVER = {
   envVar: 'MODELLER_LANGUAGE_SERVER_PATH',
@@ -13,5 +14,13 @@ const LANGUAGE_SERVER = {
 
 export function spawnLanguageServer(): ChildProcessWithoutNullStreams {
   const location = resolveDotnetTool(LANGUAGE_SERVER);
-  return spawn('dotnet', dotnetArgsFor(location), { stdio: ['pipe', 'pipe', 'pipe'] });
+  // MODELLER_WORKSPACE_ROOT gives the server (which runs locally, on the same
+  // filesystem as the workspace — see lsp-process.ts's own spawn) real
+  // workspace/multi-file awareness: it reads .modeller/config.json's sources
+  // itself instead of only ever seeing whichever document a client happened
+  // to didOpen. See wayfinder decision #59.
+  return spawn('dotnet', dotnetArgsFor(location), {
+    stdio: ['pipe', 'pipe', 'pipe'],
+    env: { ...process.env, MODELLER_WORKSPACE_ROOT: resolveWorkspaceRoot() },
+  });
 }

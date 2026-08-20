@@ -3,14 +3,20 @@ using System.Text;
 using System.Text.Json;
 using Modeller.Editor;
 using Modeller.Parsing;
+using Modeller.Workspace;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Modeller.LanguageServer.Tests")]
 
-var server = new RmlLspServer(Console.OpenStandardInput(), Console.OpenStandardOutput());
+var server = new RmlLspServer(Console.OpenStandardInput(), Console.OpenStandardOutput(), Environment.GetEnvironmentVariable("MODELLER_WORKSPACE_ROOT"));
 await server.RunAsync();
 
-internal sealed class RmlLspServer(Stream input, Stream output)
+internal sealed class RmlLspServer(Stream input, Stream output, string? workspaceRoot = null)
 {
+    // Must match apps/studio/src/lib/languageclient-setup.ts's toModelUri(): a
+    // sibling loaded from disk under this prefix lines up with the same file's
+    // URI if a client later didOpens it too, so Upsert overwrites the
+    // server-loaded placeholder in place rather than producing a duplicate.
+    private const string WorkspaceUriPrefix = "file:///workspace/";
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private readonly ConcurrentDictionary<string, RmlWorkspaceDocument> documents = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim writes = new(1, 1);
@@ -52,7 +58,9 @@ internal sealed class RmlLspServer(Stream input, Stream output)
             case "shutdown": shutdown = true; await RespondAsync(id!.Value, null, null, cancellationToken); break;
             case "exit": if (shutdown) Environment.ExitCode = 0; return;
             case "textDocument/didOpen":
-                Upsert(parameters.GetProperty("textDocument")); await PublishAsync(parameters.GetProperty("textDocument").GetProperty("uri").GetString()!, cancellationToken); break;
+                Upsert(parameters.GetProperty("textDocument"));
+                await LoadWorkspaceSiblingsAsync(cancellationToken);
+                await PublishAsync(parameters.GetProperty("textDocument").GetProperty("uri").GetString()!, cancellationToken); break;
             case "textDocument/didChange":
                 Change(parameters); await PublishAsync(parameters.GetProperty("textDocument").GetProperty("uri").GetString()!, cancellationToken); break;
             case "textDocument/didClose":
@@ -119,6 +127,46 @@ internal sealed class RmlLspServer(Stream input, Stream output)
         return new { data };
     }
     private RmlWorkspaceAnalysis Analysis(CancellationToken cancellationToken) => RmlLanguageService.Analyze(documents.Values, cancellationToken);
+    /// <summary>
+    /// Gives the server real workspace/multi-file awareness: reads <c>.modeller/config.json</c>'s
+    /// declared <c>sources</c> off disk (the server runs locally, spawned by Studio's own Node
+    /// backend, with the same filesystem access the CLI has) and loads whichever ones aren't already
+    /// tracked — independent of which document a client happened to <c>didOpen</c>. Runs on every
+    /// <c>didOpen</c> so a sibling evicted by an earlier <c>didClose</c> reloads on demand instead of
+    /// staying missing for the rest of the session.
+    /// </summary>
+    private async Task LoadWorkspaceSiblingsAsync(CancellationToken cancellationToken)
+    {
+        if (workspaceRoot is null) return;
+        var configPath = Path.Combine(workspaceRoot, ".modeller", "config.json");
+        if (!File.Exists(configPath)) return;
+
+        WorkspaceServerConfiguration? configuration;
+        try
+        {
+            var configurationText = await File.ReadAllTextAsync(configPath, cancellationToken);
+            configuration = JsonSerializer.Deserialize<WorkspaceServerConfiguration>(configurationText, Json);
+        }
+        catch (Exception exception) when (exception is IOException or JsonException) { return; }
+        if (configuration?.Sources is null) return;
+
+        foreach (var declared in configuration.Sources)
+        {
+            if (!LogicalPath.TryCreate(declared, out var logical)) continue;
+            var uri = WorkspaceUriPrefix + logical.Value;
+            if (documents.ContainsKey(uri)) continue;
+            var sourcePath = Path.Combine(workspaceRoot, logical.Value.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(sourcePath)) continue;
+            // A source disappearing or becoming unreadable between the File.Exists check above and
+            // this read is a genuine environment fault (deleted mid-scan, permissions changed) — let
+            // it propagate to the top-level handler in RunAsync, which already reports failures for
+            // requests and swallows them safely for notifications like didOpen, rather than silently
+            // skipping a source that should have loaded.
+            var text = await File.ReadAllTextAsync(sourcePath, cancellationToken);
+            documents.TryAdd(uri, new(new(uri), 0, text));
+        }
+    }
+    private sealed record WorkspaceServerConfiguration(IReadOnlyList<string>? Sources);
     private void Upsert(JsonElement node)
     {
         var uri = node.GetProperty("uri").GetString()!;
