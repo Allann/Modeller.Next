@@ -136,9 +136,15 @@ additionally on `@vercel/speed-insights`) — real-user monitoring and Core Web 
 new infrastructure; enabling them is a Vercel dashboard action per project (see Action items).
 `Modeller.Api` already registers OpenTelemetry tracing/metrics unconditionally
 (`hosted-workspace-api.mdx`'s Observability section) — cost/availability alerting on top of that is
-whichever OTLP collector/backend is chosen, plus Vercel's own per-project usage alerts for the
-Next.js projects; no collector is provisioned in this pass (same "not yet chosen" state
-`hosted-workspace-api.mdx` already documented).
+whichever OTLP collector/backend is chosen; no collector is provisioned in this pass (same "not yet
+chosen" state `hosted-workspace-api.mdx` already documented), and none of the three projects has
+custom cost/usage alerts, because Vercel's Spend Management (configurable alert destination and
+threshold) is a Pro-plan feature and all three projects run on the free Hobby plan. Hobby's
+alternative — an automatic hard usage cap that pauses the project rather than overspending, with no
+configurable destination or threshold — is accepted as the cost control for this deployment. If
+traffic grows enough that an unplanned pause becomes a real availability risk, revisit by either
+upgrading to Pro for real alerting or standing up an external check (e.g. a scheduled job hitting
+`/healthz` and Vercel's usage API).
 
 `apps/website/src/app/privacy/page.tsx` is the privacy statement this issue's scope asks for,
 linked from `SiteFooter.tsx` and from the playground's own footer text — it covers: no accounts;
@@ -170,9 +176,12 @@ anything else on the site — rolling back `modeller.website` isn't even needed 
       Preview-environment equivalents are wanted.
 - [ ] Set `STUDIO_DEPLOYMENT_URL` on the `modeller.website` project to that project's own Vercel
       deployment URL (e.g. `https://modeller-studio.vercel.app`), for both Production and Preview.
-- [ ] Enable Vercel Analytics/Speed Insights and set per-project cost/usage alerts for both projects
-      (`modeller-api`, `modeller.website`) plus the new `apps/studio` project. Analytics is
-      currently unenabled on `modeller.website`: its injected script 404s on every page load.
+- [ ] Enable Vercel Analytics/Speed Insights for both projects (`modeller-api`, `modeller.website`)
+      plus the new `apps/studio` project. Analytics is currently unenabled on `modeller.website`:
+      its injected script 404s on every page load. Per-project cost/usage alerts are not
+      configured — Spend Management requires the Pro plan, which none of the three projects is on;
+      Hobby's automatic usage-cap pause is the accepted substitute (see Monitoring, budgets, and
+      privacy).
 - [ ] Optional: set `NEXT_PUBLIC_MODELLER_API_URL` on the `modeller.website` project. Production no
       longer depends on it (`next.config.mjs` defaults to the deployed API), but setting it per
       environment is how a Preview build is pointed at a Preview API.
