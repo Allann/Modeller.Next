@@ -1,4 +1,4 @@
-export const SUPPORTED_VIEWS = ['Lifecycle', 'RuleDecision'] as const;
+export const SUPPORTED_VIEWS = ['BehaviourMap', 'Lifecycle', 'CausalityAndEventFlow', 'ContextMap', 'Structural', 'RuleDecision'] as const;
 export type ProjectionView = (typeof SUPPORTED_VIEWS)[number];
 
 export interface ProjectionRoot {

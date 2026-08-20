@@ -27,7 +27,7 @@ import { decodeShareLink, encodeShareLink, type ShareDecodeResult } from '@/lib/
 import { buildWorkspaceZip, downloadWorkspaceZip } from '@/lib/playground/workspace-bundle';
 import { capture } from '@/lib/productAnalytics';
 
-const VIEW_KINDS = ['Lifecycle', 'RuleDecision', 'Structural'] as const;
+const VIEW_KINDS = ['BehaviourMap', 'Lifecycle', 'CausalityAndEventFlow', 'ContextMap', 'Structural', 'RuleDecision'] as const;
 type ViewKind = (typeof VIEW_KINDS)[number];
 const ANALYZE_DEBOUNCE_MS = 500;
 

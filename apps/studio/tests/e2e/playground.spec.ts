@@ -4,7 +4,10 @@ import { expect, test, type Page } from '@playwright/test';
 // deterministic, offline-safe, and the only reliable way to trigger the
 // service-failure path on demand. See docs/architecture/decisions/
 // hosted-workspace-api.mdx for the request/response shape being mocked.
-const SUPPORTED_VIEWS_RESPONSE = { apiVersion: '1.0', views: ['Lifecycle', 'RuleDecision', 'Structural'] };
+const SUPPORTED_VIEWS_RESPONSE = {
+  apiVersion: '1.0',
+  views: ['BehaviourMap', 'Lifecycle', 'CausalityAndEventFlow', 'ContextMap', 'Structural', 'RuleDecision'],
+};
 const ORDER_LIFECYCLE_ROOT = { id: 'order-lifecycle-root', kind: 'Lifecycle', name: 'Order lifecycle', slug: 'order-lifecycle' };
 
 interface AnalyzeRequestBody {
@@ -141,6 +144,18 @@ test('playground shows the Ordering lifecycle without requiring a root selection
 
   await expect(page.getByRole('combobox').nth(1)).toHaveValue(ORDER_LIFECYCLE_ROOT.id);
   await expect(page.locator('.react-flow__node')).toContainText('Draft');
+});
+
+test('every view kind reported by the API appears in the diagram-type selector', async ({ page }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, cleanResponse);
+
+  await page.goto('/');
+  await expect(page.getByRole('status')).toContainText('Ready');
+
+  const viewSelect = page.getByRole('combobox').nth(0);
+  const optionLabels = await viewSelect.locator('option').allTextContents();
+  expect(optionLabels).toEqual(SUPPORTED_VIEWS_RESPONSE.views);
 });
 
 test('playground reuses discovered identities when it requests the selected projection', async ({ page }) => {

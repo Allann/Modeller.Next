@@ -32,4 +32,16 @@ test('a reader discovers the Child Care story and verifies its model change in t
 
   await expect(page.locator('.react-flow__node', { hasText: 'Awaiting information' })).toBeVisible();
   await expect(page.getByRole('status')).toContainText('Ready');
+
+  // Guards against the diagram-type selector silently truncating the view list to a stale
+  // client-side default instead of the kinds the live API actually reports as supported.
+  const viewSelect = page.getByRole('combobox').nth(0);
+  const optionLabels = await viewSelect.locator('option').allTextContents();
+  expect(optionLabels).toEqual(['BehaviourMap', 'Lifecycle', 'CausalityAndEventFlow', 'ContextMap', 'Structural', 'RuleDecision']);
+
+  // Proves a newly-added projection kind (not just the pre-existing Lifecycle view) actually
+  // renders a diagram end-to-end against the real deployed API.
+  await viewSelect.selectOption({ label: 'ContextMap' });
+  await page.getByRole('combobox').nth(1).selectOption({ label: 'Child Care' });
+  await expect(page.locator('.react-flow__node', { hasText: 'Child Care' })).toBeVisible();
 });
