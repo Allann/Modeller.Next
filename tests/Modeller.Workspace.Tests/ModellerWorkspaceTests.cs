@@ -177,24 +177,10 @@ public sealed class ModellerWorkspaceTests
         Assert.IsType<WorkspaceOutcome<ProjectionResult>.Cancelled>(outcome);
     }
 
-    [Theory]
-    [InlineData(ViewKind.BehaviourMap)]
-    [InlineData(ViewKind.CausalityAndEventFlow)]
-    [InlineData(ViewKind.ContextMap)]
-    public void Project_rejects_a_view_kind_DiagramProjector_does_not_implement_yet(ViewKind unsupported)
-    {
-        var analyzed = Assert.IsType<WorkspaceOutcome<AnalyzedWorkspace>.Success>(ModellerWorkspace.Analyze(EphemeralWorkspace(), TestContext.Current.CancellationToken)).Value;
-
-        var outcome = ModellerWorkspace.Project(analyzed, new ViewDefinition("v", 1, unsupported, []), cancellationToken: TestContext.Current.CancellationToken);
-
-        var failed = Assert.IsType<WorkspaceOutcome<ProjectionResult>.Failed>(outcome);
-        Assert.Equal("project.view.unsupported", Assert.Single(failed.Diagnostics).Code);
-    }
-
     [Fact]
     public void SupportedViewKinds_lists_exactly_the_view_kinds_DiagramProjector_implements()
     {
-        Assert.Equal([ViewKind.Lifecycle, ViewKind.RuleDecision, ViewKind.Structural], ModellerWorkspace.SupportedViewKinds);
+        Assert.Equal(Enum.GetValues<ViewKind>().ToHashSet(), ModellerWorkspace.SupportedViewKinds.ToHashSet());
     }
 
     [Fact]

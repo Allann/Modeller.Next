@@ -9,10 +9,8 @@ namespace Modeller.Cli;
 /// <summary>
 /// The <c>project</c> capability: loads a workspace (via <see cref="WorkspaceLoader"/>, the same
 /// pipeline <c>generate</c> uses) and either lists the roots a view kind can be rooted at, or
-/// projects a diagram for a chosen root, via <see cref="ModellerWorkspace.Project"/>.
-///
-/// Only <see cref="ViewKind.Lifecycle"/> and <see cref="ViewKind.RuleDecision"/> are implemented in
-/// <see cref="DiagramProjector"/> today — the other four view kinds are rejected here with a clear
+/// projects a diagram for a chosen root, via <see cref="ModellerWorkspace.Project"/>. A view kind
+/// absent from <see cref="ModellerWorkspace.SupportedViewKinds"/> is rejected here with a clear
 /// diagnostic rather than silently returning an empty graph. See issue #64.
 /// </summary>
 internal static class WorkspaceProjection
@@ -43,13 +41,19 @@ internal static class WorkspaceProjection
 
     private static async ValueTask<CliExitCode> EmitRootsAsync(AuthoredContextRevision revision, ViewKind viewKind, bool machine, ICliHost host)
     {
-        var roots = (viewKind == ViewKind.Lifecycle
-                ? revision.Definitions.OfType<EntityDefinition>().Where(entity => entity.Lifecycle is not null)
-                    .Select(entity => new RootSummary(entity.Id.ToString(), entity.Name.Value, entity.Slug.Value))
-                : revision.Definitions.OfType<RuleDefinition>()
-                    .Select(rule => new RootSummary(rule.Id.ToString(), rule.Name.Value, rule.Slug.Value)))
-            .OrderBy(root => root.Slug, StringComparer.Ordinal)
-            .ToArray();
+        IEnumerable<RootSummary> candidates = viewKind switch
+        {
+            ViewKind.Lifecycle => revision.Definitions.OfType<EntityDefinition>().Where(entity => entity.Lifecycle is not null)
+                .Select(entity => new RootSummary(entity.Id.ToString(), entity.Name.Value, entity.Slug.Value)),
+            ViewKind.RuleDecision => revision.Definitions.OfType<RuleDefinition>()
+                .Select(rule => new RootSummary(rule.Id.ToString(), rule.Name.Value, rule.Slug.Value)),
+            ViewKind.BehaviourMap => revision.Definitions.OfType<EntityDefinition>()
+                .Select(entity => new RootSummary(entity.Id.ToString(), entity.Name.Value, entity.Slug.Value)),
+            ViewKind.Structural or ViewKind.CausalityAndEventFlow or ViewKind.ContextMap =>
+                [new RootSummary(revision.Id.ToString(), revision.Name.Value, revision.Slug.Value)],
+            _ => [],
+        };
+        var roots = candidates.OrderBy(root => root.Slug, StringComparer.Ordinal).ToArray();
 
         if (machine)
             await host.Output.WriteLineAsync(JsonSerializer.Serialize(new { outputVersion = "1.0", view = viewKind.ToString(), roots }, Json));

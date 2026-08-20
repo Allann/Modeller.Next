@@ -52,6 +52,53 @@ public sealed class DiagramProjectionTests
     }
 
     [Fact]
+    public void Behaviour_map_reveals_a_behaviour_and_its_published_event_for_an_entity_root()
+    {
+        var revision = ChildCare.Revision();
+        var result = DiagramProjector.Project(revision, new("behaviour-map", 1, ViewKind.BehaviourMap, [ChildCare.ApplicationId]), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.True(result.Succeeded);
+        Assert.Contains(result.Graph!.Nodes, node => node.Role == "behaviour" && node.Label == "Submit ACCS determination application");
+        Assert.Contains(result.Graph.Nodes, node => node.Role == "outcome" && node.Label == "Application submitted");
+        Assert.Contains(result.Graph.Nodes, node => node.Role == "event" && node.Label == "Application submitted event");
+        Assert.Contains(result.Graph.Edges, edge => edge.Role == "publishes");
+    }
+
+    [Fact]
+    public void Behaviour_map_requires_an_entity_root()
+    {
+        var result = DiagramProjector.Project(ChildCare.Revision(), new("behaviour-map", 1, ViewKind.BehaviourMap, [ChildCare.ContextId]), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("projection.root.invalid", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void Causality_and_event_flow_view_shows_the_behaviour_that_publishes_an_event()
+    {
+        var revision = ChildCare.Revision();
+        var result = DiagramProjector.Project(revision, new("event-flow", 1, ViewKind.CausalityAndEventFlow, [ChildCare.ContextId]), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.True(result.Succeeded);
+        var edge = Assert.Single(result.Graph!.Edges);
+        Assert.Equal("publishes", edge.Role);
+        Assert.Equal("Submit ACCS determination application", result.Graph.Nodes.Single(n => n.Id == edge.SourceId).Label);
+        Assert.Equal("Application submitted event", result.Graph.Nodes.Single(n => n.Id == edge.TargetId).Label);
+    }
+
+    [Fact]
+    public void Context_map_shows_the_context_root_itself()
+    {
+        var revision = ChildCare.Revision();
+        var result = DiagramProjector.Project(revision, new("context-map", 1, ViewKind.ContextMap, [ChildCare.ContextId]), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.True(result.Succeeded);
+        var node = Assert.Single(result.Graph!.Nodes);
+        Assert.Equal("context", node.Role);
+        Assert.Equal("Child Care", node.Label);
+    }
+
+    [Fact]
     public void Every_initial_view_kind_uses_the_same_projection_interface()
     {
         foreach (var kind in Enum.GetValues<ViewKind>())
@@ -60,6 +107,9 @@ public sealed class DiagramProjectionTests
             {
                 ViewKind.Lifecycle => ImmutableArray.Create(ChildCare.ApplicationId),
                 ViewKind.Structural => ImmutableArray.Create(ChildCare.ContextId),
+                ViewKind.BehaviourMap => ImmutableArray.Create(ChildCare.ApplicationId),
+                ViewKind.CausalityAndEventFlow => ImmutableArray.Create(ChildCare.ContextId),
+                ViewKind.ContextMap => ImmutableArray.Create(ChildCare.ContextId),
                 _ => [],
             };
             var result = DiagramProjector.Project(ChildCare.Revision(), new($"view-{kind}", 1, kind, roots), cancellationToken: TestContext.Current.CancellationToken);
@@ -101,6 +151,7 @@ public sealed class DiagramProjectionTests
         private static readonly SemanticId SubmittedId = Id("0191f6d4-4ea0-7000-8000-000000000005");
         private static readonly SemanticId BehaviourId = Id("0191f6d4-4ea0-7000-8000-00000000000a");
         private static readonly SemanticId OutcomeId = Id("0191f6d4-4ea0-7000-8000-00000000000b");
+        private static readonly SemanticId EventId = Id("0191f6d4-4ea0-7000-8000-00000000000c");
         private static readonly SemanticId TransitionId = Id("0191f6d4-4ea0-7000-8000-00000000000d");
         private static readonly SemanticId ActiveId = Id("0191f6d4-4ea0-7000-8000-000000000006");
         private static readonly SemanticId EvidenceId = Id("0191f6d4-4ea0-7000-8000-000000000007");
@@ -113,7 +164,8 @@ public sealed class DiagramProjectionTests
                 new(LifecycleId, new("ACCS determination application lifecycle"), new("accs-determination-application-lifecycle"),
                     [new(DraftId, new("Draft"), new("draft")), new(SubmittedId, new("Submitted"), new("submitted"))]));
             var behaviour = new BehaviourDefinition(BehaviourId, new("Submit ACCS determination application"), new("submit-accs-determination-application"), new(ApplicationId),
-                [new(OutcomeId, new("Application submitted"), new("application-submitted"))], [], [],
+                [new(OutcomeId, new("Application submitted"), new("application-submitted"))], [],
+                [new(EventId, new("Application submitted event"), new("application-submitted-event"))],
                 [new(TransitionId, new("Submit application"), new("submit-application"), new(LifecycleId), new(DraftId), new(SubmittedId), new(OutcomeId))], []);
             return CanonicalModel.Apply(empty, new AddDefinition(entity),
                 new AddDefinition(new FactDefinition(ActiveId, new("Active enrolment exists"), new("active-enrolment"), FactType.Truth)),
