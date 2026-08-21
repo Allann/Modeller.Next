@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Modeller.Configuration;
 using Modeller.Contexts;
+using Modeller.Model;
 using Modeller.Parsing;
 using Modeller.Projections;
 
@@ -10,13 +11,20 @@ namespace Modeller.Workspace;
 /// The result of analyzing a <see cref="WorkspaceInput"/>: the parsed, validated package; the
 /// resolved runtime configuration; source provenance; the identity strategy that was applied; and
 /// the post-identity-application document text (needed by <see cref="ModellerWorkspace.Export"/>).
+/// <see cref="Package"/> is always the first declared bounded context — the only one most view
+/// kinds and CLI generation operate on today. <see cref="Contexts"/> holds every bounded context
+/// the workspace declared (one entry for an ordinary single-context workspace) and
+/// <see cref="Dependencies"/> the cross-context imports RML 1.0 can declare between them; the
+/// context-map view is the only view kind that currently projects across all of them.
 /// </summary>
 public sealed record AnalyzedWorkspace(
     ImmutableArray<WorkspaceDocument> IdentifiedDocuments,
     LoadedContextPackage Package,
     RuntimeConfiguration Configuration,
     ImmutableArray<SourceProvenance> Provenance,
-    IdentityStrategy Identity);
+    IdentityStrategy Identity,
+    ImmutableArray<LoadedContextPackage> Contexts,
+    ImmutableArray<ContextDependency> Dependencies);
 
 /// <summary>
 /// The transport-neutral seam for analyzing, projecting, and exporting a Modeller workspace —
@@ -58,7 +66,11 @@ public static class ModellerWorkspace
         }
 
         var options = input.Identity is IdentityStrategy.Ephemeral ? ParseOptions.EditorLanguage1 : ParseOptions.Language1;
-        var sources = identified.Select(document => new SourceDocument(document.Path.Value, document.Content));
+        var sources = identified.Select(document => new SourceDocument(document.Path.Value, document.Content)).ToArray();
+
+        if (RmlCompiler.IsRml(sources) && RmlCompiler.RequiresWorkspaceCompilation(sources))
+            return AnalyzeWorkspaceContexts(sources, options, input, identified, configured.Configuration!, cancellationToken);
+
         var parsed = DefinitionParser.Parse(sources, options, cancellationToken);
         if (parsed.IsCancelled) return WorkspaceOutcome.Cancelled<AnalyzedWorkspace>();
         if (!parsed.IsSuccess)
@@ -72,7 +84,38 @@ public static class ModellerWorkspace
         {
             Span = RemapLocation(item.Span, input.Documents, identified) ?? item.Span
         }).ToImmutableArray();
-        return WorkspaceOutcome.Success(new AnalyzedWorkspace(identified.ToImmutable(), parsed.Package!, configured.Configuration!, remappedProvenance, input.Identity));
+        return WorkspaceOutcome.Success(new AnalyzedWorkspace(
+            identified.ToImmutable(), parsed.Package!, configured.Configuration!, remappedProvenance, input.Identity,
+            [parsed.Package!], []));
+    }
+
+    /// <summary>The multi-context counterpart of the single-context path above: routes through
+    /// <see cref="RmlCompiler.CompileWorkspace"/> instead of <see cref="DefinitionParser.Parse"/>
+    /// so a workspace declaring more than one bounded context — and the cross-context imports
+    /// declared between them — can be analyzed. <see cref="AnalyzedWorkspace.Package"/> is set to
+    /// the first declared context so every existing single-context consumer keeps working
+    /// unchanged; <see cref="AnalyzedWorkspace.Contexts"/> and
+    /// <see cref="AnalyzedWorkspace.Dependencies"/> carry the rest for the context-map view.</summary>
+    private static WorkspaceOutcome<AnalyzedWorkspace> AnalyzeWorkspaceContexts(
+        SourceDocument[] sources, ParseOptions options, WorkspaceInput input,
+        ImmutableArray<WorkspaceDocument>.Builder identified, RuntimeConfiguration configuration, CancellationToken cancellationToken)
+    {
+        var parsed = RmlCompiler.CompileWorkspace(sources, options, cancellationToken);
+        if (parsed.IsCancelled) return WorkspaceOutcome.Cancelled<AnalyzedWorkspace>();
+        if (!parsed.IsSuccess)
+            return WorkspaceOutcome.Failed<AnalyzedWorkspace>(
+                parsed.Diagnostics.Select(diagnostic => new WorkspaceDiagnostic(
+                    diagnostic.Code,
+                    diagnostic.Message,
+                    RemapLocation(diagnostic.Location, input.Documents, identified))).ToImmutableArray());
+
+        var remappedProvenance = parsed.Provenance.Select(item => item with
+        {
+            Span = RemapLocation(item.Span, input.Documents, identified) ?? item.Span
+        }).ToImmutableArray();
+        return WorkspaceOutcome.Success(new AnalyzedWorkspace(
+            identified.ToImmutable(), parsed.Contexts[0], configuration, remappedProvenance, input.Identity,
+            parsed.Contexts, parsed.Dependencies));
     }
 
     private static SourceSpan? RemapLocation(
@@ -147,7 +190,11 @@ public static class ModellerWorkspace
 
         try
         {
-            return WorkspaceOutcome.Success(DiagramProjector.Project(analyzed.Package.AuthoredRevision, view, layout, cancellationToken));
+            var result = view.Kind == ViewKind.ContextMap
+                ? DiagramProjector.ProjectContextMap(
+                    [.. analyzed.Contexts.Select(context => context.AuthoredRevision)], analyzed.Dependencies, view, cancellationToken)
+                : DiagramProjector.Project(analyzed.Package.AuthoredRevision, view, layout, cancellationToken);
+            return WorkspaceOutcome.Success(result);
         }
         catch (OperationCanceledException)
         {

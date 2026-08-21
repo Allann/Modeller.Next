@@ -117,6 +117,48 @@ public static class DiagramProjector
         return new(new(revision.Revision, view.Kind, [.. nodes], []), []);
     }
 
+    /// <summary>Projects a context map across a workspace's bounded contexts, rendering one node
+    /// per declared context and one edge per <see cref="ContextDependency"/> — the cross-context
+    /// import relationships RML 1.0's grammar can now declare between contexts in one workspace.
+    /// </summary>
+    public static ProjectionResult ProjectContextMap(
+        ImmutableArray<AuthoredContextRevision> contexts,
+        ImmutableArray<ContextDependency> dependencies,
+        ViewDefinition view,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (view.Version != 1)
+            return new(null, [new("projection.view-version.unsupported", $"View version '{view.Version}' is not supported.")]);
+        if (view.Kind != ViewKind.ContextMap)
+            return new(null, [new("projection.view-kind.unsupported", $"'{view.Kind}' is not a context map.")]);
+
+        var root = contexts.FirstOrDefault(context => view.Roots.Contains(context.Id));
+        if (root is null)
+            return new(null, [new("projection.root.invalid", "A context map requires a context root.")]);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        var relevantDependencies = dependencies
+            .Where(dependency => dependency.ImportingContextId == root.Id || dependency.ExportingContextId == root.Id)
+            .ToImmutableArray();
+        var relevantContextIds = new HashSet<SemanticId>(relevantDependencies
+            .SelectMany(dependency => new[] { dependency.ImportingContextId, dependency.ExportingContextId }));
+        relevantContextIds.Add(root.Id);
+
+        var nodes = contexts.Where(context => relevantContextIds.Contains(context.Id))
+            .Select(context => new ProjectionNode(ElementId("context", context.Id), "context", context.Name.Value, [context.Id]))
+            .ToImmutableArray();
+        var edges = relevantDependencies
+            .Select(dependency => new ProjectionEdge(
+                $"import:{dependency.ImportingContextId}:{dependency.ExportingContextId}:{dependency.FactId}",
+                "import", dependency.FactName.Value,
+                ElementId("context", dependency.ImportingContextId), ElementId("context", dependency.ExportingContextId),
+                [dependency.ImportingContextId, dependency.ExportingContextId, dependency.FactId]))
+            .ToImmutableArray();
+        return new(new(root.Revision, view.Kind, nodes, edges), []);
+    }
+
     private static ProjectionResult Structural(AuthoredContextRevision revision, ViewDefinition view, CancellationToken cancellationToken)
     {
         if (!view.Roots.Contains(revision.Id))

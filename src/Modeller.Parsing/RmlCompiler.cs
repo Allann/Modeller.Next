@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 using System.Text.RegularExpressions;
+using Modeller.Contexts;
+using Modeller.Model;
 
 namespace Modeller.Parsing;
 
@@ -8,6 +10,24 @@ public static partial class RmlCompiler
     public static bool IsRml(IEnumerable<SourceDocument> documents) => documents.Any(document =>
         document.Content.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n')
             .Any(line => line.Trim().StartsWith("rml ", StringComparison.Ordinal)));
+
+    /// <summary>Whether a workspace's RML source needs <see cref="CompileWorkspace"/> rather than
+    /// the single-context <see cref="Compile"/> — a cheap textual scan, true when more than one
+    /// 'context' is declared, or when an 'import' statement appears at all. The single-context
+    /// path never processes 'import' children (there is no second context to import from), so an
+    /// import naming an unresolvable context must still route through <see cref="CompileWorkspace"/>
+    /// to be validated rather than silently ignored.</summary>
+    public static bool RequiresWorkspaceCompilation(IEnumerable<SourceDocument> documents)
+    {
+        var contextCount = 0;
+        foreach (var line in documents.SelectMany(document =>
+            document.Content.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n')).Select(line => line.Trim()))
+        {
+            if (line.StartsWith("context ", StringComparison.Ordinal) || line == "context") contextCount++;
+            else if (line.StartsWith("import ", StringComparison.Ordinal)) return true;
+        }
+        return contextCount > 1;
+    }
 
     public static ParseResult Compile(
         IEnumerable<SourceDocument> documents,
@@ -24,18 +44,8 @@ public static partial class RmlCompiler
             var model = Build(parsed.Roots);
             var saf = new SourceDocument(".modeller/compiled.rml.saf", model.Saf);
             var result = DefinitionParser.Parse([saf], options, cancellationToken);
-            var provenance = model.Symbols.Select(symbol => new SourceProvenance(
-                symbol.Id,
-                new SourceSpan(symbol.Document, symbol.Line, symbol.Column, symbol.Length),
-                symbol.SemanticPath)).ToImmutableArray();
-            var diagnostics = result.Diagnostics.Select(diagnostic =>
-            {
-                var generated = result.Provenance.LastOrDefault(item => item.Span.Line == diagnostic.Location?.Line);
-                var source = generated is null ? null : provenance.LastOrDefault(item =>
-                    item.SemanticId == generated.SemanticId && item.SemanticPath == generated.SemanticPath)
-                    ?? provenance.FirstOrDefault(item => item.SemanticId == generated.SemanticId);
-                return diagnostic with { Location = source?.Span };
-            }).ToImmutableArray();
+            var provenance = ToProvenance(model.Symbols);
+            var diagnostics = RemapDiagnostics(result, provenance);
             return result with { Provenance = provenance, Diagnostics = diagnostics };
         }
         catch (RmlException exception)
@@ -47,6 +57,72 @@ public static partial class RmlCompiler
             return new(null, [], [new("rml.source.invalid", "RML source is malformed or incomplete.", null)], false);
         }
     }
+
+    /// <summary>
+    /// Compiles a workspace that may declare more than one bounded context. Each declared
+    /// declaration (entity, enumeration, fact, rule, behaviour) belongs to the nearest
+    /// preceding 'context' declaration in source order. A 'context' may 'import' a fact
+    /// exported by an earlier-declared context, producing a <see cref="ContextDependency"/>
+    /// that a context-map projection can render as a real cross-context edge.
+    /// </summary>
+    public static WorkspaceParseResult CompileWorkspace(
+        IEnumerable<SourceDocument> documents,
+        ParseOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        var sources = documents.OrderBy(document => document.Name, StringComparer.Ordinal).ToArray();
+        if (cancellationToken.IsCancellationRequested) return new([], [], [], [], true);
+        var parsed = ParseNodes(sources, options, cancellationToken);
+        if (cancellationToken.IsCancellationRequested) return new([], [], [], [], true);
+        if (parsed.Diagnostic is not null) return new([], [], [], [parsed.Diagnostic], false);
+        try
+        {
+            var built = BuildWorkspace(parsed.Roots);
+            var contexts = ImmutableArray.CreateBuilder<LoadedContextPackage>();
+            var diagnostics = ImmutableArray.CreateBuilder<ParseDiagnostic>();
+            var provenance = ToProvenance(built.Symbols);
+            var cancelled = false;
+            foreach (var contextModel in built.Contexts)
+            {
+                if (cancellationToken.IsCancellationRequested) { cancelled = true; break; }
+                var saf = new SourceDocument($".modeller/compiled.{contextModel.Slug}.rml.saf", contextModel.Saf);
+                var result = DefinitionParser.Parse([saf], options, cancellationToken);
+                diagnostics.AddRange(RemapDiagnostics(result, provenance));
+                cancelled |= result.IsCancelled;
+                if (result.Package is not null) contexts.Add(result.Package);
+            }
+            return new(contexts.ToImmutable(), built.Dependencies, provenance, diagnostics.ToImmutable(), cancelled);
+        }
+        catch (RmlException exception)
+        {
+            return new([], [], [], [new(exception.Code, exception.Message, Span(exception.Node))], false);
+        }
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            return new([], [], [], [new("rml.source.invalid", "RML source is malformed or incomplete.", null)], false);
+        }
+    }
+
+    /// <summary>Maps each identity-bearing RML symbol to the source span its declaration occupies —
+    /// shared by <see cref="Compile"/> and <see cref="CompileWorkspace"/> so a generated SAF
+    /// diagnostic can be relocated back to the RML line that produced it.</summary>
+    private static ImmutableArray<SourceProvenance> ToProvenance(ImmutableArray<Symbol> symbols) =>
+        symbols.Select(symbol => new SourceProvenance(
+            symbol.Id,
+            new SourceSpan(symbol.Document, symbol.Line, symbol.Column, symbol.Length),
+            symbol.SemanticPath)).ToImmutableArray();
+
+    /// <summary>Relocates each diagnostic raised against the generated SAF back to the RML source
+    /// span that produced the referenced semantic identity, via <paramref name="provenance"/>.</summary>
+    private static ImmutableArray<ParseDiagnostic> RemapDiagnostics(ParseResult result, ImmutableArray<SourceProvenance> provenance) =>
+        result.Diagnostics.Select(diagnostic =>
+        {
+            var generated = result.Provenance.LastOrDefault(item => item.Span.Line == diagnostic.Location?.Line);
+            var source = generated is null ? null : provenance.LastOrDefault(item =>
+                item.SemanticId == generated.SemanticId && item.SemanticPath == generated.SemanticPath)
+                ?? provenance.FirstOrDefault(item => item.SemanticId == generated.SemanticId);
+            return diagnostic with { Location = source?.Span };
+        }).ToImmutableArray();
 
     public static RmlSourceEdit Rename(string source, string oldName, string newName)
     {
@@ -217,48 +293,178 @@ public static partial class RmlCompiler
 
     private static Model Build(ImmutableArray<Node> roots)
     {
-        var versions = roots.Where(item => item.Keyword == "rml").ToArray();
-        var version = versions.FirstOrDefault() ?? throw new RmlException("rml.statement.required", "At least one 'rml' declaration is required.", roots.First());
-        if (versions.Any(item => item.Value != "1.0")) throw new RmlException("rml.language.unsupported", $"RML version '{version.Value}' is not supported.", version);
+        RequireLanguageVersion1(roots);
         var context = Single(roots, "context");
         var symbols = new List<Symbol>();
         var byName = new Dictionary<string, Node>(StringComparer.OrdinalIgnoreCase);
-        void Register(Node node, string? path = null)
-        {
-            RequiredId(node);
-            if (byName.TryGetValue(node.Value, out var existing))
-                throw new RmlException("rml.name.duplicate", $"'{node.Keyword} {node.Value}' has the same name as '{existing.Keyword} {existing.Value}' ({existing.Document}:{existing.Line}). Names must be unique across the document.", node);
-            byName.Add(node.Value, node);
-            symbols.Add(new(node.Id!, node.Document, node.Line, node.Column, node.TextLength, path));
-        }
+        void Register(Node node) => RegisterSymbol(node, byName, symbols);
+        void AddSymbol(Node node) => AppendSymbol(node, symbols);
         Register(context);
         foreach (var node in roots.Where(item => item.Keyword is "entity" or "enumeration" or "fact" or "rule" or "behaviour"))
+            RegisterDeclaration(node, Register, AddSymbol);
+        string Id(string name, Node owner) => ResolveId(name, owner, byName);
+
+        var lines = new List<string> { "language 1.0", ContextHeader(context) };
+        lines.AddRange(EmitDeclarations(
+            roots.Where(item => item.Keyword == "entity"),
+            roots.Where(item => item.Keyword == "enumeration"),
+            roots.Where(item => item.Keyword == "fact"),
+            roots.Where(item => item.Keyword == "rule"),
+            roots.Where(item => item.Keyword == "behaviour"),
+            Id, byName));
+        return new(string.Join('\n', lines) + "\n", symbols.ToImmutableArray());
+    }
+
+    private static WorkspaceModel BuildWorkspace(ImmutableArray<Node> roots)
+    {
+        RequireLanguageVersion1(roots);
+        var contextNodes = roots.Where(item => item.Keyword == "context").ToArray();
+        if (contextNodes.Length == 0) throw new RmlException("rml.statement.required", "At least one 'context' declaration is required.", roots.First());
+
+        var symbols = new List<Symbol>();
+        var byName = new Dictionary<string, Node>(StringComparer.OrdinalIgnoreCase);
+        void Register(Node node) => RegisterSymbol(node, byName, symbols);
+        void AddSymbol(Node node) => AppendSymbol(node, symbols);
+        foreach (var context in contextNodes) Register(context);
+
+        var ownerOf = ComputeContextOwnership(roots);
+        foreach (var node in roots.Where(item => item.Keyword is "entity" or "enumeration" or "fact" or "rule" or "behaviour"))
+            RegisterDeclaration(node, Register, AddSymbol);
+        string Id(string name, Node owner) => ResolveId(name, owner, byName);
+
+        var dependencies = ResolveImports(contextNodes, byName, ownerOf);
+
+        var contexts = ImmutableArray.CreateBuilder<ContextModel>();
+        foreach (var context in contextNodes)
         {
-            Register(node);
-            if (node.Keyword == "entity")
-            {
-                var lifecycle = node.Children.SingleOrDefault(item => item.Keyword == "lifecycle");
-                if (lifecycle is not null) { Register(lifecycle); foreach (var stage in lifecycle.Children.Where(item => item.Keyword == "stage")) Register(stage); }
-                foreach (var child in node.Children.Where(item => item.Keyword is "field" or "relationship"))
-                {
-                    RequiredId(child); symbols.Add(new(child.Id!, child.Document, child.Line, child.Column, child.TextLength, null));
-                }
-            }
-            if (node.Keyword == "enumeration") foreach (var member in node.Children.Where(item => item.Keyword == "member"))
-            {
-                RequiredId(member); symbols.Add(new(member.Id!, member.Document, member.Line, member.Column, member.TextLength, null));
-            }
-            if (node.Keyword == "rule") Register(Child(node, "conclusion"));
-            if (node.Keyword == "behaviour")
-                foreach (var child in node.Children.Where(item => item.Keyword is "outcome" or "transition")) Register(child);
+            bool OwnedBy(Node node) => ownerOf.GetValueOrDefault(node) == context;
+            var lines = new List<string> { "language 1.0", ContextHeader(context) };
+            lines.AddRange(EmitDeclarations(
+                roots.Where(item => item.Keyword == "entity" && OwnedBy(item)),
+                roots.Where(item => item.Keyword == "enumeration" && OwnedBy(item)),
+                roots.Where(item => item.Keyword == "fact" && OwnedBy(item)),
+                roots.Where(item => item.Keyword == "rule" && OwnedBy(item)),
+                roots.Where(item => item.Keyword == "behaviour" && OwnedBy(item)),
+                Id, byName));
+            contexts.Add(new(context.Value, Slug(context.Value), string.Join('\n', lines) + "\n"));
         }
-        string Id(string name, Node owner)
+
+        return new(contexts.ToImmutable(), dependencies, symbols.ToImmutableArray());
+    }
+
+    private static void RequireLanguageVersion1(ImmutableArray<Node> roots)
+    {
+        var versions = roots.Where(item => item.Keyword == "rml").ToArray();
+        var version = versions.FirstOrDefault() ?? throw new RmlException("rml.statement.required", "At least one 'rml' declaration is required.", roots.First());
+        if (versions.Any(item => item.Value != "1.0")) throw new RmlException("rml.language.unsupported", $"RML version '{version.Value}' is not supported.", version);
+    }
+
+    private static string ContextHeader(Node context) =>
+        $"context id={context.Id} name=\"{context.Value}\" slug={Slug(context.Value)} version={Child(context, "version").Value}";
+
+    private static void RegisterSymbol(Node node, Dictionary<string, Node> byName, List<Symbol> symbols)
+    {
+        RequiredId(node);
+        if (byName.TryGetValue(node.Value, out var existing))
+            throw new RmlException("rml.name.duplicate", $"'{node.Keyword} {node.Value}' has the same name as '{existing.Keyword} {existing.Value}' ({existing.Document}:{existing.Line}). Names must be unique across the document.", node);
+        byName.Add(node.Value, node);
+        symbols.Add(new(node.Id!, node.Document, node.Line, node.Column, node.TextLength, null));
+    }
+
+    private static void AppendSymbol(Node node, List<Symbol> symbols)
+    {
+        RequiredId(node);
+        symbols.Add(new(node.Id!, node.Document, node.Line, node.Column, node.TextLength, null));
+    }
+
+    private static string ResolveId(string name, Node owner, Dictionary<string, Node> byName) =>
+        byName.TryGetValue(name, out var node) ? node.Id! : throw new RmlException("rml.reference.unresolved", $"RML reference '{name}' could not be resolved.", owner);
+
+    /// <summary>Registers a declaration and its identity-bearing children (lifecycle/stage,
+    /// field/relationship, enumeration member, rule conclusion, behaviour outcome/transition) —
+    /// shared by both the single-context and multi-context context builders.</summary>
+    private static void RegisterDeclaration(Node node, Action<Node> register, Action<Node> addSymbol)
+    {
+        register(node);
+        if (node.Keyword == "entity")
         {
-            if (!byName.TryGetValue(name, out var node)) throw new RmlException("rml.reference.unresolved", $"RML reference '{name}' could not be resolved.", owner);
-            return node.Id!;
+            var lifecycle = node.Children.SingleOrDefault(item => item.Keyword == "lifecycle");
+            if (lifecycle is not null)
+            {
+                register(lifecycle);
+                foreach (var stage in lifecycle.Children.Where(item => item.Keyword == "stage")) register(stage);
+            }
+            foreach (var child in node.Children.Where(item => item.Keyword is "field" or "relationship")) addSymbol(child);
         }
-        var lines = new List<string> { "language 1.0", $"context id={context.Id} name=\"{context.Value}\" slug={Slug(context.Value)} version={Child(context, "version").Value}" };
-        foreach (var entity in roots.Where(item => item.Keyword == "entity"))
+        if (node.Keyword == "enumeration")
+            foreach (var member in node.Children.Where(item => item.Keyword == "member")) addSymbol(member);
+        if (node.Keyword == "rule") register(Child(node, "conclusion"));
+        if (node.Keyword == "behaviour")
+            foreach (var child in node.Children.Where(item => item.Keyword is "outcome" or "transition")) register(child);
+    }
+
+    /// <summary>Assigns each entity/enumeration/fact/rule/behaviour to the nearest preceding
+    /// 'context' declaration in source order.</summary>
+    private static Dictionary<Node, Node> ComputeContextOwnership(ImmutableArray<Node> roots)
+    {
+        var ownerOf = new Dictionary<Node, Node>(ReferenceEqualityComparer.Instance);
+        Node? currentContext = null;
+        foreach (var node in roots)
+        {
+            if (node.Keyword == "context") { currentContext = node; continue; }
+            if (node.Keyword is not ("entity" or "enumeration" or "fact" or "rule" or "behaviour")) continue;
+            if (currentContext is null)
+                throw new RmlException("rml.context.required", $"'{node.Keyword} {node.Value}' must be declared after a 'context'.", node);
+            ownerOf[node] = currentContext;
+        }
+        return ownerOf;
+    }
+
+    private static ImmutableArray<ContextDependency> ResolveImports(
+        IEnumerable<Node> contextNodes, Dictionary<string, Node> byName, Dictionary<Node, Node> ownerOf)
+    {
+        var dependencies = ImmutableArray.CreateBuilder<ContextDependency>();
+        foreach (var context in contextNodes)
+        {
+            foreach (var import in context.Children.Where(item => item.Keyword == "import"))
+            {
+                var from = Child(import, "from");
+                if (!byName.TryGetValue(from.Value, out var sourceContext) || sourceContext.Keyword != "context")
+                    throw new RmlException("rml.import.context-unresolved", $"Bounded context '{from.Value}' could not be resolved.", from);
+                if (!byName.TryGetValue(import.Value, out var factNode) || factNode.Keyword != "fact")
+                    throw new RmlException("rml.import.fact-unresolved", $"Imported fact '{import.Value}' could not be resolved.", import);
+                if (!ownerOf.TryGetValue(factNode, out var factOwner) || factOwner != sourceContext)
+                    throw new RmlException("rml.import.context-unresolved", $"Fact '{import.Value}' is not declared by bounded context '{from.Value}'.", import);
+                if (!factNode.Children.Any(item => item.Keyword == "export"))
+                    throw new RmlException("rml.import.not-exported", $"Fact '{import.Value}' is not exported by bounded context '{from.Value}'.", import);
+                dependencies.Add(new(
+                    SemanticId.Parse(context.Id!), new(context.Value),
+                    SemanticId.Parse(sourceContext.Id!), new(sourceContext.Value),
+                    SemanticId.Parse(factNode.Id!), new(factNode.Value)));
+            }
+        }
+        return dependencies.ToImmutable();
+    }
+
+    /// <summary>Emits SAF lines for one context's declarations — shared by the single-context and
+    /// multi-context builders, which differ only in which declarations they pass in.</summary>
+    private static List<string> EmitDeclarations(
+        IEnumerable<Node> entities, IEnumerable<Node> enumerations, IEnumerable<Node> facts,
+        IEnumerable<Node> rules, IEnumerable<Node> behaviours,
+        Func<string, Node, string> id, Dictionary<string, Node> byName)
+    {
+        var lines = new List<string>();
+        EmitEntities(lines, entities, id);
+        EmitEnumerations(lines, enumerations);
+        EmitFacts(lines, facts);
+        EmitRules(lines, rules, id);
+        EmitBehaviours(lines, behaviours, id, byName);
+        return lines;
+    }
+
+    private static void EmitEntities(List<string> lines, IEnumerable<Node> entities, Func<string, Node, string> id)
+    {
+        foreach (var entity in entities)
         {
             var lifecycle = entity.Children.SingleOrDefault(item => item.Keyword == "lifecycle");
             var lifecycleText = lifecycle is null ? "" : $" lifecycle-id={lifecycle.Id} lifecycle-name=\"{lifecycle.Value}\" lifecycle-slug={Slug(lifecycle.Value)}";
@@ -269,50 +475,65 @@ public static partial class RmlCompiler
             {
                 var type = Child(field, "type");
                 var namedKind = new[] { "enumeration", "entity", "value" }.FirstOrDefault(kind => type.Value.StartsWith(kind + " ", StringComparison.Ordinal));
-                var named = namedKind is not null ? $" named-type={Id(Unquote(type.Value[(namedKind.Length + 1)..]), type)}" : "";
+                var named = namedKind is not null ? $" named-type={id(Unquote(type.Value[(namedKind.Length + 1)..]), type)}" : "";
                 var primitive = namedKind switch { "enumeration" => "Enumeration", "entity" => "EntityReference", "value" => "ValueTypeReference", _ => CanonicalType(type.Value.Split('(')[0]) };
                 var precision = DecimalPrecision(type.Value);
                 lines.Add($"field owner={entity.Id} id={field.Id} name=\"{field.Value}\" slug={Slug(field.Value)} type={primitive}{named}{precision}{Flag(field, "optional")}");
             }
             foreach (var relationship in entity.Children.Where(item => item.Keyword == "relationship"))
-                lines.Add($"relationship owner={entity.Id} id={relationship.Id} name=\"{relationship.Value}\" slug={Slug(relationship.Value)} target={Id(Child(relationship, "target").Value, relationship)} cardinality={Title(Child(relationship, "cardinality").Value)}{Flag(relationship, "optional")}");
+                lines.Add($"relationship owner={entity.Id} id={relationship.Id} name=\"{relationship.Value}\" slug={Slug(relationship.Value)} target={id(Child(relationship, "target").Value, relationship)} cardinality={Title(Child(relationship, "cardinality").Value)}{Flag(relationship, "optional")}");
         }
-        foreach (var enumeration in roots.Where(item => item.Keyword == "enumeration"))
+    }
+
+    private static void EmitEnumerations(List<string> lines, IEnumerable<Node> enumerations)
+    {
+        foreach (var enumeration in enumerations)
         {
             lines.Add($"enumeration id={enumeration.Id} name=\"{enumeration.Value}\" slug={Slug(enumeration.Value)}");
             foreach (var member in enumeration.Children.Where(item => item.Keyword == "member"))
                 lines.Add($"enumeration-member owner={enumeration.Id} id={member.Id} name=\"{member.Value}\" slug={Slug(member.Value)} value={Child(member, "value").Value}");
         }
-        foreach (var fact in roots.Where(item => item.Keyword == "fact"))
+    }
+
+    private static void EmitFacts(List<string> lines, IEnumerable<Node> facts)
+    {
+        foreach (var fact in facts)
             lines.Add($"fact id={fact.Id} name=\"{fact.Value}\" slug={Slug(fact.Value)} type={Title(Child(fact, "type").Value)}{Flag(fact, "export")}");
-        foreach (var rule in roots.Where(item => item.Keyword == "rule"))
+    }
+
+    private static void EmitRules(List<string> lines, IEnumerable<Node> rules, Func<string, Node, string> id)
+    {
+        foreach (var rule in rules)
         {
-            var inputs = rule.Children.Where(item => item.Keyword == "input").Select(item => Id(item.Value, item)).ToArray();
+            var inputs = rule.Children.Where(item => item.Keyword == "input").Select(item => id(item.Value, item)).ToArray();
             var when = Child(rule, "when");
             if (!when.Value.Equals("all", StringComparison.OrdinalIgnoreCase)) throw new RmlException("rml.expression.unsupported", "RML 1.0 supports only 'when all'.", when);
-            var operands = when.Children.Where(item => item.Keyword == "fact").Select(item => Id(item.Value, item)).ToArray();
+            var operands = when.Children.Where(item => item.Keyword == "fact").Select(item => id(item.Value, item)).ToArray();
             var conclusion = Child(rule, "conclusion");
             var findings = rule.Children.Where(item => item.Keyword == "finding").Select(Finding).ToArray();
-            string Findings(string disposition) => string.Join(',', findings.Where(item => item.Disposition == disposition).Select(item => $"{Id(item.Fact, item.Node)}:{item.Code}"));
+            string Findings(string disposition) => string.Join(',', findings.Where(item => item.Disposition == disposition).Select(item => $"{id(item.Fact, item.Node)}:{item.Code}"));
             var optional = new[] { ("true-findings", Findings("true")), ("false-findings", Findings("false")), ("missing-findings", Findings("missing")) }
                 .Where(item => item.Item2.Length > 0).Select(item => $" {item.Item1}={item.Item2}");
             lines.Add($"rule id={rule.Id} name=\"{rule.Value}\" slug={Slug(rule.Value)} inputs={string.Join(',', inputs)} expression=and({string.Join(',', operands)}){string.Concat(optional)} conclusion-id={conclusion.Id} conclusion-name=\"{conclusion.Value}\" conclusion-slug={Slug(conclusion.Value)}{Flag(rule, "export")}");
         }
-        foreach (var behaviour in roots.Where(item => item.Keyword == "behaviour"))
+    }
+
+    private static void EmitBehaviours(List<string> lines, IEnumerable<Node> behaviours, Func<string, Node, string> id, Dictionary<string, Node> byName)
+    {
+        foreach (var behaviour in behaviours)
         {
-            lines.Add($"behaviour id={behaviour.Id} name=\"{behaviour.Value}\" slug={Slug(behaviour.Value)} entity={Id(Child(behaviour, "for").Value, behaviour)}");
+            lines.Add($"behaviour id={behaviour.Id} name=\"{behaviour.Value}\" slug={Slug(behaviour.Value)} entity={id(Child(behaviour, "for").Value, behaviour)}");
             foreach (var outcome in behaviour.Children.Where(item => item.Keyword == "outcome"))
                 lines.Add($"outcome owner={behaviour.Id} id={outcome.Id} name=\"{outcome.Value}\" slug={Slug(outcome.Value)}");
             foreach (var requires in behaviour.Children.Where(item => item.Keyword == "requires"))
             {
                 var rule = byName[requires.Value];
-                var facts = rule.Children.Where(item => item.Keyword == "input").Select(item => Id(item.Value, item)).ToArray();
-                lines.Add($"binding owner={behaviour.Id} rule={rule.Id} purpose=Requirement facts={string.Join(',', facts.Select(id => $"{id}:{id}"))}");
+                var facts = rule.Children.Where(item => item.Keyword == "input").Select(item => id(item.Value, item)).ToArray();
+                lines.Add($"binding owner={behaviour.Id} rule={rule.Id} purpose=Requirement facts={string.Join(',', facts.Select(value => $"{value}:{value}"))}");
             }
             foreach (var transition in behaviour.Children.Where(item => item.Keyword == "transition"))
-                lines.Add($"transition owner={behaviour.Id} id={transition.Id} name=\"{transition.Value}\" slug={Slug(transition.Value)} lifecycle={Id(Child(transition, "lifecycle").Value, transition)} source={Id(Child(transition, "from").Value, transition)} target={Id(Child(transition, "to").Value, transition)} outcome={Id(Child(transition, "outcome").Value, transition)}");
+                lines.Add($"transition owner={behaviour.Id} id={transition.Id} name=\"{transition.Value}\" slug={Slug(transition.Value)} lifecycle={id(Child(transition, "lifecycle").Value, transition)} source={id(Child(transition, "from").Value, transition)} target={id(Child(transition, "to").Value, transition)} outcome={id(Child(transition, "outcome").Value, transition)}");
         }
-        return new(string.Join('\n', lines) + "\n", symbols.ToImmutableArray());
     }
 
     private static (string Fact, string Disposition, string Code, Node Node) Finding(Node node)
@@ -361,11 +582,17 @@ public static partial class RmlCompiler
         (value.Length >= 2 && value[1] == ':' && char.IsAsciiLetter(value[0]));
     private static SourceSpan Span(Node node) => new(node.Document, node.Line, node.Column, node.TextLength);
     private static bool OpensBlock(string keyword, string? parent) =>
-        parent is null && keyword is "context" or "entity" or "enumeration" or "fact" or "rule" or "behaviour" ||
-        parent == "entity" && keyword is "lifecycle" or "field" or "relationship" ||
-        parent == "enumeration" && keyword == "member" ||
-        parent == "rule" && keyword is "when" or "conclusion" ||
-        parent == "behaviour" && keyword is "outcome" or "transition";
+        BlockOpeningKeywords.TryGetValue(parent ?? "", out var allowed) && allowed.Contains(keyword);
+
+    private static readonly Dictionary<string, string[]> BlockOpeningKeywords = new(StringComparer.Ordinal)
+    {
+        [""] = ["context", "entity", "enumeration", "fact", "rule", "behaviour"],
+        ["context"] = ["import"],
+        ["entity"] = ["lifecycle", "field", "relationship"],
+        ["enumeration"] = ["member"],
+        ["rule"] = ["when", "conclusion"],
+        ["behaviour"] = ["outcome", "transition"],
+    };
     private static readonly HashSet<string> IdentityDeclarations = ["context", "entity", "lifecycle", "stage", "field", "relationship", "enumeration", "member", "fact", "rule", "conclusion", "behaviour", "outcome", "transition"];
     [GeneratedRegex("^#\\s*@id=(?<id>[0-9a-fA-F-]{36})\\s*$", RegexOptions.CultureInvariant)] private static partial Regex Identity();
     [GeneratedRegex("[^a-z0-9]+", RegexOptions.CultureInvariant)] private static partial Regex SlugCharacters();
@@ -373,7 +600,19 @@ public static partial class RmlCompiler
     private sealed record Node(string Keyword, string Value, string? Id, string Document, int Line, int Column, int TextLength, List<Node> Children);
     private sealed record Symbol(string Id, string Document, int Line, int Column, int Length, string? SemanticPath);
     private sealed record Model(string Saf, ImmutableArray<Symbol> Symbols);
+    private sealed record ContextModel(string Name, string Slug, string Saf);
+    private sealed record WorkspaceModel(ImmutableArray<ContextModel> Contexts, ImmutableArray<ContextDependency> Dependencies, ImmutableArray<Symbol> Symbols);
     private sealed class RmlException(string code, string message, Node node) : Exception(message) { public string Code { get; } = code; public Node Node { get; } = node; }
 }
 
 public sealed record RmlSourceEdit(string Original, string Updated, bool Changed);
+
+public sealed record WorkspaceParseResult(
+    ImmutableArray<LoadedContextPackage> Contexts,
+    ImmutableArray<ContextDependency> Dependencies,
+    ImmutableArray<SourceProvenance> Provenance,
+    ImmutableArray<ParseDiagnostic> Diagnostics,
+    bool IsCancelled)
+{
+    public bool IsSuccess => !IsCancelled && Diagnostics.IsEmpty && !Contexts.IsDefaultOrEmpty;
+}

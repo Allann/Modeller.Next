@@ -99,6 +99,131 @@ public sealed class DiagramProjectionTests
     }
 
     [Fact]
+    public void ProjectContextMap_shows_a_dependency_edge_for_a_declared_import()
+    {
+        var childCare = ChildCare.Revision();
+        var centreOperations = AuthoredContextRevision.Create(CentreOperationsId, new("Centre Operations"), new("centre-operations"), "1.0.0");
+        var dependency = new ContextDependency(
+            CentreOperationsId, new("Centre Operations"),
+            ChildCare.ContextId, new("Child Care"),
+            SemanticId.Parse("0191f6d4-4ea0-7000-8000-0000000000e1"), new("Active enrolment exists"));
+
+        var result = DiagramProjector.ProjectContextMap(
+            [childCare, centreOperations], [dependency],
+            new("context-map", 1, ViewKind.ContextMap, [ChildCare.ContextId]),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(2, result.Graph!.Nodes.Length);
+        Assert.Contains(result.Graph.Nodes, node => node.Role == "context" && node.Label == "Child Care");
+        Assert.Contains(result.Graph.Nodes, node => node.Role == "context" && node.Label == "Centre Operations");
+        var edge = Assert.Single(result.Graph.Edges);
+        Assert.Equal("import", edge.Role);
+        Assert.Equal($"import:{CentreOperationsId}:{ChildCare.ContextId}:0191f6d4-4ea0-7000-8000-0000000000e1", edge.Id);
+        Assert.Equal("Active enrolment exists", edge.Label);
+        Assert.Equal("Centre Operations", result.Graph.Nodes.Single(n => n.Id == edge.SourceId).Label);
+        Assert.Equal("Child Care", result.Graph.Nodes.Single(n => n.Id == edge.TargetId).Label);
+    }
+
+    [Fact]
+    public void ProjectContextMap_shows_the_same_dependency_edge_when_rooted_at_the_importing_context()
+    {
+        var childCare = ChildCare.Revision();
+        var centreOperations = AuthoredContextRevision.Create(CentreOperationsId, new("Centre Operations"), new("centre-operations"), "1.0.0");
+        var dependency = new ContextDependency(
+            CentreOperationsId, new("Centre Operations"),
+            ChildCare.ContextId, new("Child Care"),
+            SemanticId.Parse("0191f6d4-4ea0-7000-8000-0000000000e1"), new("Active enrolment exists"));
+
+        var result = DiagramProjector.ProjectContextMap(
+            [childCare, centreOperations], [dependency],
+            new("context-map", 1, ViewKind.ContextMap, [CentreOperationsId]),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(2, result.Graph!.Nodes.Length);
+        Assert.Single(result.Graph.Edges);
+    }
+
+    [Fact]
+    public void ProjectContextMap_returns_a_diagnostic_when_the_root_is_not_among_the_contexts()
+    {
+        var result = DiagramProjector.ProjectContextMap(
+            [ChildCare.Revision()], [],
+            new("context-map", 1, ViewKind.ContextMap, [CentreOperationsId]),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("projection.root.invalid", diagnostic.Code);
+        Assert.Equal("A context map requires a context root.", diagnostic.Message);
+    }
+
+    [Fact]
+    public void ProjectContextMap_returns_a_diagnostic_when_the_view_version_is_unsupported()
+    {
+        var result = DiagramProjector.ProjectContextMap(
+            [ChildCare.Revision()], [], new("context-map", 2, ViewKind.ContextMap, [ChildCare.ContextId]),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("projection.view-version.unsupported", diagnostic.Code);
+        Assert.Equal("View version '2' is not supported.", diagnostic.Message);
+    }
+
+    [Fact]
+    public void ProjectContextMap_returns_a_diagnostic_when_the_view_kind_is_not_context_map()
+    {
+        var result = DiagramProjector.ProjectContextMap(
+            [ChildCare.Revision()], [], new("view", 1, ViewKind.Structural, [ChildCare.ContextId]),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.False(result.Succeeded);
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("projection.view-kind.unsupported", diagnostic.Code);
+        Assert.Equal("'Structural' is not a context map.", diagnostic.Message);
+    }
+
+    [Fact]
+    public void ProjectContextMap_throws_when_view_is_null()
+    {
+        Assert.Throws<ArgumentNullException>(() => DiagramProjector.ProjectContextMap(
+            [ChildCare.Revision()], [], null!, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public void ProjectContextMap_throws_when_cancellation_already_requested()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        // No contexts supplied: only the first ThrowIfCancellationRequested (before the root
+        // lookup) can observably fire here — a graceful root-invalid diagnostic, not a thrown
+        // exception, is what the second check further down would otherwise mask this into.
+        Assert.Throws<OperationCanceledException>(() => DiagramProjector.ProjectContextMap(
+            [], [], new("context-map", 1, ViewKind.ContextMap, [ChildCare.ContextId]), cts.Token));
+    }
+
+    [Fact]
+    public void ProjectContextMap_for_a_single_context_workspace_has_no_dependency_edges()
+    {
+        var childCare = ChildCare.Revision();
+
+        var result = DiagramProjector.ProjectContextMap(
+            [childCare], [],
+            new("context-map", 1, ViewKind.ContextMap, [ChildCare.ContextId]),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.True(result.Succeeded);
+        var node = Assert.Single(result.Graph!.Nodes);
+        Assert.Equal("Child Care", node.Label);
+        Assert.Empty(result.Graph.Edges);
+    }
+
+    private static readonly SemanticId CentreOperationsId = SemanticId.Parse("0191f6d4-4ea0-7000-8000-0000000000e0");
+
+    [Fact]
     public void Every_initial_view_kind_uses_the_same_projection_interface()
     {
         foreach (var kind in Enum.GetValues<ViewKind>())

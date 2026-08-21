@@ -135,7 +135,8 @@ public sealed class WorkspaceAnalysisPipeline(ILogger<WorkspaceAnalysisPipeline>
     private static WorkspaceOutcome<WorkspaceAnalyzeResponse> BuildResponse(
         AnalyzedWorkspace analyzed, IReadOnlyList<ProjectionRequestDto> requests, CancellationToken cancellationToken)
     {
-        var workspaceTooLarge = WorkspaceContractMappings.ExceedsDefinitionLimit(analyzed.Package.AuthoredRevision.Definitions.Length);
+        var workspaceTooLarge = WorkspaceContractMappings.ExceedsDefinitionLimit(
+            analyzed.Contexts.Sum(context => context.AuthoredRevision.Definitions.Length));
         var projections = new List<ProjectionResponseDto>(requests.Count);
         var totalGraphElements = 0;
         foreach (var request in requests)
@@ -198,9 +199,11 @@ public sealed class WorkspaceAnalysisPipeline(ILogger<WorkspaceAnalysisPipeline>
     private static IReadOnlyList<RootSummaryDto> ComputeRoots(AnalyzedWorkspace analyzed)
     {
         var revision = analyzed.Package.AuthoredRevision;
-        ViewKind[] contextRootedViews = [ViewKind.Structural, ViewKind.CausalityAndEventFlow, ViewKind.ContextMap];
+        ViewKind[] contextRootedViews = [ViewKind.Structural, ViewKind.CausalityAndEventFlow];
         return [.. contextRootedViews
             .Select(kind => new RootSummaryDto(revision.Id.ToString(), kind, revision.Name.Value, revision.Slug.Value))
+            .Concat(analyzed.Contexts.Select(context => new RootSummaryDto(
+                context.AuthoredRevision.Id.ToString(), ViewKind.ContextMap, context.AuthoredRevision.Name.Value, context.AuthoredRevision.Slug.Value)))
             .Concat(revision.Definitions.OfType<EntityDefinition>().Where(entity => entity.Lifecycle is not null)
                 .Select(entity => new RootSummaryDto(entity.Id.ToString(), ViewKind.Lifecycle, entity.Name.Value, entity.Slug.Value)))
             .Concat(revision.Definitions.OfType<EntityDefinition>()

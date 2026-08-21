@@ -38,6 +38,7 @@
     <Project Path="tests/Modeller.LanguageServer.Tests/Modeller.LanguageServer.Tests.csproj" />
     <Project Path="tests/Modeller.Model.Tests/Modeller.Model.Tests.csproj" />
     <Project Path="tests/Modeller.Output.Tests/Modeller.Output.Tests.csproj" />
+    <Project Path="tests/Modeller.Parsing.Acceptance/Modeller.Parsing.Acceptance.csproj" />
     <Project Path="tests/Modeller.Parsing.Tests/Modeller.Parsing.Tests.csproj" />
     <Project Path="tests/Modeller.Projections.Tests/Modeller.Projections.Tests.csproj" />
     <Project Path="tests/Modeller.Rendering.Tests/Modeller.Rendering.Tests.csproj" />

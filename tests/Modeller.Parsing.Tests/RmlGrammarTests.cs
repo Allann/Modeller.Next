@@ -40,6 +40,20 @@ public sealed class RmlGrammarTests
     }
 
     [Fact]
+    public void Complete_suggests_declared_bounded_contexts_after_import_from()
+    {
+        var documents = new SourceDocument[]
+        {
+            new("contexts.modeller", "context Child Care\nend\ncontext Centre Operations\n  import \"Active enrolment exists\"\n    from \n  end\nend\n"),
+        };
+
+        var items = RmlGrammar.Complete(documents, "contexts.modeller", 5, 10, TestContext.Current.CancellationToken);
+
+        Assert.Contains(items, item => item.Kind == "Context" && item.Label == "Child Care");
+        Assert.All(items, item => Assert.Equal("Context", item.Kind));
+    }
+
+    [Fact]
     public void Complete_uses_the_prefix_inside_an_open_quote_across_an_invalid_workspace()
     {
         var documents = new SourceDocument[]
@@ -67,6 +81,8 @@ public sealed class RmlGrammarTests
     [InlineData("rule Decide\n  input ", 2, "Fact")]
     [InlineData("rule Decide\n  finding ", 2, "Fact")]
     [InlineData("rule Decide\n  when All\n    fact ", 3, "Fact")]
+    [InlineData("entity Widget\n  field Kind\n    type enumeration ", 3, "Enumeration")]
+    [InlineData("entity Widget\n  field Kind\n    type entity ", 3, "Entity")]
     public void Complete_returns_only_the_compatible_reference_kind(string activeSource, int line, string expectedKind)
     {
         const string declarations = """
@@ -74,6 +90,9 @@ public sealed class RmlGrammarTests
               lifecycle Order lifecycle
                 stage Draft
               end
+            end
+            enumeration Status
+              member Open
             end
             fact Payment confirmed
             rule Determine readiness
@@ -100,5 +119,19 @@ public sealed class RmlGrammarTests
         Assert.Throws<OperationCanceledException>(() => RmlGrammar.Complete(
             [new("model.modeller", "rule Decide\nbehaviour Work\n  requires ")],
             "model.modeller", 3, 12, cancellation.Token));
+    }
+
+    [Fact]
+    public void ParentAt_skips_blank_and_comment_lines_when_finding_the_enclosing_block()
+    {
+        const string source = "entity Order\n\n  # a comment about the next field\n  field Total\n";
+
+        Assert.Equal("entity", RmlGrammar.ParentAt(source, 4));
+    }
+
+    [Fact]
+    public void ParentAt_returns_null_outside_any_block()
+    {
+        Assert.Null(RmlGrammar.ParentAt("entity Order\nend\n", 3));
     }
 }

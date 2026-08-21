@@ -154,6 +154,154 @@ public sealed class ModellerWorkspaceTests
         Assert.Equal("rml.block.unclosed", Assert.Single(failed.Diagnostics).Code);
     }
 
+    private const string ChildCareExportingDocument = """
+        rml 1.0
+        context Child Care
+          version 1.0.0
+        end
+        fact Active enrolment exists
+          type truth
+          export
+        end
+        """;
+
+    private const string CentreOperationsImportingDocument = """
+        context Centre Operations
+          version 1.0.0
+          import "Active enrolment exists"
+            from "Child Care"
+          end
+        end
+        """;
+
+    private static WorkspaceInput TwoContextEphemeralWorkspace() => new(
+        [
+            new(LogicalPath.Create("model/child-care.rml"), ChildCareExportingDocument),
+            new(LogicalPath.Create("model/centre-operations.rml"), CentreOperationsImportingDocument),
+        ],
+        IdentityStrategy.Ephemeral.Instance,
+        new WorkspaceConfigurationInput("1.0", "generated/"));
+
+    [Fact]
+    public void Analyze_a_single_context_workspace_populates_Contexts_with_just_the_primary_package()
+    {
+        var analyzed = Assert.IsType<WorkspaceOutcome<AnalyzedWorkspace>.Success>(
+            ModellerWorkspace.Analyze(EphemeralWorkspace(), TestContext.Current.CancellationToken)).Value;
+
+        var context = Assert.Single(analyzed.Contexts);
+        Assert.Same(analyzed.Package, context);
+        Assert.Empty(analyzed.Dependencies);
+    }
+
+    [Fact]
+    public void Analyze_a_workspace_declaring_two_bounded_contexts_routes_through_CompileWorkspace()
+    {
+        var outcome = ModellerWorkspace.Analyze(TwoContextEphemeralWorkspace(), TestContext.Current.CancellationToken);
+
+        var analyzed = Assert.IsType<WorkspaceOutcome<AnalyzedWorkspace>.Success>(outcome).Value;
+        Assert.Equal(2, analyzed.Contexts.Length);
+        Assert.Contains(analyzed.Contexts, context => context.AuthoredRevision.Name.Value == "Child Care");
+        Assert.Contains(analyzed.Contexts, context => context.AuthoredRevision.Name.Value == "Centre Operations");
+        var dependency = Assert.Single(analyzed.Dependencies);
+        Assert.Equal("Active enrolment exists", dependency.FactName.Value);
+    }
+
+    [Fact]
+    public void Analyze_a_workspace_declaring_a_single_context_with_no_import_does_not_route_through_CompileWorkspace()
+    {
+        var analyzed = Assert.IsType<WorkspaceOutcome<AnalyzedWorkspace>.Success>(
+            ModellerWorkspace.Analyze(EphemeralWorkspace(), TestContext.Current.CancellationToken)).Value;
+
+        // Single-context workspaces keep going through the original Compile() path: Package still
+        // carries the full LoadedContextPackage (imports/exports/digests), not just a revision.
+        Assert.NotNull(analyzed.Package.PackageDigest);
+        Assert.NotNull(analyzed.Package.SemanticDigest);
+    }
+
+    [Fact]
+    public void Analyze_does_not_route_a_non_rml_workspace_through_CompileWorkspace_even_if_it_looks_multi_context()
+    {
+        // Neither line starts with "rml " (IsRml is false), but both start with "context " (so
+        // RequiresWorkspaceCompilation alone would be true). Routing must require BOTH — an
+        // accidental && -> || here would send non-RML source into the RML compiler instead of the
+        // legacy parser, producing an RML-flavoured diagnostic instead of the legacy one.
+        const string nonRmlSource =
+            "context id=00000000-0000-7000-8000-000000000001 name=\"A\" slug=a version=1.0.0\n" +
+            "context id=00000000-0000-7000-8000-000000000002 name=\"B\" slug=b version=1.0.0\n";
+        var input = new WorkspaceInput(
+            [new(LogicalPath.Create("model/legacy.modeller"), nonRmlSource)],
+            IdentityStrategy.Ephemeral.Instance,
+            new WorkspaceConfigurationInput("1.0", "generated/"));
+
+        var outcome = ModellerWorkspace.Analyze(input, TestContext.Current.CancellationToken);
+
+        var failed = Assert.IsType<WorkspaceOutcome<AnalyzedWorkspace>.Failed>(outcome);
+        var diagnostic = Assert.Single(failed.Diagnostics);
+        Assert.Equal("parse.statement.required", diagnostic.Code);
+    }
+
+    [Fact]
+    public void Analyze_remaps_a_multi_context_diagnostic_location_back_to_the_submitted_source()
+    {
+        const string centreOperationsWithUnresolvedImport = """
+            context Centre Operations
+              version 1.0.0
+              import "Active enrolment exists"
+                from "Unknown Context"
+              end
+            end
+            """;
+        var input = new WorkspaceInput(
+            [
+                new(LogicalPath.Create("model/child-care.rml"), ChildCareExportingDocument),
+                new(LogicalPath.Create("model/centre-operations.rml"), centreOperationsWithUnresolvedImport),
+            ],
+            IdentityStrategy.Ephemeral.Instance,
+            new WorkspaceConfigurationInput("1.0", "generated/"));
+
+        var outcome = ModellerWorkspace.Analyze(input, TestContext.Current.CancellationToken);
+
+        var failed = Assert.IsType<WorkspaceOutcome<AnalyzedWorkspace>.Failed>(outcome);
+        var diagnostic = Assert.Single(failed.Diagnostics);
+        Assert.Equal("rml.import.context-unresolved", diagnostic.Code);
+        Assert.NotNull(diagnostic.Location);
+        Assert.Equal("model/centre-operations.rml", diagnostic.Location.Document);
+        Assert.Equal(4, diagnostic.Location.Line);
+    }
+
+    [Fact]
+    public void Analyze_remaps_multi_context_provenance_spans_back_to_the_submitted_source()
+    {
+        // Ephemeral identity mints a "# @id=" comment before "context Child Care" (submitted line
+        // 2), shifting it to identified line 3. Provenance must be remapped back to line 2 — the
+        // line a client that only ever sees the submitted source can actually navigate to.
+        var analyzed = Assert.IsType<WorkspaceOutcome<AnalyzedWorkspace>.Success>(
+            ModellerWorkspace.Analyze(TwoContextEphemeralWorkspace(), TestContext.Current.CancellationToken)).Value;
+        var childCare = analyzed.Contexts.Single(context => context.AuthoredRevision.Name.Value == "Child Care");
+
+        var provenance = Assert.Single(analyzed.Provenance, item => item.SemanticId == childCare.AuthoredRevision.Id.ToString());
+
+        Assert.Equal("model/child-care.rml", provenance.Span.Document);
+        Assert.Equal(2, provenance.Span.Line);
+    }
+
+    [Fact]
+    public void Project_a_context_map_via_ModellerWorkspace_shows_the_cross_context_dependency_edge()
+    {
+        var analyzed = Assert.IsType<WorkspaceOutcome<AnalyzedWorkspace>.Success>(
+            ModellerWorkspace.Analyze(TwoContextEphemeralWorkspace(), TestContext.Current.CancellationToken)).Value;
+        var childCare = analyzed.Contexts.Single(context => context.AuthoredRevision.Name.Value == "Child Care");
+
+        var outcome = ModellerWorkspace.Project(
+            analyzed, new ViewDefinition("context-map", 1, ViewKind.ContextMap, [childCare.AuthoredRevision.Id]),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var projection = Assert.IsType<WorkspaceOutcome<ProjectionResult>.Success>(outcome).Value;
+        Assert.True(projection.Succeeded, string.Join(",", projection.Diagnostics));
+        Assert.Equal(2, projection.Graph!.Nodes.Length);
+        Assert.Single(projection.Graph.Edges);
+    }
+
     [Fact]
     public void Analyze_returns_cancelled_for_a_pre_cancelled_token()
     {

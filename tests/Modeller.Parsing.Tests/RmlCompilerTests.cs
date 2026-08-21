@@ -1,3 +1,4 @@
+using Modeller.Model;
 using Modeller.Parsing;
 using Xunit;
 
@@ -378,5 +379,250 @@ public sealed class RmlCompilerTests
         cts.Cancel();
 
         Assert.Throws<OperationCanceledException>(() => RmlCompiler.ApplyIdentities("rml 1.0\ncontext Child Care\nend\n", [], cts.Token));
+    }
+
+    [Fact]
+    public void CompileWorkspace_compiles_every_declared_bounded_context()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            context Centre Operations
+              version 1.0.0
+            end
+            """;
+
+        var result = RmlCompiler.CompileWorkspace(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(["Child Care", "Centre Operations"], result.Contexts.Select(context => context.AuthoredRevision.Name.Value));
+        Assert.Empty(result.Dependencies);
+    }
+
+    [Fact]
+    public void CompileWorkspace_records_a_dependency_for_an_import_of_an_exported_fact()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            fact Active enrolment exists
+              type truth
+              export
+            end
+            context Centre Operations
+              version 1.0.0
+              import "Active enrolment exists"
+                from "Child Care"
+              end
+            end
+            """;
+
+        var result = RmlCompiler.CompileWorkspace(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess);
+        var dependency = Assert.Single(result.Dependencies);
+        Assert.Equal("Centre Operations", dependency.ImportingContextName.Value);
+        Assert.Equal("Child Care", dependency.ExportingContextName.Value);
+        Assert.Equal("Active enrolment exists", dependency.FactName.Value);
+    }
+
+    [Fact]
+    public void CompileWorkspace_rejects_an_import_of_a_fact_that_is_not_exported()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            fact Active enrolment exists
+              type truth
+            end
+            context Centre Operations
+              version 1.0.0
+              import "Active enrolment exists"
+                from "Child Care"
+              end
+            end
+            """;
+
+        var result = RmlCompiler.CompileWorkspace(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("rml.import.not-exported", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void CompileWorkspace_rejects_an_import_naming_an_unresolved_bounded_context()
+    {
+        const string source = """
+            rml 1.0
+            context Centre Operations
+              version 1.0.0
+              import "Active enrolment exists"
+                from "Child Care"
+              end
+            end
+            """;
+
+        var result = RmlCompiler.CompileWorkspace(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("rml.import.context-unresolved", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void CompileWorkspace_supports_entities_enumerations_rules_and_behaviours_across_contexts()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            enumeration Room status type
+              member Open
+                value 1
+              end
+            end
+            entity Room
+              field Room name
+                type text
+              end
+              lifecycle Room lifecycle
+                stage Draft
+                stage Active
+              end
+            end
+            entity Child
+              relationship Assigned room
+                target "Room"
+                cardinality one
+              end
+            end
+            fact Active enrolment exists
+              type truth
+            end
+            rule Determine eligibility
+              input "Active enrolment exists"
+              when all
+                fact "Active enrolment exists"
+              end
+              conclusion Eligible
+              end
+            end
+            behaviour Activate room
+              for "Room"
+              requires "Determine eligibility"
+              outcome Activated
+              end
+              transition Activate
+                lifecycle "Room lifecycle"
+                from "Draft"
+                to "Active"
+                outcome "Activated"
+              end
+            end
+            context Centre Operations
+              version 1.0.0
+            end
+            """;
+
+        var result = RmlCompiler.CompileWorkspace(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join("; ", result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message} @ {diagnostic.Location?.Line}")));
+        Assert.Equal(["Child Care", "Centre Operations"], result.Contexts.Select(context => context.AuthoredRevision.Name.Value));
+        var childCare = result.Contexts.Single(context => context.AuthoredRevision.Name.Value == "Child Care").AuthoredRevision;
+        Assert.Contains(childCare.Definitions, definition => definition is EntityDefinition entity && entity.Name.Value == "Room");
+        Assert.Contains(childCare.Definitions, definition => definition is EntityDefinition entity && entity.Name.Value == "Child");
+        Assert.Contains(childCare.Definitions, definition => definition is EnumerationDefinition enumeration && enumeration.Name.Value == "Room status type");
+        Assert.Contains(childCare.Definitions, definition => definition is RuleDefinition rule && rule.Name.Value == "Determine eligibility");
+        Assert.Contains(childCare.Definitions, definition => definition is BehaviourDefinition behaviour && behaviour.Name.Value == "Activate room");
+        var centreOperations = result.Contexts.Single(context => context.AuthoredRevision.Name.Value == "Centre Operations").AuthoredRevision;
+        Assert.Empty(centreOperations.Definitions);
+    }
+
+    [Fact]
+    public void CompileWorkspace_rejects_two_bounded_contexts_sharing_a_name()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            context Child Care
+              version 1.0.0
+            end
+            """;
+
+        var result = RmlCompiler.CompileWorkspace(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("rml.name.duplicate", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void CompileWorkspace_returns_a_cancelled_result_when_the_token_is_already_cancelled()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var result = RmlCompiler.CompileWorkspace(
+            [new SourceDocument("workspace.rml", "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n")], ParseOptions.EditorLanguage1, cts.Token);
+
+        Assert.True(result.IsCancelled);
+        Assert.False(result.IsSuccess);
+    }
+
+    [Fact]
+    public void RequiresWorkspaceCompilation_is_false_for_a_single_context_with_no_import()
+    {
+        const string source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n";
+
+        Assert.False(RmlCompiler.RequiresWorkspaceCompilation([new SourceDocument("workspace.rml", source)]));
+    }
+
+    [Fact]
+    public void RequiresWorkspaceCompilation_is_true_for_more_than_one_declared_context()
+    {
+        const string source = "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\ncontext Centre Operations\n  version 1.0.0\nend\n";
+
+        Assert.True(RmlCompiler.RequiresWorkspaceCompilation([new SourceDocument("workspace.rml", source)]));
+    }
+
+    [Fact]
+    public void RequiresWorkspaceCompilation_is_true_for_a_single_context_that_declares_an_import()
+    {
+        const string source = """
+            rml 1.0
+            context Centre Operations
+              version 1.0.0
+              import "Active enrolment exists"
+                from "Child Care"
+              end
+            end
+            """;
+
+        Assert.True(RmlCompiler.RequiresWorkspaceCompilation([new SourceDocument("workspace.rml", source)]));
+    }
+
+    [Fact]
+    public void RequiresWorkspaceCompilation_counts_context_declarations_across_multiple_documents()
+    {
+        var documents = new[]
+        {
+            new SourceDocument("a.rml", "rml 1.0\ncontext Child Care\n  version 1.0.0\nend\n"),
+            new SourceDocument("b.rml", "context Centre Operations\n  version 1.0.0\nend\n"),
+        };
+
+        Assert.True(RmlCompiler.RequiresWorkspaceCompilation(documents));
     }
 }

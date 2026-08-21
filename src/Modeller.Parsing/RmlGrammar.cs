@@ -11,7 +11,8 @@ public static class RmlGrammar
         new Dictionary<string, ImmutableArray<string>>(StringComparer.Ordinal)
         {
             [""] = ["rml", "context", "entity", "enumeration", "fact", "rule", "behaviour"],
-            ["context"] = ["version"],
+            ["context"] = ["version", "import"],
+            ["import"] = ["from"],
             ["entity"] = ["lifecycle", "field", "relationship"],
             ["lifecycle"] = ["stage"],
             ["field"] = ["type", "optional"],
@@ -41,11 +42,17 @@ public static class RmlGrammar
             if (text.Length == 0 || text.StartsWith('#')) continue;
             if (text == "end") { if (stack.Count > 0) stack.Pop(); continue; }
             var keyword = text.Split(' ', 2)[0];
-            if (keyword is "context" or "entity" or "lifecycle" or "field" or "relationship" or "enumeration" or "member" or "fact" or "rule" or "when" or "behaviour" or "transition")
+            if (BlockKeywords.Contains(keyword))
                 stack.Push(keyword);
         }
         return stack.TryPeek(out var parent) ? parent : null;
     }
+
+    private static readonly HashSet<string> BlockKeywords = new(StringComparer.Ordinal)
+    {
+        "context", "entity", "lifecycle", "field", "relationship", "enumeration", "member",
+        "fact", "rule", "when", "behaviour", "transition", "import",
+    };
 
     public static ImmutableArray<RmlCompletionCandidate> Complete(
         IEnumerable<SourceDocument> documents,
@@ -116,18 +123,28 @@ public static class RmlGrammar
             .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase).ToImmutableArray();
     }
 
-    private static string? ReferenceKind(string statement, string? parent, string trimmed) => (parent, statement) switch
+    private static string? ReferenceKind(string statement, string? parent, string trimmed) =>
+        parent == "field" && statement == "type"
+            ? FieldTypeReferenceKind(trimmed)
+            : parent is not null && ReferenceKinds.TryGetValue((parent, statement), out var kind) ? kind : null;
+
+    private static string? FieldTypeReferenceKind(string trimmed) =>
+        trimmed.StartsWith("type enumeration", StringComparison.Ordinal) ? "Enumeration" :
+        trimmed.StartsWith("type entity", StringComparison.Ordinal) ? "Entity" : null;
+
+    private static readonly Dictionary<(string Parent, string Statement), string> ReferenceKinds = new()
     {
-        ("behaviour", "for") => "Entity",
-        ("behaviour", "requires") => "Rule",
-        ("transition", "lifecycle") => "Lifecycle",
-        ("transition", "from" or "to") => "LifecycleStage",
-        ("transition", "outcome") => "Outcome",
-        ("relationship", "target") => "Entity",
-        ("rule", "input" or "finding") or ("when", "fact") => "Fact",
-        ("field", "type") when trimmed.StartsWith("type enumeration", StringComparison.Ordinal) => "Enumeration",
-        ("field", "type") when trimmed.StartsWith("type entity", StringComparison.Ordinal) => "Entity",
-        _ => null,
+        [("behaviour", "for")] = "Entity",
+        [("behaviour", "requires")] = "Rule",
+        [("transition", "lifecycle")] = "Lifecycle",
+        [("transition", "from")] = "LifecycleStage",
+        [("transition", "to")] = "LifecycleStage",
+        [("transition", "outcome")] = "Outcome",
+        [("relationship", "target")] = "Entity",
+        [("import", "from")] = "Context",
+        [("rule", "input")] = "Fact",
+        [("rule", "finding")] = "Fact",
+        [("when", "fact")] = "Fact",
     };
 
     private static string Words(string value) => string.Concat(value.Select((character, index) =>
