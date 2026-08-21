@@ -1,0 +1,9 @@
+rml 1.0
+fact Absence is approved
+  type truth
+  export
+end
+fact Absence document is held
+  type truth
+  export
+end

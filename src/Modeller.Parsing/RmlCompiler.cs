@@ -225,7 +225,10 @@ public static partial class RmlCompiler
         var byName = new Dictionary<string, Node>(StringComparer.OrdinalIgnoreCase);
         void Register(Node node, string? path = null)
         {
-            RequiredId(node); byName.Add(node.Value, node);
+            RequiredId(node);
+            if (byName.TryGetValue(node.Value, out var existing))
+                throw new RmlException("rml.name.duplicate", $"'{node.Keyword} {node.Value}' has the same name as '{existing.Keyword} {existing.Value}' ({existing.Document}:{existing.Line}). Names must be unique across the document.", node);
+            byName.Add(node.Value, node);
             symbols.Add(new(node.Id!, node.Document, node.Line, node.Column, node.TextLength, path));
         }
         Register(context);

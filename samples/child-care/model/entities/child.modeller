@@ -1,0 +1,50 @@
+rml 1.0
+# Core identity fields only. Medical, consent, community-support, and school
+# relationships are out of scope for this slice; see gaps.md.
+entity Child
+  field First name
+    type string
+  end
+  field Middle name
+    type string
+    optional
+  end
+  field Last name
+    type string
+  end
+  field Preferred name
+    type string
+    optional
+  end
+  field Former name
+    type string
+    optional
+  end
+  field Date of birth
+    type date
+    optional
+  end
+  field Date of birth is predicted
+    type boolean
+  end
+  field CRN
+    type string
+    optional
+  end
+  field Place of birth
+    type string
+    optional
+  end
+  field Multiple births
+    type boolean
+  end
+  field Is school aged child
+    type boolean
+  end
+  field Show on bus list
+    type boolean
+  end
+  field Child number
+    type string
+  end
+end

@@ -1,0 +1,49 @@
+rml 1.0
+# Service-offering, operating-hours, and structure-node relationships are out
+# of scope for this slice; see gaps.md. The direct Centre/Room relationship
+# simplifies the legacy StructureNode-mediated link.
+entity Centre
+  field Name
+    type string
+  end
+  field Status
+    type enumeration "Centre status"
+  end
+  field Centre code
+    type string
+  end
+  field Approval id
+    type string
+    optional
+  end
+  field Cost centre
+    type string
+  end
+  field Phone number
+    type string
+    optional
+  end
+  field Email address
+    type string
+    optional
+  end
+  field Website url
+    type string
+    optional
+  end
+  field Max licenced capacity
+    type int32
+    optional
+  end
+  field Iana time zone
+    type string
+  end
+  relationship Addresses
+    target "Centre address"
+    cardinality many
+  end
+  relationship Rooms
+    target "Room"
+    cardinality many
+  end
+end

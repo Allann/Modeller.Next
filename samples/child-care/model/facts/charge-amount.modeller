@@ -1,0 +1,9 @@
+rml 1.0
+fact Booking was attended
+  type truth
+  export
+end
+fact Room session fee is configured
+  type truth
+  export
+end

@@ -1,0 +1,53 @@
+rml 1.0
+# An absence from a booked session of care. Non-chargeable-reason structure
+# is added in a later increment; see gaps.md.
+entity Absence
+  field Absence date
+    type date
+  end
+  field Start time
+    type time
+  end
+  field End time
+    type time
+  end
+  field Non chargeable
+    type boolean
+    optional
+  end
+  field Absence type
+    type enumeration "Absence type"
+  end
+  field Approved absence
+    type boolean
+    optional
+  end
+  field Absence document is held
+    type boolean
+    optional
+  end
+  relationship Child
+    target "Child"
+    cardinality one
+  end
+  relationship Adult
+    target "Adult"
+    cardinality one
+    optional
+  end
+  relationship Staff
+    target "User"
+    cardinality one
+    optional
+  end
+  relationship Confirmed by
+    target "Adult"
+    cardinality one
+    optional
+  end
+  relationship Absence reason
+    target "Absence reason"
+    cardinality one
+    optional
+  end
+end

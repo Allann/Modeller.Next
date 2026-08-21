@@ -1,0 +1,16 @@
+rml 1.0
+rule Determine absence chargeability
+  input "Absence is approved"
+  input "Absence document is held"
+  when all
+    fact "Absence is approved"
+    fact "Absence document is held"
+  end
+  conclusion Non chargeable
+  end
+  finding "Absence is approved" true absence.approved-confirmed
+  finding "Absence document is held" true absence.document-confirmed
+  finding "Absence is approved" missing absence.approval-required
+  finding "Absence document is held" missing absence.document-required
+  export
+end

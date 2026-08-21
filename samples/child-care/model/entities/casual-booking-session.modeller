@@ -1,0 +1,15 @@
+rml 1.0
+# A one-off booking session for a child on a specific date.
+entity Casual booking session
+  field Date
+    type date
+  end
+  relationship Room
+    target "Room"
+    cardinality one
+  end
+  relationship Session
+    target "Session"
+    cardinality one
+  end
+end

@@ -1,0 +1,9 @@
+rml 1.0
+enumeration Room status type
+  member Open
+    value 1
+  end
+  member Closed
+    value 2
+  end
+end

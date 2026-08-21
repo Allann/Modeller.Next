@@ -1,0 +1,12 @@
+rml 1.0
+enumeration Address type
+  member Residential
+    value 1
+  end
+  member Commercial
+    value 2
+  end
+  member Postal
+    value 3
+  end
+end

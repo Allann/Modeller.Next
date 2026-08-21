@@ -1,0 +1,22 @@
+{
+  "_comment": "Allow-list of ProjectReference edges, keyed by dependent -> [dependencies it may reference]. Seeded from the graph as of 2026-08-21 (aln.gauntlet setup) - review and tighten by hand; this only guarantees no NEW violations creep in, it does not vouch for the existing graph being correct.",
+  "allowedDependencies": {
+    "Modeller.AI": ["Modeller.Model", "Modeller.Validation"],
+    "Modeller.Api": ["Modeller.Workspace", "Modeller.Initiative", "Modeller.Initiative.OpenAICompatible"],
+    "Modeller.Cli": ["*"],
+    "Modeller.Contexts": ["Modeller.Model"],
+    "Modeller.Editor": ["Modeller.Parsing", "Modeller.Projections", "Modeller.GenerationWorkflow"],
+    "Modeller.Generation": ["Modeller.Contexts", "Modeller.Templates"],
+    "Modeller.GenerationWorkflow": ["Modeller.Generation", "Modeller.Rendering", "Modeller.Output"],
+    "Modeller.Initiative.OpenAICompatible": ["Modeller.Initiative"],
+    "Modeller.LanguageServer": ["Modeller.Editor", "Modeller.Workspace"],
+    "Modeller.Output": ["Modeller.Rendering"],
+    "Modeller.Parsing": ["Modeller.Contexts", "Modeller.Validation"],
+    "Modeller.Projections": ["Modeller.Model"],
+    "Modeller.Rendering": ["Modeller.Generation", "Modeller.Contexts", "Modeller.Model", "Modeller.Templates"],
+    "Modeller.Rules": ["Modeller.Contexts", "Modeller.Validation"],
+    "Modeller.Validation": ["Modeller.Contexts", "Modeller.Model"],
+    "Modeller.Workspace": ["Modeller.Parsing", "Modeller.Configuration", "Modeller.Projections"]
+  },
+  "forbidCycles": true
+}

@@ -1,0 +1,12 @@
+rml 1.0
+# The single financial account a family is responsible for.
+entity Family account
+  relationship Account
+    target "Account"
+    cardinality one
+  end
+  relationship Account holders
+    target "Adult"
+    cardinality many
+  end
+end

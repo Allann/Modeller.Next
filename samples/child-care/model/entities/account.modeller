@@ -1,0 +1,9 @@
+rml 1.0
+entity Account
+  field Account number
+    type string
+  end
+  field Account type
+    type enumeration "Account type"
+  end
+end

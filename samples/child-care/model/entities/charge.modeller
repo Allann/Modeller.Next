@@ -1,0 +1,26 @@
+rml 1.0
+# A charge raised against a family's account for a booking, synthesizing the
+# legacy AttendanceCharge/AttendanceChargeVersion pair into one entity for
+# this slice; see gaps.md.
+entity Charge
+  field Amount
+    type decimal(12,2)
+  end
+  relationship Booking
+    target "Booking"
+    cardinality one
+  end
+  relationship Account
+    target "Account"
+    cardinality one
+  end
+  relationship Charge type
+    target "Charge type"
+    cardinality one
+  end
+  relationship Charge reason
+    target "Charge reason"
+    cardinality one
+    optional
+  end
+end

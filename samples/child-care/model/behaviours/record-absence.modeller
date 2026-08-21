@@ -1,0 +1,15 @@
+rml 1.0
+behaviour Record absence
+  for "Booking"
+  requires "Determine absence chargeability"
+  outcome Absence recorded as non chargeable
+  end
+  outcome Absence recorded as chargeable
+  end
+  transition Mark booking absent
+    lifecycle "Booking lifecycle"
+    from "Planned"
+    to "Absent"
+    outcome "Absence recorded as non chargeable"
+  end
+end

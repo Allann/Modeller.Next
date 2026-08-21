@@ -1,0 +1,15 @@
+rml 1.0
+enumeration Care type
+  member CBC
+    value 1
+  end
+  member ASC
+    value 2
+  end
+  member BSC
+    value 3
+  end
+  member VAC
+    value 4
+  end
+end

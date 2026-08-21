@@ -1,0 +1,21 @@
+rml 1.0
+entity Room age group
+  field Max number of children for age
+    type int32
+  end
+  field Min age in months
+    type int32
+  end
+  field Max age in months
+    type int32
+  end
+  field Educator ratio
+    type int32
+  end
+  field Child ratio
+    type int32
+  end
+  field Eligible for preschool programs
+    type boolean
+  end
+end

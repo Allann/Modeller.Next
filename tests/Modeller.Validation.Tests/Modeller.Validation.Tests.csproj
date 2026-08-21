@@ -6,6 +6,7 @@
     <RootNamespace>Modeller.Validation.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
     <ProjectReference Include="../../src/Modeller.Conformance/Modeller.Conformance.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
@@ -16,11 +17,7 @@
     <ProjectReference Include="../../src/Modeller.Validation/Modeller.Validation.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="../../conformance/inputs/child-care-accs.context-package.v1.json"
-          Link="Fixtures/child-care-accs.context-package.v1.json"
-          CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../../conformance/fixtures/child-care/validation-unknown-fact.v1.json"
-          Link="Fixtures/validation-unknown-fact.v1.json"
-          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../conformance/inputs/child-care-accs.context-package.v1.json" Link="Fixtures/child-care-accs.context-package.v1.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../conformance/fixtures/child-care/validation-unknown-fact.v1.json" Link="Fixtures/validation-unknown-fact.v1.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

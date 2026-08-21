@@ -1,0 +1,26 @@
+rml 1.0
+# A session definition at the organisation level, e.g. "Before School Care".
+entity Session
+  field Name
+    type string
+  end
+  field Short name
+    type string
+  end
+  field Available start
+    type date
+  end
+  field Available end
+    type date
+    optional
+  end
+  field Start time
+    type time
+  end
+  field End time
+    type time
+  end
+  field Care type
+    type enumeration "Care type"
+  end
+end

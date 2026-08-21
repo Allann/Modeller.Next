@@ -1,0 +1,9 @@
+rml 1.0
+entity Charge reason
+  field Code
+    type string
+  end
+  field Description
+    type string
+  end
+end

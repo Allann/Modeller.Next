@@ -1,0 +1,15 @@
+rml 1.0
+behaviour Run billing for booking
+  for "Booking"
+  requires "Determine charge amount"
+  outcome Charge raised
+  end
+  outcome Charge deferred
+  end
+  transition Raise charge
+    lifecycle "Booking lifecycle"
+    from "Attended"
+    to "Billed"
+    outcome "Charge raised"
+  end
+end

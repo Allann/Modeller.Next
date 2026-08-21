@@ -6,6 +6,7 @@
     <RootNamespace>Modeller.Contexts.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
@@ -15,17 +16,9 @@
     <ProjectReference Include="../../src/Modeller.Contexts/Modeller.Contexts.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="../../conformance/inputs/child-care-accs.context-package.v1.json"
-          Link="Fixtures/child-care-accs.context-package.v1.json"
-          CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../../conformance/inputs/child-care-accs-decision-table.context-package.v1.json"
-          Link="Fixtures/child-care-accs-decision-table.context-package.v1.json"
-          CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../../conformance/fixtures/child-care/context-package-resolution.v1.json"
-          Link="Fixtures/context-package-resolution.v1.json"
-          CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../../conformance/compatibility/unknown-future-persistence-schema.v1.json"
-          Link="Fixtures/unknown-future-persistence-schema.v1.json"
-          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../conformance/inputs/child-care-accs.context-package.v1.json" Link="Fixtures/child-care-accs.context-package.v1.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../conformance/inputs/child-care-accs-decision-table.context-package.v1.json" Link="Fixtures/child-care-accs-decision-table.context-package.v1.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../conformance/fixtures/child-care/context-package-resolution.v1.json" Link="Fixtures/context-package-resolution.v1.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../conformance/compatibility/unknown-future-persistence-schema.v1.json" Link="Fixtures/unknown-future-persistence-schema.v1.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

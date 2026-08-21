@@ -1,0 +1,9 @@
+rml 1.0
+enumeration Account type
+  member Family
+    value 1
+  end
+  member Third party
+    value 2
+  end
+end

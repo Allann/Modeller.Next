@@ -1,0 +1,18 @@
+rml 1.0
+enumeration Centre status
+  member Opening
+    value 1
+  end
+  member Enrolling
+    value 2
+  end
+  member Operating
+    value 3
+  end
+  member Closing
+    value 4
+  end
+  member Closed
+    value 5
+  end
+end

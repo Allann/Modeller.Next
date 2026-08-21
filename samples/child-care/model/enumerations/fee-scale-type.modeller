@@ -1,0 +1,12 @@
+rml 1.0
+enumeration Fee scale type
+  member Days per week
+    value 1
+  end
+  member Sessions per day
+    value 2
+  end
+  member Single day
+    value 3
+  end
+end

@@ -1,0 +1,18 @@
+rml 1.0
+# A recurring weekly booking pattern entry, e.g. "every Tuesday, week 1".
+entity Routine booking session
+  field Cycle week number
+    type int32
+  end
+  field Day
+    type enumeration "Week day"
+  end
+  relationship Session
+    target "Session"
+    cardinality one
+  end
+  relationship Room
+    target "Room"
+    cardinality one
+  end
+end

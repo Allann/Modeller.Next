@@ -1,0 +1,16 @@
+rml 1.0
+rule Determine charge amount
+  input "Booking was attended"
+  input "Room session fee is configured"
+  when all
+    fact "Booking was attended"
+    fact "Room session fee is configured"
+  end
+  conclusion Chargeable
+  end
+  finding "Booking was attended" true charge.attendance-confirmed
+  finding "Room session fee is configured" true charge.fee-schedule-confirmed
+  finding "Booking was attended" missing charge.attendance-required
+  finding "Room session fee is configured" missing charge.fee-schedule-required
+  export
+end

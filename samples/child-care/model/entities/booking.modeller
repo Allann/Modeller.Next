@@ -1,6 +1,13 @@
 rml 1.0
 # A Booking of attendance for a child at a centre for a session.
 entity Booking
+  lifecycle Booking lifecycle
+    stage Planned
+    stage Attending
+    stage Attended
+    stage Absent
+    stage Billed
+  end
   field Booking date
     type date
   end

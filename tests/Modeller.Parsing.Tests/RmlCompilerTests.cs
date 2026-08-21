@@ -38,6 +38,44 @@ public sealed class RmlCompilerTests
     }
 
     [Fact]
+    public void Compile_reports_a_precise_diagnostic_when_two_declarations_share_a_name()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Booking
+            end
+            behaviour Record absence
+              for "Booking"
+              outcome Absence recorded as non chargeable
+              end
+              outcome Absence recorded as chargeable
+              end
+              transition Record absence
+                lifecycle "Booking lifecycle"
+                from "Planned"
+                to "Absent"
+                outcome "Absence recorded as non chargeable"
+              end
+            end
+            """;
+
+        var result = DefinitionParser.Parse(
+            [new SourceDocument("model/behaviours/record-absence.modeller", source)],
+            ParseOptions.EditorLanguage1,
+            TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Package);
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("rml.name.duplicate", diagnostic.Code);
+        Assert.Contains("Record absence", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Equal(13, diagnostic.Location!.Line);
+    }
+
+    [Fact]
     public void Rename_updates_a_matching_declaration_line_and_preserves_indentation_and_kind()
     {
         var edit = RmlCompiler.Rename("  context Child Care\nend\n", "Child Care", "Family Care");

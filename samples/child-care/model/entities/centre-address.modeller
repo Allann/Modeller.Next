@@ -1,0 +1,24 @@
+rml 1.0
+# The State reference-data relationship is simplified to a plain field for
+# this slice; see gaps.md.
+entity Centre address
+  field Address type
+    type enumeration "Address type"
+  end
+  field Address line 1
+    type string
+  end
+  field Address line 2
+    type string
+    optional
+  end
+  field Suburb
+    type string
+  end
+  field State
+    type string
+  end
+  field Postcode
+    type string
+  end
+end

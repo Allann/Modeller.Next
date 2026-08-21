@@ -7,13 +7,31 @@ compatibility target.
 
 ## Current slice
 
-The first slice models an ACCS determination application:
+The model now covers two capability areas built around a shared care-booking
+graph, so it stands as both the decision-heavy business-domain flagship and
+the multiple-downstream-projections flagship.
+
+**ACCS determination** — the original slice:
 
 - Draft and Submitted lifecycle stages;
 - active-enrolment and supporting-evidence Facts;
 - the Determine ACCS eligibility Rule;
 - submission and rejection Outcomes; and
 - the guarded transition produced by a successful submission.
+
+**Booking, attendance, and billing** — a broader sweep ported from the legacy
+`M:\Modeller\samples\child-care-old` sample (see `gaps.md` for what was
+simplified or left out):
+
+- a Booking lifecycle (Planned → Attending → Attended/Absent → Billed) tied
+  to its Routine/Casual booking sessions, Arrangement, Session, Room, and
+  Child structure;
+- the Determine absence chargeability Rule and Record absence Behaviour;
+- the Determine charge amount Rule and Run billing for booking Behaviour,
+  chained off a Booking's attendance outcome;
+- Centre/Room/Room age group structure for a richer entity graph; and
+- Account, Family account, Charge, Charge type, and Charge reason for the
+  billing side.
 
 Compile and validate the complete declared model with a generation preview:
 
@@ -29,6 +47,24 @@ dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care
 - `templates/python/` is the Python pack catalogue; `api-project/` is a FastAPI pack that mirrors `templates/csharp/api-project/` scope-for-scope.
 - `expected/` contains the deterministic golden output.
 - `generated/` contains the current manifest-owned output.
+- `gaps.md` records what was simplified or left out when porting from the
+  legacy sample, and where the six diagram projection kinds stand for this
+  workspace.
+
+## Projections
+
+List the available roots for any of the six diagram projection kinds, then
+project one:
+
+```powershell
+dotnet run --project src/Modeller.Cli -- project --workspace samples/child-care --view Structural
+dotnet run --project src/Modeller.Cli -- project --workspace samples/child-care --view Structural --root <id>
+```
+
+`Lifecycle`, `RuleDecision`, `BehaviourMap`, and `Structural` all render real,
+non-trivial content for this workspace. `ContextMap` and
+`CausalityAndEventFlow` currently render minimally for any RML 1.0 model —
+see `gaps.md` for why.
 
 ## Acceptance destination
 

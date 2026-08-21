@@ -1,0 +1,63 @@
+rml 1.0
+# The fee schedule charged for a Room/Session combination.
+entity Room session fee
+  field Name
+    type string
+  end
+  field Is active
+    type boolean
+  end
+  field Fee scale type
+    type enumeration "Fee scale type"
+  end
+  field Schedule 1 amount
+    type decimal(12,2)
+  end
+  field Schedule 2 amount
+    type decimal(12,2)
+  end
+  field Schedule 3 amount
+    type decimal(12,2)
+  end
+  field Schedule 4 amount
+    type decimal(12,2)
+  end
+  field Schedule 5 amount
+    type decimal(12,2)
+  end
+  field Schedule 6 amount
+    type decimal(12,2)
+  end
+  field Schedule 7 amount
+    type decimal(12,2)
+  end
+  field Apply early charge
+    type boolean
+  end
+  field Early charge amount
+    type decimal(12,2)
+  end
+  field Early charge frequency
+    type int32
+  end
+  field Apply late charge
+    type boolean
+  end
+  field Late charge amount
+    type decimal(12,2)
+  end
+  field Late charge frequency
+    type int32
+  end
+  field Grace period in minutes
+    type int32
+  end
+  relationship Session
+    target "Session"
+    cardinality one
+  end
+  relationship Room
+    target "Room"
+    cardinality one
+  end
+end

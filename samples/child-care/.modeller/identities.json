@@ -10,14 +10,59 @@
       "0191f6d4-4ea0-7000-8000-000000000002", "0191f6d4-4ea0-7000-8000-000000000003",
       "0191f6d4-4ea0-7000-8000-000000000004", "0191f6d4-4ea0-7000-8000-000000000005"
     ],
-    "model/entities/booking-relationship-targets.modeller": [
-      "0191f6d4-4ea0-7000-8000-000000000200", "0191f6d4-4ea0-7000-8000-000000000201",
-      "0191f6d4-4ea0-7000-8000-000000000202", "0191f6d4-4ea0-7000-8000-000000000203",
-      "0191f6d4-4ea0-7000-8000-000000000204", "0191f6d4-4ea0-7000-8000-000000000205",
-      "0191f6d4-4ea0-7000-8000-000000000206", "0191f6d4-4ea0-7000-8000-000000000207",
-      "0191f6d4-4ea0-7000-8000-000000000208", "0191f6d4-4ea0-7000-8000-000000000209"
+    "model/entities/absence-reason.modeller": [
+      "01a02238-b945-724e-a241-e09961b5c4a6", "01a02238-b945-7cd5-8074-ec279171b32f"
+    ],
+    "model/entities/account.modeller": [
+      "01a0223e-3db8-7c6b-8259-b43146db6b79", "01a0223e-3db8-7c6a-a697-022a5b19b0d9",
+      "01a0223e-3db8-7d2b-92a9-905f9de7f280"
+    ],
+    "model/entities/family-account.modeller": [
+      "01a0223e-3db9-7f14-8d91-8cf264b61c50", "01a0223e-3db9-7a92-8c41-dde4efbc1b58",
+      "01a0223e-3db9-7e74-a4cc-e912c2201854"
+    ],
+    "model/entities/charge-type.modeller": [
+      "01a0223e-3dba-718e-9935-aa6f066ec483", "01a0223e-3dba-75ca-abf5-da85db3ec951",
+      "01a0223e-3dba-73b0-b019-424dd5eb8e2b"
+    ],
+    "model/entities/charge-reason.modeller": [
+      "01a0223e-3dbb-7d3d-b73a-1db1e3a595b4", "01a0223e-3dbb-7de9-b775-cff30bd49c3c",
+      "01a0223e-3dbb-790c-8e77-9b9f40798542"
+    ],
+    "model/entities/charge.modeller": [
+      "01a0223e-3dbc-7f27-92b2-54ff0ad846db", "01a0223e-3dbc-7610-a728-df4587ab1575",
+      "01a0223e-3dbc-7441-acd3-0426c6f3078e", "01a0223e-3dbc-727d-a4a7-7d97098649bc",
+      "01a0223e-3dbc-7672-8633-13e259873316", "01a0223e-3dbc-7620-8f66-2b2820e44398"
+    ],
+    "model/entities/absence.modeller": [
+      "01a02238-b945-72f4-95ad-a735ca471ab1", "01a02238-b945-7737-804a-f13052ed7ec0",
+      "01a02238-b945-7d83-b588-ef1b4db506c2", "01a02238-b945-78ca-9a0d-5f4e9f9f4928",
+      "01a02238-b945-7ba6-a593-8ace01c69d4d", "01a02238-b945-7317-9f0d-64e6c1a89182",
+      "01a02238-b945-7ea8-8a39-d4342bd2a54f", "01a02238-b945-73b2-8af2-3a9975a71c3c",
+      "01a02238-b945-7ff2-b229-874909d830b5", "01a02238-b945-7938-8d2b-5eb76124eb24",
+      "01a02238-b945-70ba-a7ea-5a8f2476e94c", "01a02238-b945-7b29-b6f6-4f57ed065d59",
+      "01a02238-b945-70ef-bc71-bc26e2dd1f82"
+    ],
+    "model/entities/arrangement.modeller": [
+      "01a02238-b945-7f43-be89-72890b06d62d", "01a02238-b945-74db-a2eb-6c458693f605",
+      "01a02238-b945-7d98-9b06-96c18dc7e121", "01a02238-b945-711e-9d93-ad5482ff57ce",
+      "01a02238-b945-77cc-83ab-ad22f3594edc", "01a02238-b945-76f6-a618-91961a616649",
+      "01a02238-b945-7052-b039-86b4469c7e8b", "01a02238-b945-7838-bd4f-b60518bebc07",
+      "01a02238-b945-7233-b0bc-ab29469fdab5"
+    ],
+    "model/entities/attendance.modeller": [
+      "01a02238-b946-7006-b2e4-cc308f08e213", "01a02238-b946-7b40-a11b-e03f78164f87",
+      "01a02238-b946-7ce7-ae92-dae0afa4d006", "01a02238-b946-7bab-a26f-9a8ebfab2473",
+      "01a02238-b946-77b2-970e-36326b6655bd", "01a02238-b946-7c5d-ae12-c654fcb0c533",
+      "01a02238-b946-7ad2-87f4-15123f9cff01", "01a02238-b946-7ee9-a598-5ab77234ea8f",
+      "01a02238-b946-7cab-9577-44d52235dbf8", "01a02238-b946-7d7f-8b3e-c9054b528382",
+      "01a02238-b946-76ae-8092-3f4a38301581"
     ],
     "model/entities/booking.modeller": [
+      "01a0223b-0cdb-79db-86e6-c38053894996", "01a0223b-0cde-7be8-a017-82396cc605ee",
+      "01a0223b-0cde-789e-8589-a97268d9ca47", "01a0223b-0cde-7381-aba8-1c38e54a1dfb",
+      "01a0223b-0cde-7abc-baee-0b07a57df93d",
+      "01a0223e-3db5-78bc-b0ef-7451f0f27dc7",
       "0191f6d4-4ea0-7000-8000-000000000100", "0191f6d4-4ea0-7000-8000-000000000101",
       "0191f6d4-4ea0-7000-8000-000000000102", "0191f6d4-4ea0-7000-8000-000000000103",
       "0191f6d4-4ea0-7000-8000-000000000104", "0191f6d4-4ea0-7000-8000-000000000105",
@@ -32,6 +77,91 @@
       "0191f6d4-4ea0-7000-8000-000000000125", "0191f6d4-4ea0-7000-8000-000000000126",
       "0191f6d4-4ea0-7000-8000-000000000127", "0191f6d4-4ea0-7000-8000-000000000128",
       "0191f6d4-4ea0-7000-8000-000000000129"
+    ],
+    "model/entities/casual-booking-session.modeller": [
+      "01a02238-b945-768d-96f2-1d4746493818", "01a02238-b945-7761-86e0-981f0f892e7b",
+      "01a02238-b945-7d5c-ae16-1e470437d43c", "01a02238-b945-74ac-87cf-333a6e8366a1"
+    ],
+    "model/entities/child.modeller": [
+      "01a02238-b946-7557-8268-8b4dfc13de44", "01a02238-b946-763b-9f97-6bc69196dc6d",
+      "01a02238-b946-75af-b115-1674adf61d73", "01a02238-b946-764a-abb8-4b27bedd2d24",
+      "01a02238-b946-777b-ad6c-a5e5c6bebbf1", "01a02238-b946-7065-836b-b0e8a964a915",
+      "01a02238-b946-706c-8215-07144682d0eb", "01a02238-b946-79b7-8b27-45b27f1f825f",
+      "01a02238-b946-78e5-8389-f060876a841e", "01a02238-b946-70ae-b16b-59527d221deb",
+      "01a02238-b946-71db-b405-5de7bca6eaf5", "01a02238-b946-7ccf-ab68-23675c3d2ae4",
+      "01a02238-b946-7368-8271-b3514c2e90a5", "01a02238-b946-75cc-8725-17eafca16e04"
+    ],
+    "model/entities/reference-stubs.modeller": [
+      "01a02238-b945-7e07-bbb7-e8b95dd7aab0", "01a02238-b945-7110-8d4f-d55cace51c53"
+    ],
+    "model/entities/room-session-fee.modeller": [
+      "01a02238-b945-7f22-ac5c-af70e3c41eb7", "01a02238-b945-7475-88d5-bfda35797668",
+      "01a02238-b945-79d3-9a2e-981bed8943f1", "01a02238-b945-77fb-8137-0609179f881a",
+      "01a02238-b945-7839-958e-c14d94caf0cb", "01a02238-b945-7fcf-98ab-86790f4814a0",
+      "01a02238-b945-7543-8912-82a82bb4ddab", "01a02238-b945-7a4d-8074-5aa22362ecf5",
+      "01a02238-b945-74b7-8243-aa32e3e0d265", "01a02238-b945-7847-a7b2-161c91f69c15",
+      "01a02238-b945-71f5-bfa3-e213f927b711", "01a02238-b945-7806-8d75-6677083abcf6",
+      "01a02238-b945-7ec0-8092-389efca2a250", "01a02238-b945-7656-8d56-153d7c88a720",
+      "01a02238-b945-7139-a681-0935d6162ac4", "01a02238-b945-78a2-abc1-9c7cd7c84301",
+      "01a02238-b945-70b7-b587-272aff829156", "01a02238-b945-7db9-862a-22b29da8022a",
+      "01a02238-b945-762e-85d6-ff2cab0a9576", "01a02238-b945-7ddb-a777-157317e19a10"
+    ],
+    "model/entities/room.modeller": [
+      "01a02238-b945-789f-9e18-b2b7e385afeb", "01a02238-b945-7846-9726-8902a355ff40",
+      "01a02238-b945-7651-bc7f-c7b620c40798", "01a02238-b945-7feb-a027-99ef98f15bc3",
+      "01a02238-b945-7b57-97e9-ffffac69a8c7", "01a02238-b945-746d-850e-22150ea693a0",
+      "01a02238-b945-72c8-9014-3dabe887963e", "01a02238-b945-7393-8483-1115854f1e87",
+      "01a02238-b945-78d9-8f6b-43627617dd66",
+      "01a0223f-bc55-788f-8a1d-0fce1e7d4326", "01a0223f-bc56-7fbf-87a8-2ebb9538fb6d"
+    ],
+    "model/entities/centre.modeller": [
+      "01a0223f-bc54-7737-b3b4-d552e3f6634b", "01a0223f-bc54-76fd-a3c3-ae78060aaea8",
+      "01a0223f-bc54-7f86-85d5-33258d46f4f9", "01a0223f-bc54-7197-bcb1-3d93efd2b7be",
+      "01a0223f-bc54-74a2-acf4-00fe8f980ac2", "01a0223f-bc55-7e1b-b071-1e6e98f03626",
+      "01a0223f-bc55-7524-a85a-fd4beedc7956", "01a0223f-bc55-7660-bd41-ac8b4671eb53",
+      "01a0223f-bc55-717f-97b9-13b8527d8e0a", "01a0223f-bc55-702c-840e-242cb72b812d",
+      "01a0223f-bc55-7c20-9c7b-e50bcfb3d7f0", "01a0223f-bc55-785d-a2f2-a661743c2aea",
+      "01a0223f-bc55-7818-b50b-4ae5f7dfe748"
+    ],
+    "model/entities/centre-address.modeller": [
+      "01a0223f-bc51-712d-b953-62913430b9db", "01a0223f-bc51-7818-9aca-a69816a24c5b",
+      "01a0223f-bc51-7ba3-b09d-df688003fad3", "01a0223f-bc52-778d-9e72-72f1ff01bed9",
+      "01a0223f-bc52-747d-a61f-f4e82fe74688", "01a0223f-bc52-7b56-a9b8-2c9a919c6360",
+      "01a0223f-bc52-73e0-a885-a93537587ad1"
+    ],
+    "model/entities/room-age-group.modeller": [
+      "01a0223f-bc53-765d-be94-638c1735e949", "01a0223f-bc53-74c9-a41d-13e6b0dda586",
+      "01a0223f-bc53-765b-803e-b383d7f782e2", "01a0223f-bc53-7686-a52f-30ae41fff1ec",
+      "01a0223f-bc53-7f2c-88b5-f25cfe5a209e", "01a0223f-bc54-7c8d-9f2b-f45f2c046755",
+      "01a0223f-bc54-7de8-bfd2-3445d0b1ef18"
+    ],
+    "model/entities/routine-booking-session.modeller": [
+      "01a02238-b945-7148-b2a9-915c1db6109b", "01a02238-b945-7003-9977-1da86a0fa23a",
+      "01a02238-b945-72a9-b885-e219a78c3a83", "01a02238-b945-7ecd-978d-b842a2b330f2",
+      "01a02238-b945-792e-a856-5396d4d937a9"
+    ],
+    "model/entities/session.modeller": [
+      "01a02238-b945-7a46-9198-0c4495a0852c", "01a02238-b945-7437-8868-87f858a35901",
+      "01a02238-b945-78dc-a92c-4938c9efe51e", "01a02238-b945-7581-a69c-aeb23a5bcd67",
+      "01a02238-b945-7a07-ac10-dce5c7022290", "01a02238-b945-76fb-a7b4-bd1a0f6d20c8",
+      "01a02238-b945-7b9f-a5b4-02297c14d266", "01a02238-b945-77a5-b8f8-8dfcffbca1cc"
+    ],
+    "model/enumerations/account-type.modeller": [
+      "01a0223e-3db7-72b7-9299-b7ea0acf91a2", "01a0223e-3db7-7ace-a856-3d04043ceb58",
+      "01a0223e-3db7-7ce9-b2bb-39e308f0055c"
+    ],
+    "model/enumerations/address-type.modeller": [
+      "01a0223f-bc50-7c05-a7fb-4f9ffb1a1a92", "01a0223f-bc50-70c4-a817-fa90c86d512d",
+      "01a0223f-bc50-77bf-8779-a5df03aeaa47", "01a0223f-bc50-7e22-9b23-8ba81e1e70d7"
+    ],
+    "model/enumerations/centre-status.modeller": [
+      "01a0223f-bc4d-79c4-82e1-815b88896ce4", "01a0223f-bc4e-7bd4-8846-bcbb0bfcf737",
+      "01a0223f-bc4e-7ff2-b6a5-43855e082b4c", "01a0223f-bc4f-719c-ac95-a97ddd836036",
+      "01a0223f-bc4f-7b1e-9682-f4239a631f8e", "01a0223f-bc4f-775b-be0f-9a420cae463c"
+    ],
+    "model/enumerations/absence-type.modeller": [
+      "01a02238-b944-788f-b2f6-d0845e53d3ac", "01a02238-b944-78ce-a5e4-595546325134",
+      "01a02238-b944-7ecb-826c-0c19a0351ac4"
     ],
     "model/enumerations/arrangement-type.modeller": [
       "0191f6d4-4ea0-7000-8000-000000000330", "0191f6d4-4ea0-7000-8000-000000000331",
@@ -57,11 +187,54 @@
       "0191f6d4-4ea0-7000-8000-000000000324", "0191f6d4-4ea0-7000-8000-000000000325",
       "0191f6d4-4ea0-7000-8000-000000000326"
     ],
+    "model/enumerations/care-type.modeller": [
+      "01a02238-b944-7f98-9f3e-434577406957", "01a02238-b944-71d3-95ef-219eab84c593",
+      "01a02238-b944-7ea8-ab04-4ae863b92d09", "01a02238-b944-73a9-853a-186786dd305e",
+      "01a02238-b944-77b7-911c-fc9fe9126fc9"
+    ],
+    "model/enumerations/fee-scale-type.modeller": [
+      "01a02238-b944-73a0-8c02-b80b725d3c1f", "01a02238-b944-7b06-88f6-e76d22953cbc",
+      "01a02238-b944-7af8-8a11-88978187b43f", "01a02238-b944-75d9-8d59-c99639b6283d"
+    ],
+    "model/enumerations/group-room-by.modeller": [
+      "01a02238-b944-763d-b604-84719bffdb38", "01a02238-b944-7291-bb55-cfbe498387ce",
+      "01a02238-b944-7ae4-9ca9-e8aea47a00ab"
+    ],
+    "model/enumerations/room-status-type.modeller": [
+      "01a02238-b944-7870-91e6-c9214190381b", "01a02238-b944-7ef7-99fe-5351e5f2de62",
+      "01a02238-b944-7937-99c0-ff0111498339"
+    ],
+    "model/enumerations/week-day.modeller": [
+      "01a02238-b940-7a86-8052-0abd5135b2fe", "01a02238-b943-7dbb-a91b-9eb5bc571ef5",
+      "01a02238-b943-71e4-bc75-fe7658785c73", "01a02238-b943-7efe-b1b3-d294c2bdc6eb",
+      "01a02238-b943-7922-afcd-c2d8b1f0d056", "01a02238-b943-7031-a3dd-c25ab7b7f75d",
+      "01a02238-b943-7bb4-8599-3de8c21d4520", "01a02238-b943-73b7-b279-ef41d1e0457f"
+    ],
     "model/facts/accs-eligibility.modeller": [
       "0191f6d4-4ea0-7000-8000-000000000006", "0191f6d4-4ea0-7000-8000-000000000007"
     ],
+    "model/facts/absence-chargeability.modeller": [
+      "01a0223b-0cdf-7105-b346-bf0838944f7b", "01a0223b-0cdf-78c7-a797-39dacd50e21c"
+    ],
+    "model/facts/charge-amount.modeller": [
+      "01a0223e-3dbd-7a45-98a9-05a3e16a12e0", "01a0223e-3dbd-71c1-bc2f-901c540b9b5a"
+    ],
     "model/rules/determine-accs-eligibility.modeller": [
       "0191f6d4-4ea0-7000-8000-000000000008", "0191f6d4-4ea0-7000-8000-000000000009"
+    ],
+    "model/rules/determine-absence-chargeability.modeller": [
+      "01a0223b-0ce0-723d-b964-e6dc9eaeda59", "01a0223b-0ce0-7fba-8eb4-fa1c2b4bda81"
+    ],
+    "model/rules/determine-charge-amount.modeller": [
+      "01a0223e-3dbd-70a6-98d9-d28f64fc3fb5", "01a0223e-3dbd-792b-9686-6f0319dfd302"
+    ],
+    "model/behaviours/record-absence.modeller": [
+      "01a0223b-0ce1-78c4-9a79-18b59c917eeb", "01a0223b-0ce1-7f9d-96d9-1d2aaf9ddbcd",
+      "01a0223b-0ce1-7e35-9cbf-bec6a3ad8366", "01a0223b-0ce1-7dfa-b9b2-e75053f640df"
+    ],
+    "model/behaviours/run-billing-for-booking.modeller": [
+      "01a0223e-3dbe-7f5a-be1a-e6fc07378435", "01a0223e-3dbe-7cc8-84a2-3c08e8060118",
+      "01a0223e-3dbe-7f12-b6f0-1611187a3d87", "01a0223e-3dbe-7988-8fab-3f28c167dd2d"
     ]
   }
 }

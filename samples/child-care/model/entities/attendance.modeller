@@ -1,0 +1,43 @@
+rml 1.0
+entity Attendance
+  field Date
+    type date
+  end
+  field Time in
+    type time
+  end
+  field Time out
+    type time
+    optional
+  end
+  field In authorised
+    type boolean
+  end
+  field Out authorised
+    type boolean
+  end
+  relationship Child
+    target "Child"
+    cardinality one
+  end
+  relationship Adult in
+    target "Adult"
+    cardinality one
+    optional
+  end
+  relationship Adult out
+    target "Adult"
+    cardinality one
+    optional
+  end
+  relationship Staff in
+    target "User"
+    cardinality one
+    optional
+  end
+  relationship Staff out
+    target "User"
+    cardinality one
+    optional
+  end
+end

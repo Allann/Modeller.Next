@@ -1,0 +1,37 @@
+rml 1.0
+# A physical room at a centre.
+entity Room
+  field Room number
+    type int32
+  end
+  field Name
+    type string
+  end
+  field Group room by
+    type enumeration "Group room by"
+  end
+  field Is default OSHC room
+    type boolean
+  end
+  field Room description
+    type string
+  end
+  field Provides preschool activities
+    type boolean
+  end
+  field Notes
+    type string
+    optional
+  end
+  field Status
+    type enumeration "Room status type"
+  end
+  relationship Age groups
+    target "Room age group"
+    cardinality many
+  end
+  relationship Centre
+    target "Centre"
+    cardinality one
+  end
+end

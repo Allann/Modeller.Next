@@ -1,0 +1,9 @@
+rml 1.0
+enumeration Absence type
+  member Holiday
+    value 1
+  end
+  member Absent
+    value 2
+  end
+end

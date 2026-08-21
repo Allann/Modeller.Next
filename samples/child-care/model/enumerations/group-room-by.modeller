@@ -1,0 +1,9 @@
+rml 1.0
+enumeration Group room by
+  member Age group
+    value 1
+  end
+  member Session
+    value 2
+  end
+end
