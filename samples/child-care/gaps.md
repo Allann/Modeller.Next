@@ -32,9 +32,12 @@ every entity. What was simplified or left out, by area:
 `ContextMap` and `CausalityAndEventFlow` are implemented (issue #64) but stay
 minimal for any RML 1.0 model, not specifically this one:
 
-- RML 1.0 supports exactly one `context` declaration per workspace, so
-  `ContextMap` — which shows cross-context relationships — always renders a
-  single node with no edges until the language grows multi-context support.
+- RML 1.0 now supports multiple `context` declarations per workspace and
+  cross-context `import`s between them (issue #120), so `ContextMap` can show
+  a real dependency edge. This sample stays single-context by choice — see
+  the Studio Playground's child-care example for a version with a second
+  "Centre Operations" context — so `ContextMap` still renders a single node
+  with no edges here specifically, not because the language can't do more.
 - RML 1.0's `behaviour` grammar has no syntax for declaring published events
   or effects, so `CausalityAndEventFlow` — which walks `BehaviourDefinition.PublishedEvents`
   — always renders an empty graph until events are exposed to authors.
