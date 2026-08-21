@@ -198,11 +198,15 @@ public sealed class WorkspaceAnalysisPipeline(ILogger<WorkspaceAnalysisPipeline>
     private static IReadOnlyList<RootSummaryDto> ComputeRoots(AnalyzedWorkspace analyzed)
     {
         var revision = analyzed.Package.AuthoredRevision;
-        return [.. new[] { new RootSummaryDto(revision.Id.ToString(), ViewKind.Structural, revision.Name.Value, revision.Slug.Value) }
+        ViewKind[] contextRootedViews = [ViewKind.Structural, ViewKind.CausalityAndEventFlow, ViewKind.ContextMap];
+        return [.. contextRootedViews
+            .Select(kind => new RootSummaryDto(revision.Id.ToString(), kind, revision.Name.Value, revision.Slug.Value))
             .Concat(revision.Definitions.OfType<EntityDefinition>().Where(entity => entity.Lifecycle is not null)
-            .Select(entity => new RootSummaryDto(entity.Id.ToString(), ViewKind.Lifecycle, entity.Name.Value, entity.Slug.Value))
+                .Select(entity => new RootSummaryDto(entity.Id.ToString(), ViewKind.Lifecycle, entity.Name.Value, entity.Slug.Value)))
+            .Concat(revision.Definitions.OfType<EntityDefinition>()
+                .Select(entity => new RootSummaryDto(entity.Id.ToString(), ViewKind.BehaviourMap, entity.Name.Value, entity.Slug.Value)))
             .Concat(revision.Definitions.OfType<RuleDefinition>()
-                .Select(rule => new RootSummaryDto(rule.Id.ToString(), ViewKind.RuleDecision, rule.Name.Value, rule.Slug.Value))))
+                .Select(rule => new RootSummaryDto(rule.Id.ToString(), ViewKind.RuleDecision, rule.Name.Value, rule.Slug.Value)))
             .OrderBy(root => root.Slug, StringComparer.Ordinal)
             .Take(RequestLimits.MaximumRoots)];
     }

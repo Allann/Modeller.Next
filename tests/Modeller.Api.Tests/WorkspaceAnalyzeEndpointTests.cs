@@ -281,6 +281,23 @@ public sealed class WorkspaceAnalyzeEndpointTests : IClassFixture<WebApplication
     }
 
     [Fact]
+    public async Task Analyze_discovers_a_root_for_every_supported_view_kind()
+    {
+        // Regression test for 2026-08-20: ComputeRoots (the analyze endpoint's root-discovery,
+        // mirrored from the CLI's `project --view <kind>`) was never updated when BehaviourMap,
+        // CausalityAndEventFlow, and ContextMap shipped, so those three view kinds never had a
+        // discoverable root even though DiagramProjector and SupportedViewKinds both supported
+        // them — the playground's root dropdown stayed permanently empty for them in production.
+        using var client = _factory.CreateClient();
+        using var response = await client.PostAsJsonAsync("/v1/workspace/analyze", ReferenceWorkspaceRequest(), ApiJson.Options, TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadFromJsonAsync<WorkspaceAnalyzeResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(body);
+        foreach (var kind in Enum.GetValues<ViewKind>())
+            Assert.Contains(body.Roots, root => root.Kind == kind);
+    }
+
+    [Fact]
     public async Task Analyze_returns_a_deterministic_owned_outline_without_echoing_source_content()
     {
         const string source = """
