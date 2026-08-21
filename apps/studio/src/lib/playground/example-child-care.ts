@@ -2,10 +2,21 @@ import type { ConfigurationDto, WorkspaceDocumentDto } from './api-client';
 
 // A small browser-safe copy of the canonical samples/child-care vertical slice.
 // Keep the source text aligned with that sample when its accepted model changes.
+// context.modeller additionally declares "Centre Operations", importing the
+// exported "Active enrolment exists" fact from "Child Care" — samples/child-care
+// itself stays single-context (see samples/child-care/gaps.md), but the
+// playground demonstrates the multi-context/cross-context-import capability
+// from issue #120 since that's exactly what a visitor would want to see.
 export const EXAMPLE_CHILD_CARE_DOCUMENTS: readonly WorkspaceDocumentDto[] = [
   { path: 'model/context.modeller', content: `rml 1.0
 context Child Care
   version 1.0.0
+end
+context Centre Operations
+  version 1.0.0
+  import "Active enrolment exists"
+    from "Child Care"
+  end
 end
 ` },
   { path: 'model/entities/accs-determination-application.modeller', content: `rml 1.0
