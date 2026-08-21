@@ -1,0 +1,18 @@
+# Both apps/studio and apps/docs deploy workflows run `vercel deploy` from the repo root (the
+# Vercel project's own Root Directory setting handles scoping the build, but the upload step
+# itself walks from cwd). The root .gitignore's build-output patterns are anchored to the repo
+# root (e.g. `/.next/`), so they never exclude apps/*/.next — and those directories can hold
+# multi-gigabyte Turbopack dev-cache blobs once Playwright's e2e suite has spun up a few dev
+# servers, well past Vercel's 100MB per-file upload cap. Mirror the build-output excludes here,
+# unanchored, so they apply at any depth regardless of which app is deploying.
+node_modules
+.next
+.next-playground
+.next-playground-local
+.next-case-study
+server-bin
+bin
+obj
+test-results
+playwright-report
+*.tsbuildinfo
