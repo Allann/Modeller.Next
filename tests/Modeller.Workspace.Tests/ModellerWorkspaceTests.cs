@@ -375,6 +375,202 @@ public sealed class ModellerWorkspaceTests
             Assert.Equal(identities, reExported.Documents[path]);
     }
 
+    // Verbatim copies of apps/studio/src/lib/playground/example-ordering.ts and
+    // example-child-care.ts, each with a second context + import appended to context.modeller —
+    // exactly the edit a Studio Playground user makes by hand. These exist because every earlier
+    // multi-context test used a small synthetic fixture built context-first; none reproduced the
+    // playground's actual document layout (context.modeller sorting alphabetically AFTER
+    // behaviours/, entities/, facts/, rules/) until a live user hit the ownership bug this guards
+    // against. If either example's real content in apps/studio changes, update these to match.
+
+    private const string OrderingContextWithFulfilment = """
+        rml 1.0
+        context Ordering
+          version 1.0.0
+        end
+        context Fulfilment
+          version 1.0.0
+          import "Payment is confirmed"
+            from "Ordering"
+          end
+        end
+        """;
+
+    private const string OrderingOrderEntity = """
+        rml 1.0
+        entity Order
+          lifecycle Order lifecycle
+            stage Draft
+            stage Placed
+          end
+        end
+        """;
+
+    private const string OrderingPaymentFact = """
+        rml 1.0
+        fact Payment is confirmed
+          type truth
+          export
+        end
+        """;
+
+    private const string OrderingReadinessRule = """
+        rml 1.0
+        rule Determine order readiness
+          input "Payment is confirmed"
+          when all
+            fact "Payment is confirmed"
+          end
+          conclusion Ready
+          end
+          finding "Payment is confirmed" true order.payment-confirmed
+          finding "Payment is confirmed" missing order.payment-required
+          export
+        end
+        """;
+
+    private const string OrderingPlaceOrderBehaviour = """
+        rml 1.0
+        behaviour Place order
+          for "Order"
+          requires "Determine order readiness"
+          outcome Order placed
+          end
+          outcome Order rejected
+          end
+          transition Order placement
+            lifecycle "Order lifecycle"
+            from "Draft"
+            to "Placed"
+            outcome "Order placed"
+          end
+        end
+        """;
+
+    [Fact]
+    public void Analyze_the_real_ordering_playground_example_with_a_second_context_added()
+    {
+        var input = new WorkspaceInput(
+            [
+                new(LogicalPath.Create("model/context.modeller"), OrderingContextWithFulfilment),
+                new(LogicalPath.Create("model/entities/order.modeller"), OrderingOrderEntity),
+                new(LogicalPath.Create("model/facts/payment-confirmation.modeller"), OrderingPaymentFact),
+                new(LogicalPath.Create("model/rules/determine-order-readiness.modeller"), OrderingReadinessRule),
+                new(LogicalPath.Create("model/behaviours/place-order.modeller"), OrderingPlaceOrderBehaviour),
+            ],
+            IdentityStrategy.Ephemeral.Instance,
+            new WorkspaceConfigurationInput("1.0", "generated/"));
+
+        var outcome = ModellerWorkspace.Analyze(input, TestContext.Current.CancellationToken);
+
+        var analyzed = Assert.IsType<WorkspaceOutcome<AnalyzedWorkspace>.Success>(outcome).Value;
+        Assert.Equal(2, analyzed.Contexts.Length);
+        var ordering = analyzed.Contexts.Single(context => context.AuthoredRevision.Name.Value == "Ordering");
+        var fulfilment = analyzed.Contexts.Single(context => context.AuthoredRevision.Name.Value == "Fulfilment");
+        Assert.Contains(ordering.AuthoredRevision.Definitions, definition => definition is EntityDefinition entity && entity.Name.Value == "Order");
+        Assert.Contains(ordering.AuthoredRevision.Definitions, definition => definition is BehaviourDefinition behaviour && behaviour.Name.Value == "Place order");
+        Assert.Empty(fulfilment.AuthoredRevision.Definitions);
+        Assert.Single(analyzed.Dependencies);
+    }
+
+    private const string ChildCareContextWithCentreOperations = """
+        rml 1.0
+        context Child Care
+          version 1.0.0
+        end
+        context Centre Operations
+          version 1.0.0
+          import "Active enrolment exists"
+            from "Child Care"
+          end
+        end
+        """;
+
+    private const string ChildCareApplicationEntity = """
+        rml 1.0
+        entity ACCS determination application
+          lifecycle ACCS determination application lifecycle
+            stage Draft
+            stage Submitted
+          end
+        end
+        """;
+
+    private const string ChildCareEligibilityFacts = """
+        rml 1.0
+        fact Active enrolment exists
+          type truth
+          export
+        end
+        fact Supporting evidence is held
+          type truth
+          export
+        end
+        """;
+
+    private const string ChildCareEligibilityRule = """
+        rml 1.0
+        rule Determine ACCS eligibility
+          input "Active enrolment exists"
+          input "Supporting evidence is held"
+          when all
+            fact "Active enrolment exists"
+            fact "Supporting evidence is held"
+          end
+          conclusion Eligible
+          end
+          finding "Active enrolment exists" true accs.active-enrolment-confirmed
+          finding "Supporting evidence is held" true accs.supporting-evidence-confirmed
+          finding "Active enrolment exists" missing accs.active-enrolment-required
+          finding "Supporting evidence is held" missing accs.supporting-evidence-required
+          export
+        end
+        """;
+
+    private const string ChildCareSubmitBehaviour = """
+        rml 1.0
+        behaviour Submit ACCS determination application
+          for "ACCS determination application"
+          requires "Determine ACCS eligibility"
+          outcome Application submitted
+          end
+          outcome Application rejected
+          end
+          transition Submit application
+            lifecycle "ACCS determination application lifecycle"
+            from "Draft"
+            to "Submitted"
+            outcome "Application submitted"
+          end
+        end
+        """;
+
+    [Fact]
+    public void Analyze_the_real_child_care_playground_example_with_a_second_context_added()
+    {
+        var input = new WorkspaceInput(
+            [
+                new(LogicalPath.Create("model/context.modeller"), ChildCareContextWithCentreOperations),
+                new(LogicalPath.Create("model/entities/accs-determination-application.modeller"), ChildCareApplicationEntity),
+                new(LogicalPath.Create("model/facts/accs-eligibility.modeller"), ChildCareEligibilityFacts),
+                new(LogicalPath.Create("model/rules/determine-accs-eligibility.modeller"), ChildCareEligibilityRule),
+                new(LogicalPath.Create("model/behaviours/submit-accs-determination-application.modeller"), ChildCareSubmitBehaviour),
+            ],
+            IdentityStrategy.Ephemeral.Instance,
+            new WorkspaceConfigurationInput("1.0", "generated/"));
+
+        var outcome = ModellerWorkspace.Analyze(input, TestContext.Current.CancellationToken);
+
+        var analyzed = Assert.IsType<WorkspaceOutcome<AnalyzedWorkspace>.Success>(outcome).Value;
+        Assert.Equal(2, analyzed.Contexts.Length);
+        var childCare = analyzed.Contexts.Single(context => context.AuthoredRevision.Name.Value == "Child Care");
+        var centreOperations = analyzed.Contexts.Single(context => context.AuthoredRevision.Name.Value == "Centre Operations");
+        Assert.Contains(childCare.AuthoredRevision.Definitions, definition => definition is EntityDefinition entity && entity.Name.Value == "ACCS determination application");
+        Assert.Contains(childCare.AuthoredRevision.Definitions, definition => definition is BehaviourDefinition behaviour && behaviour.Name.Value == "Submit ACCS determination application");
+        Assert.Empty(centreOperations.AuthoredRevision.Definitions);
+        Assert.Single(analyzed.Dependencies);
+    }
+
     [Fact]
     public void Export_throws_a_diagnostic_when_a_document_has_not_yet_been_identified()
     {
