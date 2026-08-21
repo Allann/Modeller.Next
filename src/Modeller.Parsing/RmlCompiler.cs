@@ -405,17 +405,27 @@ public static partial class RmlCompiler
 
     /// <summary>Assigns each entity/enumeration/fact/rule/behaviour to the nearest preceding
     /// 'context' declaration in source order.</summary>
+    /// <summary>Assigns each entity/enumeration/fact/rule/behaviour to the nearest preceding
+    /// 'context' declared in the SAME document — matching how a workspace already mixes multiple
+    /// contexts in one file — or, for a document that declares no 'context' of its own (the
+    /// conventional case: separate documents grouping entities/, facts/, behaviours/ ... under one
+    /// shared context), to the first 'context' declared anywhere in the workspace. Ownership is
+    /// never inferred from a *different* document's most recent context: a workspace's document
+    /// names commonly don't sort with its context-declaring document first, and attributing an
+    /// unrelated document's declarations to whichever context happens to sort last would silently
+    /// misassign ownership rather than surface a clear diagnostic.</summary>
     private static Dictionary<Node, Node> ComputeContextOwnership(ImmutableArray<Node> roots)
     {
         var ownerOf = new Dictionary<Node, Node>(ReferenceEqualityComparer.Instance);
-        Node? currentContext = null;
+        var firstContext = roots.First(node => node.Keyword == "context");
+        Node? currentDocumentContext = null;
+        string? currentDocument = null;
         foreach (var node in roots)
         {
-            if (node.Keyword == "context") { currentContext = node; continue; }
+            if (node.Document != currentDocument) { currentDocument = node.Document; currentDocumentContext = null; }
+            if (node.Keyword == "context") { currentDocumentContext = node; continue; }
             if (node.Keyword is not ("entity" or "enumeration" or "fact" or "rule" or "behaviour")) continue;
-            if (currentContext is null)
-                throw new RmlException("rml.context.required", $"'{node.Keyword} {node.Value}' must be declared after a 'context'.", node);
-            ownerOf[node] = currentContext;
+            ownerOf[node] = currentDocumentContext ?? firstContext;
         }
         return ownerOf;
     }

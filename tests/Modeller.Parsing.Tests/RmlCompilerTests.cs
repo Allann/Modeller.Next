@@ -625,4 +625,40 @@ public sealed class RmlCompilerTests
 
         Assert.True(RmlCompiler.RequiresWorkspaceCompilation(documents));
     }
+
+    [Fact]
+    public void CompileWorkspace_attributes_a_context_free_document_to_the_first_declared_context_not_the_alphabetically_last_one()
+    {
+        // Reproduces a real workspace layout: a document that declares no 'context' of its own
+        // (here, deliberately named to sort BEFORE the context-declaring document) must still be
+        // attributed to the first context declared anywhere in the workspace ("Ordering") rather
+        // than silently attaching to whichever context text happens to sort last ("Fulfilment"),
+        // or requiring every declaration to explicitly precede a local 'context'.
+        var documents = new[]
+        {
+            new SourceDocument("model/behaviours/place-order.rml", """
+                behaviour Place order
+                  for "Order"
+                end
+                """),
+            new SourceDocument("model/context.rml", """
+                rml 1.0
+                context Ordering
+                  version 1.0.0
+                end
+                context Fulfilment
+                  version 1.0.0
+                end
+                """),
+            new SourceDocument("model/entities/order.rml", "entity Order\nend\n"),
+        };
+
+        var result = RmlCompiler.CompileWorkspace(documents, ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join("; ", result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}")));
+        var ordering = result.Contexts.Single(context => context.AuthoredRevision.Name.Value == "Ordering");
+        var fulfilment = result.Contexts.Single(context => context.AuthoredRevision.Name.Value == "Fulfilment");
+        Assert.Contains(ordering.AuthoredRevision.Definitions, definition => definition is EntityDefinition entity && entity.Name.Value == "Order");
+        Assert.Empty(fulfilment.AuthoredRevision.Definitions);
+    }
 }
