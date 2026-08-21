@@ -103,3 +103,20 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID_API }}
+
+      # A deployment can build cleanly, pass the local container smoke test above, and still fail
+      # to serve any traffic once Vercel actually runs it (seen 2026-08-20: every route, including
+      # /healthz/live, returned 500 INTERNAL_FUNCTION_INVOCATION_FAILED with no application logs at
+      # all — the container never started under Vercel despite an identical `docker run` working).
+      # That failure mode is invisible to the steps above, so it went unnoticed until a human
+      # checked the live site. Fail the workflow — and thus notify — the moment the production
+      # alias itself doesn't come up healthy after a deploy.
+      - name: Verify the live production deployment is healthy
+        run: |
+          for attempt in $(seq 1 10); do
+            if curl -sf https://modeller-next.vercel.app/healthz/live; then break; fi
+            echo "Attempt $attempt: production not healthy yet, retrying..."
+            sleep 6
+          done
+          curl -sf https://modeller-next.vercel.app/healthz/live
+          curl -sf https://modeller-next.vercel.app/v1/workspace/supported-views
