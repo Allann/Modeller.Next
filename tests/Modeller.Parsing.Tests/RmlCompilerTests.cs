@@ -661,4 +661,86 @@ public sealed class RmlCompilerTests
         Assert.Contains(ordering.AuthoredRevision.Definitions, definition => definition is EntityDefinition entity && entity.Name.Value == "Order");
         Assert.Empty(fulfilment.AuthoredRevision.Definitions);
     }
+
+    [Fact]
+    public void Compile_populates_a_behaviours_published_events_and_effects()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Booking
+            end
+            behaviour Record absence
+              for "Booking"
+              event Absence recorded
+              end
+              effect Notify billing system
+              end
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join("; ", result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}")));
+        var behaviour = Assert.Single(result.Package!.AuthoredRevision.Definitions.OfType<BehaviourDefinition>());
+        var @event = Assert.Single(behaviour.PublishedEvents);
+        Assert.Equal("Absence recorded", @event.Name.Value);
+        var effect = Assert.Single(behaviour.Effects);
+        Assert.Equal("Notify billing system", effect.Name.Value);
+    }
+
+    [Fact]
+    public void Compile_supports_a_behaviour_with_multiple_published_events()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Booking
+            end
+            behaviour Record absence
+              for "Booking"
+              event Absence recorded
+              end
+              event Absence backdated
+              end
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join("; ", result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}")));
+        var behaviour = Assert.Single(result.Package!.AuthoredRevision.Definitions.OfType<BehaviourDefinition>());
+        Assert.Equal(["Absence recorded", "Absence backdated"], behaviour.PublishedEvents.Select(item => item.Name.Value));
+        Assert.Empty(behaviour.Effects);
+    }
+
+    [Fact]
+    public void Compile_leaves_published_events_and_effects_empty_when_a_behaviour_declares_neither()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Booking
+            end
+            behaviour Record absence
+              for "Booking"
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join("; ", result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}")));
+        var behaviour = Assert.Single(result.Package!.AuthoredRevision.Definitions.OfType<BehaviourDefinition>());
+        Assert.Empty(behaviour.PublishedEvents);
+        Assert.Empty(behaviour.Effects);
+    }
 }

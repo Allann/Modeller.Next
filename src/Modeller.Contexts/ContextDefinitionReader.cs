@@ -115,8 +115,8 @@ public static partial class ContextPackageSystem
             identity.Slug,
             new EntityReference(SemanticId.Parse(definition.GetProperty("entity").GetString()!)),
             definition.GetProperty("outcomes").EnumerateArray().Select(ReadOutcome).ToImmutableArray(),
-            [],
-            [],
+            definition.TryGetProperty("effects", out var effects) ? effects.EnumerateArray().Select(ReadEffect).ToImmutableArray() : [],
+            definition.TryGetProperty("publishedEvents", out var events) ? events.EnumerateArray().Select(ReadEvent).ToImmutableArray() : [],
             definition.GetProperty("transitions").EnumerateArray().Select(ReadTransition).ToImmutableArray(),
             definition.GetProperty("ruleBindings").EnumerateArray().Select(ReadRuleBinding).ToImmutableArray());
 
@@ -233,6 +233,18 @@ public static partial class ContextPackageSystem
     {
         var identity = ReadIdentity(element);
         return new OutcomeDefinition(identity.Id, identity.Name, identity.Slug);
+    }
+
+    private static EffectDefinition ReadEffect(JsonElement element)
+    {
+        var identity = ReadIdentity(element);
+        return new EffectDefinition(identity.Id, identity.Name, identity.Slug);
+    }
+
+    private static EventDefinition ReadEvent(JsonElement element)
+    {
+        var identity = ReadIdentity(element);
+        return new EventDefinition(identity.Id, identity.Name, identity.Slug);
     }
 
     private static TransitionDefinition ReadTransition(JsonElement element)

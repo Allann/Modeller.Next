@@ -400,7 +400,7 @@ public static partial class RmlCompiler
             foreach (var member in node.Children.Where(item => item.Keyword == "member")) addSymbol(member);
         if (node.Keyword == "rule") register(Child(node, "conclusion"));
         if (node.Keyword == "behaviour")
-            foreach (var child in node.Children.Where(item => item.Keyword is "outcome" or "transition")) register(child);
+            foreach (var child in node.Children.Where(item => item.Keyword is "outcome" or "transition" or "event" or "effect")) register(child);
     }
 
     /// <summary>Assigns each entity/enumeration/fact/rule/behaviour to the nearest preceding
@@ -533,8 +533,9 @@ public static partial class RmlCompiler
         foreach (var behaviour in behaviours)
         {
             lines.Add($"behaviour id={behaviour.Id} name=\"{behaviour.Value}\" slug={Slug(behaviour.Value)} entity={id(Child(behaviour, "for").Value, behaviour)}");
-            foreach (var outcome in behaviour.Children.Where(item => item.Keyword == "outcome"))
-                lines.Add($"outcome owner={behaviour.Id} id={outcome.Id} name=\"{outcome.Value}\" slug={Slug(outcome.Value)}");
+            EmitOwnedChildren(lines, behaviour, "outcome");
+            EmitOwnedChildren(lines, behaviour, "event");
+            EmitOwnedChildren(lines, behaviour, "effect");
             foreach (var requires in behaviour.Children.Where(item => item.Keyword == "requires"))
             {
                 var rule = byName[requires.Value];
@@ -544,6 +545,14 @@ public static partial class RmlCompiler
             foreach (var transition in behaviour.Children.Where(item => item.Keyword == "transition"))
                 lines.Add($"transition owner={behaviour.Id} id={transition.Id} name=\"{transition.Value}\" slug={Slug(transition.Value)} lifecycle={id(Child(transition, "lifecycle").Value, transition)} source={id(Child(transition, "from").Value, transition)} target={id(Child(transition, "to").Value, transition)} outcome={id(Child(transition, "outcome").Value, transition)}");
         }
+    }
+
+    /// <summary>Emits one SAF line per <paramref name="owner"/> child matching <paramref name="keyword"/>
+    /// (outcome/event/effect all share this identity-only shape: id, name, slug, owner).</summary>
+    private static void EmitOwnedChildren(List<string> lines, Node owner, string keyword)
+    {
+        foreach (var child in owner.Children.Where(item => item.Keyword == keyword))
+            lines.Add($"{keyword} owner={owner.Id} id={child.Id} name=\"{child.Value}\" slug={Slug(child.Value)}");
     }
 
     private static (string Fact, string Disposition, string Code, Node Node) Finding(Node node)
@@ -601,9 +610,9 @@ public static partial class RmlCompiler
         ["entity"] = ["lifecycle", "field", "relationship"],
         ["enumeration"] = ["member"],
         ["rule"] = ["when", "conclusion"],
-        ["behaviour"] = ["outcome", "transition"],
+        ["behaviour"] = ["outcome", "transition", "event", "effect"],
     };
-    private static readonly HashSet<string> IdentityDeclarations = ["context", "entity", "lifecycle", "stage", "field", "relationship", "enumeration", "member", "fact", "rule", "conclusion", "behaviour", "outcome", "transition"];
+    private static readonly HashSet<string> IdentityDeclarations = ["context", "entity", "lifecycle", "stage", "field", "relationship", "enumeration", "member", "fact", "rule", "conclusion", "behaviour", "outcome", "transition", "event", "effect"];
     [GeneratedRegex("^#\\s*@id=(?<id>[0-9a-fA-F-]{36})\\s*$", RegexOptions.CultureInvariant)] private static partial Regex Identity();
     [GeneratedRegex("[^a-z0-9]+", RegexOptions.CultureInvariant)] private static partial Regex SlugCharacters();
     [GeneratedRegex("\"(?<quoted>[^\"]+)\"|(?<bare>\\S+)", RegexOptions.CultureInvariant)] private static partial Regex QuotedTokens();

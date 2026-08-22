@@ -22,7 +22,7 @@ public static class RmlGrammar
             ["fact"] = ["type", "export"],
             ["rule"] = ["input", "when", "conclusion", "finding", "export"],
             ["when"] = ["fact"],
-            ["behaviour"] = ["for", "requires", "outcome", "transition"],
+            ["behaviour"] = ["for", "requires", "outcome", "transition", "event", "effect"],
             ["transition"] = ["lifecycle", "from", "to", "outcome"],
         }.ToImmutableDictionary(StringComparer.Ordinal);
 
@@ -51,7 +51,7 @@ public static class RmlGrammar
     private static readonly HashSet<string> BlockKeywords = new(StringComparer.Ordinal)
     {
         "context", "entity", "lifecycle", "field", "relationship", "enumeration", "member",
-        "fact", "rule", "when", "behaviour", "transition", "import",
+        "fact", "rule", "when", "behaviour", "transition", "import", "event", "effect",
     };
 
     public static ImmutableArray<RmlCompletionCandidate> Complete(
@@ -158,5 +158,6 @@ public static class RmlGrammar
             ["enumeration"] = "Enumeration", ["member"] = "EnumerationMember", ["fact"] = "Fact",
             ["rule"] = "Rule", ["conclusion"] = "Conclusion", ["behaviour"] = "Behaviour",
             ["outcome"] = "Outcome", ["transition"] = "Transition",
+            ["event"] = "Event", ["effect"] = "Effect",
         }.ToImmutableDictionary(StringComparer.Ordinal);
 }

@@ -11,9 +11,21 @@ namespace Modeller.Parsing.Acceptance.Features;
 [Binding]
 public sealed class ContextMapCrossContextDependenciesSteps
 {
+    private readonly WorkspaceCompilationContext _context;
     private readonly List<ContextSpec> _contexts = [];
     private WorkspaceParseResult? _compileResult;
     private ProjectionResult? _projectionResult;
+
+    public ContextMapCrossContextDependenciesSteps(WorkspaceCompilationContext context)
+    {
+        _context = context;
+        _context.Compile = () =>
+        {
+            Compile();
+            _context.IsSuccess = _compileResult!.IsSuccess;
+            _context.FailureSummary = FailureSummary();
+        };
+    }
 
     [Given("the workspace is empty")]
     public void GivenTheWorkspaceIsEmpty() => _contexts.Clear();
@@ -63,9 +75,6 @@ public sealed class ContextMapCrossContextDependenciesSteps
         Assert.True(_compileResult!.IsSuccess, FailureSummary());
     }
 
-    [When("the workspace is compiled")]
-    public void WhenTheWorkspaceIsCompiled() => Compile();
-
     [When("the context map view is projected rooted at the bounded context {string}")]
     public void WhenTheContextMapViewIsProjectedRootedAtTheBoundedContext(string rootContextName)
     {
@@ -74,9 +83,6 @@ public sealed class ContextMapCrossContextDependenciesSteps
         _projectionResult = DiagramProjector.ProjectContextMap(
             [.. _compileResult.Contexts.Select(context => context.AuthoredRevision)], _compileResult.Dependencies, view);
     }
-
-    [Then("compilation succeeds")]
-    public void ThenCompilationSucceeds() => Assert.True(_compileResult!.IsSuccess, FailureSummary());
 
     [Then("the compiled model contains the bounded context {string}")]
     public void ThenTheCompiledModelContainsTheBoundedContext(string name) =>

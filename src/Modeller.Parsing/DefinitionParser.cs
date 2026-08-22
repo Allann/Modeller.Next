@@ -254,6 +254,10 @@ public static partial class DefinitionParser
                 var owner = Required(behaviour, "id");
                 var outcomes = statements.Where(item => item.Kind == "outcome" && Required(item, "owner") == owner)
                     .Select(Identity).ToArray();
+                var events = statements.Where(item => item.Kind == "event" && Required(item, "owner") == owner)
+                    .Select(Identity).ToArray();
+                var effects = statements.Where(item => item.Kind == "effect" && Required(item, "owner") == owner)
+                    .Select(Identity).ToArray();
                 var bindings = statements.Where(item => item.Kind == "binding" && Required(item, "owner") == owner)
                     .Select(Binding).ToArray();
                 var transitions = statements.Where(item => item.Kind == "transition" && Required(item, "owner") == owner)
@@ -266,6 +270,8 @@ public static partial class DefinitionParser
                     ["slug"] = Required(behaviour, "slug"),
                     ["entity"] = Required(behaviour, "entity"),
                     ["outcomes"] = new JsonArray(outcomes),
+                    ["effects"] = new JsonArray(effects),
+                    ["publishedEvents"] = new JsonArray(events),
                     ["ruleBindings"] = new JsonArray(bindings),
                     ["transitions"] = new JsonArray(transitions)
                 });

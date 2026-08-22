@@ -7,7 +7,7 @@
   "inputDigest": "sha256:24d7ff5597a24a32f12cf917bfe063234a182706364bb35e2c68b26bf59832e0",
   "input": { "artifact": "child-care-accs.modeller", "languageVersion": "1.0" },
   "expected": {
-    "semanticDigest": "sha256:6d1448c32127c49571d2a7ea5982045b7aa74ed28da2d7323ac5360b94ed6728",
+    "semanticDigest": "sha256:e9dd7693f50fb9e6383d6fb6b8c5249fda14698b37c3405d4fd3ec879fd9e27a",
     "context": "child-care",
     "definitionCount": 5,
     "diagnosticCount": 0

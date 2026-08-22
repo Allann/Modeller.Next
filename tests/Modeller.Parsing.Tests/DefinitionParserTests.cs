@@ -21,7 +21,7 @@ public sealed class DefinitionParserTests
         Assert.True(result.IsSuccess);
         Assert.Empty(result.Diagnostics);
         Assert.Equal(
-            "sha256:6d1448c32127c49571d2a7ea5982045b7aa74ed28da2d7323ac5360b94ed6728",
+            "sha256:e9dd7693f50fb9e6383d6fb6b8c5249fda14698b37c3405d4fd3ec879fd9e27a",
             result.Package!.SemanticDigest);
         Assert.Equal(5, result.Package.AuthoredRevision.Definitions.Length);
     }
@@ -59,7 +59,7 @@ public sealed class DefinitionParserTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(
-            "sha256:6d1448c32127c49571d2a7ea5982045b7aa74ed28da2d7323ac5360b94ed6728",
+            "sha256:e9dd7693f50fb9e6383d6fb6b8c5249fda14698b37c3405d4fd3ec879fd9e27a",
             result.Package!.SemanticDigest);
     }
 
@@ -129,7 +129,7 @@ public sealed class DefinitionParserTests
         var result = DefinitionParser.Parse([source], ParseOptions.Language1, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("sha256:63e39411df24b9ee59614cc8d3fae4397e79272f85ac99b8fc2d97eda4e7a37a", result.Package!.SemanticDigest);
+        Assert.Equal("sha256:95783f1c286b09b7ec69fd02bcfcb0480a85f704536dd5f4493c62a65edf585d", result.Package!.SemanticDigest);
     }
 
     [Fact]
