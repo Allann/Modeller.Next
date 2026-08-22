@@ -19,6 +19,7 @@
     "model/entities/charge-type.modeller",
     "model/entities/charge.modeller",
     "model/entities/family-account.modeller",
+    "model/entities/non-chargeable-reason.modeller",
     "model/entities/room-age-group.modeller",
     "model/entities/child.modeller",
     "model/entities/reference-stubs.modeller",

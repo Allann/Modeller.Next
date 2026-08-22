@@ -1,6 +1,5 @@
 rml 1.0
-# An absence from a booked session of care. Non-chargeable-reason structure
-# is added in a later increment; see gaps.md.
+# An absence from a booked session of care.
 entity Absence
   field Absence date
     type date
@@ -47,6 +46,11 @@ entity Absence
   end
   relationship Absence reason
     target "Absence reason"
+    cardinality one
+    optional
+  end
+  relationship Non chargeable reason
+    target "Non chargeable reason"
     cardinality one
     optional
   end

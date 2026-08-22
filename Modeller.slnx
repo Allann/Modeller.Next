@@ -42,6 +42,7 @@
     <Project Path="tests/Modeller.Parsing.Tests/Modeller.Parsing.Tests.csproj" />
     <Project Path="tests/Modeller.Projections.Tests/Modeller.Projections.Tests.csproj" />
     <Project Path="tests/Modeller.Rendering.Tests/Modeller.Rendering.Tests.csproj" />
+    <Project Path="tests/Modeller.Samples.ChildCare.Acceptance/Modeller.Samples.ChildCare.Acceptance.csproj" />
     <Project Path="tests/Modeller.Templates.Tests/Modeller.Templates.Tests.csproj" />
     <Project Path="tests/Modeller.Rules.Tests/Modeller.Rules.Tests.csproj" />
     <Project Path="tests/Modeller.Validation.Tests/Modeller.Validation.Tests.csproj" />

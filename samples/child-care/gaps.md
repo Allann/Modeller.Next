@@ -9,8 +9,6 @@ every entity. What was simplified or left out, by area:
   relationships are out of scope.
 - **Arrangement**: `Payee` (Account), `EndReason` (ArrangementEndReason), and
   `CRNHolder` (Adult) are not yet ported.
-- **Absence**: the legacy `NonChargeableReason` relationship is conflated
-  with `AbsenceReason` for this slice rather than kept as a separate entity.
 - **Room**: `RoomNickname` is not ported. `Status` is simplified from the
   legacy audit-log-style `RoomStatus` entity to a plain `Room status type`
   enumeration field.

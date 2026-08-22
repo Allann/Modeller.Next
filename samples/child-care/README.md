@@ -26,7 +26,9 @@ simplified or left out):
 - a Booking lifecycle (Planned → Attending → Attended/Absent → Billed) tied
   to its Routine/Casual booking sessions, Arrangement, Session, Room, and
   Child structure;
-- the Determine absence chargeability Rule and Record absence Behaviour;
+- the Determine absence chargeability Rule and Record absence Behaviour,
+  with a distinct non-chargeable reason recorded separately from an
+  absence's general absence reason;
 - the Determine charge amount Rule and Run billing for booking Behaviour,
   chained off a Booking's attendance outcome;
 - Centre/Room/Room age group structure for a richer entity graph; and
