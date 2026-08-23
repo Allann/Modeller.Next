@@ -34,5 +34,13 @@ export function buildTree(sources: string[]): TreeNode[] {
     current.children.push({ kind: 'document', name: segments[segments.length - 1], path: source });
   }
 
+  sortTree(root.children);
   return root.children;
+}
+
+function sortTree(nodes: TreeNode[]): void {
+  nodes.sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === 'folder' ? -1 : 1));
+  for (const node of nodes) {
+    if (node.kind === 'folder') sortTree(node.children);
+  }
 }

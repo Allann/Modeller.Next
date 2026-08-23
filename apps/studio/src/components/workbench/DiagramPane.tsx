@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { GraphCanvas } from './GraphCanvas';
+import { useViewRootSelection } from '@/lib/useViewRootSelection';
+import { DiagramView } from './DiagramView';
 import {
   fetchProjectionGraph,
   fetchProjectionRoots,
@@ -13,67 +14,73 @@ import {
 } from '@/lib/projection-client';
 
 export function DiagramPane() {
-  const [view, setView] = useState<ProjectionView>('Lifecycle');
+  const { view, setView, rootId, setRootId } = useViewRootSelection<ProjectionView>('Lifecycle');
   const [roots, setRoots] = useState<ProjectionRoot[]>([]);
-  const [rootId, setRootId] = useState<string>('');
   const [graph, setGraph] = useState<ProjectionGraph | undefined>();
   const [diagnostics, setDiagnostics] = useState<ProjectionDiagnostic[]>([]);
   const [error, setError] = useState<string | undefined>();
 
   useEffect(() => {
     // react-hooks/set-state-in-effect flags the resets below, but this effect's job is the
-    // fetch-on-view-change side effect itself — the resets just clear stale selection/graph state
-    // before that fetch starts, same fetch-on-mount shape as useInitiativeSession.ts.
+    // fetch-on-view-change side effect itself — the resets just clear stale root list/graph/
+    // diagnostic state before that fetch starts, same fetch-on-mount shape as
+    // useInitiativeSession.ts. `rootId` itself is reset atomically by useViewRootSelection's
+    // setView, not here — see that hook for why.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRootId('');
+    setRoots([]);
     setGraph(undefined);
+    setDiagnostics([]);
+    setError(undefined);
+    let cancelled = false;
     void fetchProjectionRoots(view)
-      .then(setRoots)
-      .catch((fetchError: unknown) => setError(fetchError instanceof Error ? fetchError.message : 'Failed to load roots.'));
+      .then((result) => {
+        if (!cancelled) setRoots(result);
+      })
+      .catch((fetchError: unknown) => {
+        if (!cancelled) setError(fetchError instanceof Error ? fetchError.message : 'Failed to load roots.');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [view]);
 
   useEffect(() => {
-    if (!rootId) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- see rationale above
+    if (!rootId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- see rationale above
+      setGraph(undefined);
+      setDiagnostics([]);
+      setError(undefined);
+      return;
+    }
     setError(undefined);
     setDiagnostics([]);
+    let cancelled = false;
     void fetchProjectionGraph(view, rootId)
       .then((result) => {
+        if (cancelled) return;
         setGraph(result.graph);
         setDiagnostics(result.diagnostics ?? []);
       })
-      .catch((fetchError: unknown) => setError(fetchError instanceof Error ? fetchError.message : 'Failed to load diagram.'));
+      .catch((fetchError: unknown) => {
+        if (!cancelled) setError(fetchError instanceof Error ? fetchError.message : 'Failed to load diagram.');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [view, rootId]);
 
   return (
-    <div className="diagram-pane">
-      <div className="diagram-toolbar">
-        <select value={view} onChange={(event) => setView(event.target.value as ProjectionView)}>
-          {SUPPORTED_VIEWS.map((kind) => (
-            <option key={kind} value={kind}>
-              {kind}
-            </option>
-          ))}
-        </select>
-        <select value={rootId} onChange={(event) => setRootId(event.target.value)}>
-          <option value="">Select a root…</option>
-          {roots.map((root) => (
-            <option key={root.id} value={root.id}>
-              {root.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      {error && <div className="diagram-error">{error}</div>}
-      {diagnostics.map((diagnostic) => (
-        <div key={diagnostic.code} className="diagram-error">
-          {diagnostic.message}
-        </div>
-      ))}
-      {!error && diagnostics.length === 0 && !graph && (
-        <div className="diagram-placeholder">{rootId ? 'Loading…' : 'Pick a root to view its diagram.'}</div>
-      )}
-      <GraphCanvas graph={graph} />
-    </div>
+    <DiagramView
+      view={view}
+      onViewChange={(next) => setView(next as ProjectionView)}
+      viewOptions={SUPPORTED_VIEWS}
+      rootId={rootId}
+      onRootChange={setRootId}
+      rootOptions={roots}
+      error={error}
+      diagnostics={diagnostics}
+      graph={graph}
+      loading={!graph}
+    />
   );
 }

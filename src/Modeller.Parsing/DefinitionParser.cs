@@ -134,6 +134,7 @@ public static partial class DefinitionParser
                 };
                 if (fields.Length > 0) entityDefinition["fields"] = new JsonArray(fields);
                 if (relationships.Length > 0) entityDefinition["relationships"] = new JsonArray(relationships);
+                AddOptional(entityDefinition, "ownerId", entity.Values.GetValueOrDefault("aggregate-owner"));
                 if (entity.Values.ContainsKey("lifecycle-id")) entityDefinition["lifecycle"] = new JsonObject
                 {
                     ["id"] = Required(entity, "lifecycle-id"), ["name"] = Required(entity, "lifecycle-name"),

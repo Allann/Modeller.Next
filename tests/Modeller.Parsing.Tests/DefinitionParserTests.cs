@@ -250,6 +250,36 @@ public sealed class DefinitionParserTests
         Assert.Equal(result.Package.SemanticDigest, reloaded.Package!.SemanticDigest);
     }
 
+    [Fact]
+    public void Flat_saf_aggregate_owner_attribute_is_distinct_from_a_fields_parent_pointer_owner_attribute()
+    {
+        // The flat SAF format already uses "owner=<id>" on a field/relationship line as a
+        // parent-pointer (this field belongs to this entity). The new aggregate-root fact must be
+        // carried by a differently-named "aggregate-owner=" attribute on the entity line itself, so
+        // an entity that both declares fields and declares an aggregate-root owner parses both
+        // facts correctly without either overwriting the other.
+        const string contextId = "0191f6d4-4ea0-7000-8000-000000000000";
+        const string centreId = "0191f6d4-4ea0-7000-8000-000000000001";
+        const string absenceId = "0191f6d4-4ea0-7000-8000-000000000002";
+        const string fieldId = "0191f6d4-4ea0-7000-8000-000000000003";
+        var source = new SourceDocument(
+            "child-care.modeller",
+            "language 1.0\n" +
+            $"context id={contextId} name=\"Child Care\" slug=child-care version=1.0.0\n" +
+            $"entity id={centreId} name=\"Centre\" slug=centre\n" +
+            $"entity id={absenceId} name=\"Absence\" slug=absence aggregate-owner={centreId}\n" +
+            $"field owner={absenceId} id={fieldId} name=\"Absence date\" slug=absence-date type=Date\n");
+
+        var result = DefinitionParser.Parse([source], ParseOptions.Language1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join(Environment.NewLine, result.Diagnostics));
+        var entities = result.Package!.AuthoredRevision.Definitions.OfType<EntityDefinition>().ToDictionary(entity => entity.Name.Value);
+        Assert.Equal(centreId, entities["Centre"].Id.ToString());
+        Assert.Equal(centreId, entities["Absence"].OwnerId.ToString());
+        Assert.Single(entities["Absence"].Fields);
+        Assert.Null(entities["Centre"].OwnerId);
+    }
+
     private sealed class ParsingConformanceAdapter(string fixtureDirectory) : IConformanceAdapter
     {
         public string Capability => "readable-source-parsing";

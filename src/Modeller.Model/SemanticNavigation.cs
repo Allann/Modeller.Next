@@ -44,7 +44,14 @@ public static class SemanticNavigation
         foreach (var definition in definitions)
         {
             var definitionName = $"{contextSlug}.{definition.Slug}";
-            yield return Address(definition, contextId, definitionName);
+            // An entity's declared aggregate-root owner (another entity) takes precedence over the
+            // default "owned by its context" address every other top-level definition gets — without
+            // this, EntityDefinition.OwnerId is parsed and stored but never reaches the navigation
+            // layer that Studio's outline/details panel and the API's /v1/workspace/analyze endpoint
+            // both read from, so the aggregate-root fact would compile successfully yet be silently
+            // invisible everywhere a person or client actually looks for it.
+            var ownerId = definition is EntityDefinition { OwnerId: { } aggregateOwnerId } ? aggregateOwnerId : contextId;
+            yield return Address(definition, ownerId, definitionName);
 
             switch (definition)
             {

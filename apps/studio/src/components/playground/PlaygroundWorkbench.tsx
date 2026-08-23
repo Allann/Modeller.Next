@@ -6,8 +6,9 @@ import { buildTree } from '@/lib/tree';
 import { Explorer } from '@/components/workbench/Explorer';
 import { EditorTabs } from '@/components/workbench/EditorTabs';
 import { ProblemsPanel } from '@/components/workbench/ProblemsPanel';
-import { GraphCanvas } from '@/components/workbench/GraphCanvas';
+import { DiagramView } from '@/components/workbench/DiagramView';
 import '@/components/workbench/workbench.css';
+import { useViewRootSelection } from '@/lib/useViewRootSelection';
 import './playground.css';
 import { PlaygroundEditor, applyDiagnosticMarkers } from './PlaygroundEditor';
 import { StatusBanner, type Notice } from './StatusBanner';
@@ -65,8 +66,7 @@ export function PlaygroundWorkbench() {
   const [draftRevision, setDraftRevision] = useState(0);
   const [activePath, setActivePath] = useState<string | undefined>(() => draft.documents[0]?.path);
   const [openPaths, setOpenPaths] = useState<string[]>(() => (draft.documents[0] ? [draft.documents[0].path] : []));
-  const [view, setView] = useState<ViewKind>('Lifecycle');
-  const [rootId, setRootId] = useState('');
+  const { view, setView, rootId, setRootId } = useViewRootSelection<ViewKind>('Lifecycle');
   const [roots, setRoots] = useState<RootSummaryDto[]>([]);
   const [outline, setOutline] = useState<SemanticOutlineItemDto[]>([]);
   const [summary, setSummary] = useState<SemanticCountDto[]>([]);
@@ -92,7 +92,7 @@ export function PlaygroundWorkbench() {
     setActivePath(shared.documents[0]?.path);
     setRootId('');
     setProjection(undefined);
-  }, []);
+  }, [setRootId]);
 
   // A share link (issue #73) is consumed once, on first load, before anything else touches the
   // draft — it always wins over whatever loadDraft() already put in state above. The fragment is
@@ -147,7 +147,7 @@ export function PlaygroundWorkbench() {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to analyze the workspace.');
       capture('analysis_completed', { outcome: 'failed' });
     }
-  }, [draft.documents, draft.identity, draft.configuration, view, rootId]);
+  }, [draft.documents, draft.identity, draft.configuration, view, rootId, setRootId]);
 
   const provideCompletions = useCallback((path: string, line: number, column: number, signal: AbortSignal) =>
     completeWorkspace(draft.documents, draft.identity, draft.configuration, path, line, column, signal),
@@ -318,7 +318,9 @@ export function PlaygroundWorkbench() {
                 </p>
               )}
               {MODEL_GROUPS.map((group) => {
-                const items = outline.filter((item) => !item.ownerId && group.kinds.includes(item.kind));
+                const items = outline
+                  .filter((item) => !item.ownerId && group.kinds.includes(item.kind))
+                  .sort((a, b) => a.name.localeCompare(b.name));
                 return items.length > 0 ? (
                   <section key={group.label} className="model-kind-group">
                     <h3>{group.label}</h3>
@@ -339,42 +341,20 @@ export function PlaygroundWorkbench() {
         </Panel>
         <Separator className="resize-handle" />
         <Panel defaultSize="25" minSize="15">
-          <div className="diagram-pane">
-            <div className="diagram-toolbar">
-              <select
-                value={view}
-                onChange={(event) => {
-                  setView(event.target.value as ViewKind);
-                  capture('projection_viewed', { view: event.target.value });
-                  setRootId('');
-                }}
-              >
-                {availableViews.map((kind) => (
-                  <option key={kind} value={kind}>
-                    {kind}
-                  </option>
-                ))}
-              </select>
-              <select value={rootId} onChange={(event) => setRootId(event.target.value)}>
-                <option value="">Select a root…</option>
-                {roots
-                  .filter((root) => root.kind === view)
-                  .map((root) => (
-                    <option key={root.id} value={root.id}>
-                      {root.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            {projection && !projection.succeeded && projection.diagnostics.map((diagnostic) => (
-              <div key={diagnostic.code} className="diagram-error">
-                {diagnostic.message}
-              </div>
-            ))}
-            {!rootId && <div className="diagram-placeholder">Pick a root to view its diagram.</div>}
-            {rootId && (!projection || projection.succeeded) && !projection?.graph && <div className="diagram-placeholder">Loading…</div>}
-            <GraphCanvas graph={projection?.graph} />
-          </div>
+          <DiagramView
+            view={view}
+            onViewChange={(next) => {
+              setView(next as ViewKind);
+              capture('projection_viewed', { view: next });
+            }}
+            viewOptions={availableViews}
+            rootId={rootId}
+            onRootChange={setRootId}
+            rootOptions={roots.filter((root) => root.kind === view)}
+            diagnostics={projection && !projection.succeeded ? projection.diagnostics : []}
+            graph={projection?.graph}
+            loading={!!rootId && (!projection || projection.succeeded) && !projection?.graph}
+          />
         </Panel>
       </Group>
       <footer className="playground-status-line" role="status">

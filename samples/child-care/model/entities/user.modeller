@@ -1,0 +1,23 @@
+rml 1.0
+# Core identity and authentication fields only. Organisation memberships
+# are out of scope for this slice; see gaps.md.
+entity User
+  field User name
+    type string
+  end
+  field First name
+    type string
+  end
+  field Last name
+    type string
+  end
+  field Authentication source system
+    type string
+  end
+  field Authentication source tenant identifier
+    type string
+  end
+  field Authentication user identifier
+    type string
+  end
+end

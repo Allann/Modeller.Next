@@ -21,9 +21,17 @@ every entity. What was simplified or left out, by area:
 - **Charge**: synthesizes the legacy `AttendanceCharge` /
   `AttendanceChargeVersion` / `AttendanceChargeGroup` trio into one entity
   for this slice's billing behaviour.
-- **Adult, User**: identity-only declarations (`model/entities/reference-stubs.modeller`)
-  — referenced widely by other entities but have no structure of their own
-  yet.
+- **Adult**: core identity and contact fields are ported
+  (`model/entities/adult.modeller`) — first name, last name, former name,
+  date of birth, CRN, home phone, mobile phone, and email. Title, gender,
+  ethnic background, languages, addresses, employment status, highest
+  education received, and CCSS-confirmed-adult stay out of scope; those need
+  their own reference entities.
+- **User**: core identity and authentication fields are ported
+  (`model/entities/user.modeller`) — user name, first name, last name,
+  authentication source system, authentication source tenant identifier,
+  and authentication user identifier. Organisation memberships stay out of
+  scope; that needs its own reference entity.
 
 ## Projection kinds this slice cannot demonstrate yet
 
@@ -42,3 +50,12 @@ minimal for any RML 1.0 model, not specifically this one:
 
 `Lifecycle`, `RuleDecision`, `BehaviourMap`, and `Structural` all render real,
 non-trivial content for this workspace.
+
+## Entity ownership (aggregate root) is now ported
+
+RML 1.0's `entity` grammar gained an `owner "<EntityName>"` clause (issue
+#123), so the legacy `.key` file's `owner(...)` fact — e.g.
+`M:\Modeller\samples\child-care-old\entities\Absence\Absence.key` states
+`owner(Centre)` — has an equivalent again. `model/entities/absence.modeller`
+declares `owner "Centre"`. Other ported entities have not been audited for
+the same fact yet.

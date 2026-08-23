@@ -1,0 +1,36 @@
+rml 1.0
+# Core identity and contact fields only. Title, gender, ethnic background,
+# languages, addresses, employment status, education, and CCSS confirmation
+# are out of scope for this slice; see gaps.md.
+entity Adult
+  field First name
+    type string
+  end
+  field Last name
+    type string
+  end
+  field Former name
+    type string
+    optional
+  end
+  field Date of birth
+    type date
+    optional
+  end
+  field CRN
+    type string
+    optional
+  end
+  field Home phone
+    type string
+    optional
+  end
+  field Mobile phone
+    type string
+    optional
+  end
+  field Email
+    type string
+    optional
+  end
+end

@@ -434,6 +434,32 @@ public sealed class ContextPackageSystemTests
         Assert.Empty(report.Mismatches);
     }
 
+    [Fact]
+    public void Entity_ownerId_is_read_when_present_and_null_when_absent()
+    {
+        const string package = """
+            {
+              "schemaVersion":"1.0", "languageVersion":"1.0",
+              "context":{"id":"0191f6d4-4ea0-7000-8000-000000000601","name":"Ownership","slug":"ownership","version":"1.0.0"},
+              "imports":[],
+              "exports":[],
+              "definitions":[
+                {"kind":"Entity","id":"0191f6d4-4ea0-7000-8000-000000000602","name":"Centre","slug":"centre"},
+                {"kind":"Entity","id":"0191f6d4-4ea0-7000-8000-000000000603","name":"Absence","slug":"absence","ownerId":"0191f6d4-4ea0-7000-8000-000000000602"}
+              ]
+            }
+            """;
+
+        var result = ContextPackageSystem.Load(Encoding.UTF8.GetBytes(package));
+
+        Assert.True(result.IsSuccess, string.Join(Environment.NewLine, result.Diagnostics));
+        var entities = result.Package!.AuthoredRevision.Definitions
+            .OfType<Modeller.Model.EntityDefinition>()
+            .ToDictionary(entity => entity.Name.Value);
+        Assert.Equal("0191f6d4-4ea0-7000-8000-000000000602", entities["Absence"].OwnerId.ToString());
+        Assert.Null(entities["Centre"].OwnerId);
+    }
+
     private static string PackageWithImport(
         string contextId,
         string slug,

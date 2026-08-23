@@ -4,7 +4,7 @@
   "private": true,
   "description": "Local definition design tool for Modeller — workspace explorer, readable-source editor with live LSP diagnostics.",
   "scripts": {
-    "predev": "node scripts/copy-grammars.mjs",
+    "predev": "node scripts/copy-grammars.mjs && npm run server:build",
     "dev": "tsx server.ts",
     "prebuild": "node scripts/copy-grammars.mjs",
     "build": "next build",

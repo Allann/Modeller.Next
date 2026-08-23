@@ -1,3 +1,4 @@
+using CsCheck;
 using Modeller.Model;
 using Modeller.Parsing;
 using Xunit;
@@ -742,5 +743,300 @@ public sealed class RmlCompilerTests
         var behaviour = Assert.Single(result.Package!.AuthoredRevision.Definitions.OfType<BehaviourDefinition>());
         Assert.Empty(behaviour.PublishedEvents);
         Assert.Empty(behaviour.Effects);
+    }
+
+    [Fact]
+    public void Compile_records_an_entitys_declared_owner_as_the_aggregate_root()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Centre
+            end
+            entity Absence
+              owner "Centre"
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join("; ", result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}")));
+        var entities = result.Package!.AuthoredRevision.Definitions.OfType<EntityDefinition>().ToDictionary(entity => entity.Name.Value);
+        Assert.Equal(entities["Centre"].Id, entities["Absence"].OwnerId);
+    }
+
+    [Fact]
+    public void Compile_leaves_owner_id_null_when_an_entity_declares_no_owner()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Centre
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join("; ", result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}")));
+        var centre = Assert.Single(result.Package!.AuthoredRevision.Definitions.OfType<EntityDefinition>());
+        Assert.Null(centre.OwnerId);
+    }
+
+    [Fact]
+    public void Compile_records_a_transitive_ownership_chain()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Centre
+            end
+            entity Room
+              owner "Centre"
+            end
+            entity Absence
+              owner "Room"
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join("; ", result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}")));
+        var entities = result.Package!.AuthoredRevision.Definitions.OfType<EntityDefinition>().ToDictionary(entity => entity.Name.Value);
+        Assert.Equal(entities["Centre"].Id, entities["Room"].OwnerId);
+        Assert.Equal(entities["Room"].Id, entities["Absence"].OwnerId);
+    }
+
+    [Fact]
+    public void Compile_still_emits_a_fields_parent_pointer_owner_attribute_alongside_an_aggregate_owner()
+    {
+        // Regression test: the flat SAF format already uses "owner=<id>" as a parent-pointer key
+        // on a field/relationship line (this field belongs to this entity). The new aggregate-root
+        // fact must use a distinct "aggregate-owner=" attribute on the entity line itself, so both
+        // can coexist without the field's owner pointer being confused with the entity's own
+        // declared aggregate-root owner.
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Centre
+            end
+            entity Absence
+              owner "Centre"
+              field Absence date
+                type date
+              end
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join("; ", result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}")));
+        var entities = result.Package!.AuthoredRevision.Definitions.OfType<EntityDefinition>().ToDictionary(entity => entity.Name.Value);
+        var absence = entities["Absence"];
+        Assert.Equal(entities["Centre"].Id, absence.OwnerId);
+        Assert.Single(absence.Fields);
+    }
+
+    [Fact]
+    public void Compile_rejects_an_owner_clause_naming_an_entity_that_is_not_declared()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Absence
+              owner "Centre"
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("rml.reference.unresolved", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void Compile_rejects_an_entity_declaring_itself_as_its_own_owner()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Absence
+              owner "Absence"
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("rml.entity.owner-self", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void Compile_rejects_two_entities_that_own_each_other()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Centre
+              owner "Absence"
+            end
+            entity Absence
+              owner "Centre"
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("rml.entity.owner-cycle", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void Compile_rejects_a_transitive_ownership_cycle()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Centre
+              owner "Room"
+            end
+            entity Room
+              owner "Absence"
+            end
+            entity Absence
+              owner "Centre"
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("rml.entity.owner-cycle", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void CompileWorkspace_records_an_entitys_declared_owner_as_the_aggregate_root()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Centre
+            end
+            entity Absence
+              owner "Centre"
+            end
+            """;
+
+        var result = RmlCompiler.CompileWorkspace(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join("; ", result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}")));
+        var childCare = Assert.Single(result.Contexts).AuthoredRevision;
+        var entities = childCare.Definitions.OfType<EntityDefinition>().ToDictionary(entity => entity.Name.Value);
+        Assert.Equal(entities["Centre"].Id, entities["Absence"].OwnerId);
+    }
+
+    /// <summary>Property test for the owner-cycle invariant described on <c>ValidateEntityOwnership</c>:
+    /// "rejects a cycle of any length, not just the 2- and 3-node shapes the acceptance scenarios
+    /// happen to exercise". The example-based tests above only exercise a self-loop, a 2-cycle, and
+    /// a 3-cycle where every entity sits on the cycle and is declared in cycle order. This generates
+    /// arbitrary owner graphs - varying size, cycle length, declaration order, and entities that sit
+    /// on a tail leading into a cycle rather than on the cycle itself - and checks the compiler's
+    /// verdict against an independently written reference cycle-check, so a shape the hand-picked
+    /// examples don't happen to cover can still surface a bug in the production walk.</summary>
+    [Fact]
+    public void CompileWorkspace_accepts_acyclic_owner_graphs_and_rejects_cyclic_ones()
+    {
+        var gen =
+            from n in Gen.Int[2, 8]
+            from owners in Gen.Int[0, n - 1].Array[n]
+            select (n, owners);
+
+        gen.Sample(sample =>
+        {
+            var (n, ownerIndexes) = sample;
+            // ownerIndexes[i] == i means entity i declares no owner; otherwise entity i is owned by
+            // entity ownerIndexes[i]. This keeps out-degree at most one per entity, matching the
+            // functional-graph shape ValidateEntityOwnership assumes, while never producing a
+            // self-owner edge (that failure mode already has its own example test above).
+            var owners = new int?[n];
+            for (var i = 0; i < n; i++) owners[i] = ownerIndexes[i] == i ? null : ownerIndexes[i];
+
+            var expectedCycle = HasCycle(owners);
+            var names = Enumerable.Range(0, n).Select(i => $"Entity{i}").ToArray();
+            var result = RmlCompiler.Compile(
+                [new SourceDocument("workspace.rml", BuildOwnershipSource(names, owners))],
+                ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+            Assert.Equal(!expectedCycle, result.IsSuccess);
+            if (expectedCycle)
+                Assert.Equal("rml.entity.owner-cycle", Assert.Single(result.Diagnostics).Code);
+        });
+    }
+
+    /// <summary>Independent reference implementation of cycle detection over a functional graph
+    /// (each node has at most one outgoing edge), deliberately not sharing code with
+    /// <c>ValidateEntityOwnership</c> so the property test above checks the production algorithm
+    /// against a second, differently-written one rather than against itself.</summary>
+    private static bool HasCycle(int?[] owners)
+    {
+        var state = new int[owners.Length]; // 0 = unvisited, 1 = visiting, 2 = done
+        for (var start = 0; start < owners.Length; start++)
+        {
+            if (state[start] != 0) continue;
+            var chain = new List<int>();
+            var current = start;
+            while (true)
+            {
+                if (state[current] == 2) break;
+                if (state[current] == 1) return true;
+                state[current] = 1;
+                chain.Add(current);
+                if (owners[current] is not int next) break;
+                current = next;
+            }
+
+            foreach (var node in chain) state[node] = 2;
+        }
+
+        return false;
+    }
+
+    private static string BuildOwnershipSource(string[] names, int?[] owners)
+    {
+        var lines = new List<string> { "rml 1.0", "context Child Care", "  version 1.0.0", "end" };
+        for (var i = 0; i < names.Length; i++)
+        {
+            lines.Add($"entity {names[i]}");
+            if (owners[i] is int ownerIndex) lines.Add($"  owner \"{names[ownerIndex]}\"");
+            lines.Add("end");
+        }
+
+        return string.Join('\n', lines) + '\n';
     }
 }

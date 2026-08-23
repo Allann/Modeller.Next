@@ -1,6 +1,7 @@
 rml 1.0
 # An absence from a booked session of care.
 entity Absence
+  owner "Centre"
   field Absence date
     type date
   end

@@ -78,7 +78,8 @@ public static partial class ContextPackageSystem
                 definition.TryGetProperty("lifecycle", out var lifecycle) ? ReadLifecycle(lifecycle) : null)
             {
                 Fields = definition.TryGetProperty("fields", out var fields) ? fields.EnumerateArray().Select(ReadField).ToImmutableArray() : [],
-                Relationships = definition.TryGetProperty("relationships", out var relationships) ? relationships.EnumerateArray().Select(ReadRelationship).ToImmutableArray() : []
+                Relationships = definition.TryGetProperty("relationships", out var relationships) ? relationships.EnumerateArray().Select(ReadRelationship).ToImmutableArray() : [],
+                OwnerId = definition.TryGetProperty("ownerId", out var ownerId) ? SemanticId.Parse(ownerId.GetString()!) : null
             },
             "Enumeration" => new EnumerationDefinition(identity.Id, identity.Name, identity.Slug,
                 definition.GetProperty("members").EnumerateArray().Select(member =>

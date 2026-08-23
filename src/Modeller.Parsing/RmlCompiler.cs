@@ -303,6 +303,7 @@ public static partial class RmlCompiler
         foreach (var node in roots.Where(item => item.Keyword is "entity" or "enumeration" or "fact" or "rule" or "behaviour"))
             RegisterDeclaration(node, Register, AddSymbol);
         string Id(string name, Node owner) => ResolveId(name, owner, byName);
+        ValidateEntityOwnership(roots.Where(item => item.Keyword == "entity"), Id);
 
         var lines = new List<string> { "language 1.0", ContextHeader(context) };
         lines.AddRange(EmitDeclarations(
@@ -331,6 +332,7 @@ public static partial class RmlCompiler
         foreach (var node in roots.Where(item => item.Keyword is "entity" or "enumeration" or "fact" or "rule" or "behaviour"))
             RegisterDeclaration(node, Register, AddSymbol);
         string Id(string name, Node owner) => ResolveId(name, owner, byName);
+        ValidateEntityOwnership(roots.Where(item => item.Keyword == "entity"), Id);
 
         var dependencies = ResolveImports(contextNodes, byName, ownerOf);
 
@@ -379,6 +381,57 @@ public static partial class RmlCompiler
 
     private static string ResolveId(string name, Node owner, Dictionary<string, Node> byName) =>
         byName.TryGetValue(name, out var node) ? node.Id! : throw new RmlException("rml.reference.unresolved", $"RML reference '{name}' could not be resolved.", owner);
+
+    /// <summary>Validates every entity's optional 'owner' clause: the named owner must resolve to
+    /// a declared entity (via <paramref name="id"/>, the same unresolved-reference mechanism a
+    /// relationship's 'target' uses), an entity may never declare itself as its own owner, and the
+    /// owner graph as a whole must be acyclic — no chain of 'owner' edges may loop back on the
+    /// entity that started it. Cycle detection walks the functional graph formed by "at most one
+    /// owner per entity" generically, so it rejects a cycle of any length, not just the 2- and
+    /// 3-node shapes the acceptance scenarios happen to exercise.</summary>
+    private static void ValidateEntityOwnership(IEnumerable<Node> entityNodes, Func<string, Node, string> id)
+    {
+        var entities = entityNodes.ToArray();
+        var ownerIdByEntityId = new Dictionary<string, string>(StringComparer.Ordinal);
+        var ownerNodeByEntityId = new Dictionary<string, Node>(StringComparer.Ordinal);
+        foreach (var entity in entities)
+        {
+            var ownerChild = entity.Children.SingleOrDefault(item => item.Keyword == "owner");
+            if (ownerChild is null) continue;
+            var ownerId = id(ownerChild.Value, ownerChild);
+            if (ownerId == entity.Id)
+                throw new RmlException("rml.entity.owner-self", $"Entity '{entity.Value}' cannot declare itself as its own owner.", ownerChild);
+            ownerIdByEntityId[entity.Id!] = ownerId;
+            ownerNodeByEntityId[entity.Id!] = ownerChild;
+        }
+
+        // Cycle detection over the owner graph, which is functional (each entity has at most one
+        // outgoing 'owner' edge): walk each entity's owner chain, marking nodes 'visiting' while on
+        // the current chain and 'done' once the chain is known to terminate without revisiting
+        // itself. Landing back on a 'visiting' node means the chain looped back on itself.
+        var state = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var start in entities)
+        {
+            if (state.GetValueOrDefault(start.Id!) != 0) continue;
+            var chain = new List<string>();
+            var current = start.Id!;
+            while (true)
+            {
+                var currentState = state.GetValueOrDefault(current);
+                if (currentState == 2) break;
+                if (currentState == 1)
+                {
+                    var closingOwnerNode = ownerNodeByEntityId[chain[^1]];
+                    throw new RmlException("rml.entity.owner-cycle", "Aggregate ownership cannot be circular.", closingOwnerNode);
+                }
+                state[current] = 1;
+                chain.Add(current);
+                if (!ownerIdByEntityId.TryGetValue(current, out var next)) break;
+                current = next;
+            }
+            foreach (var visited in chain) state[visited] = 2;
+        }
+    }
 
     /// <summary>Registers a declaration and its identity-bearing children (lifecycle/stage,
     /// field/relationship, enumeration member, rule conclusion, behaviour outcome/transition) —
@@ -478,7 +531,9 @@ public static partial class RmlCompiler
         {
             var lifecycle = entity.Children.SingleOrDefault(item => item.Keyword == "lifecycle");
             var lifecycleText = lifecycle is null ? "" : $" lifecycle-id={lifecycle.Id} lifecycle-name=\"{lifecycle.Value}\" lifecycle-slug={Slug(lifecycle.Value)}";
-            lines.Add($"entity id={entity.Id} name=\"{entity.Value}\" slug={Slug(entity.Value)}{lifecycleText}");
+            var owner = entity.Children.SingleOrDefault(item => item.Keyword == "owner");
+            var ownerText = owner is null ? "" : $" aggregate-owner={id(owner.Value, owner)}";
+            lines.Add($"entity id={entity.Id} name=\"{entity.Value}\" slug={Slug(entity.Value)}{lifecycleText}{ownerText}");
             if (lifecycle is not null) foreach (var stage in lifecycle.Children.Where(item => item.Keyword == "stage"))
                 lines.Add($"stage owner={entity.Id} id={stage.Id} name=\"{stage.Value}\" slug={Slug(stage.Value)}");
             foreach (var field in entity.Children.Where(item => item.Keyword == "field"))

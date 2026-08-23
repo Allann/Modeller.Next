@@ -46,6 +46,11 @@ public sealed record EntityDefinition(
 {
     public ImmutableArray<FieldDefinition> Fields { get; init; } = [];
     public ImmutableArray<RelationshipDefinition> Relationships { get; init; } = [];
+
+    /// <summary>The entity that owns this entity as its DDD aggregate root / consistency
+    /// boundary, if declared. <see langword="null"/> means this entity has no declared owner —
+    /// it is itself an aggregate root.</summary>
+    public SemanticId? OwnerId { get; init; }
 }
 
 public sealed record FieldDefinition(

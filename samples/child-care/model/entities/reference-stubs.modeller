@@ -1,7 +1,0 @@
-rml 1.0
-# Identity-only declarations for widely-referenced people entities whose own
-# structure is out of scope for this slice; see gaps.md for the deferred list.
-entity Adult
-end
-entity User
-end

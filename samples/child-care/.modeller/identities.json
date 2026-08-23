@@ -17,6 +17,13 @@
       "01a0223e-3db8-7c6b-8259-b43146db6b79", "01a0223e-3db8-7c6a-a697-022a5b19b0d9",
       "01a0223e-3db8-7d2b-92a9-905f9de7f280"
     ],
+    "model/entities/adult.modeller": [
+      "01a02238-b945-7e07-bbb7-e8b95dd7aab0",
+      "01a02dc2-1161-743c-b403-c7106e4932cb", "01a02dc2-1165-7b96-80c3-d2d91f9327e6",
+      "01a02dc2-1165-7134-8de9-d0f0c0403010", "01a02dc2-1165-7112-8fe8-e8640bac45e2",
+      "01a02dc2-1165-7801-918c-647af8b93adf", "01a02dc2-1165-7369-9389-0a14af2453d2",
+      "01a02dc2-1165-7de7-88fa-44314c4f454b", "01a02dc2-1165-7ab9-830b-80c99e27b889"
+    ],
     "model/entities/family-account.modeller": [
       "01a0223e-3db9-7f14-8d91-8cf264b61c50", "01a0223e-3db9-7a92-8c41-dde4efbc1b58",
       "01a0223e-3db9-7e74-a4cc-e912c2201854"
@@ -94,9 +101,6 @@
       "01a02238-b946-71db-b405-5de7bca6eaf5", "01a02238-b946-7ccf-ab68-23675c3d2ae4",
       "01a02238-b946-7368-8271-b3514c2e90a5", "01a02238-b946-75cc-8725-17eafca16e04"
     ],
-    "model/entities/reference-stubs.modeller": [
-      "01a02238-b945-7e07-bbb7-e8b95dd7aab0", "01a02238-b945-7110-8d4f-d55cace51c53"
-    ],
     "model/entities/room-session-fee.modeller": [
       "01a02238-b945-7f22-ac5c-af70e3c41eb7", "01a02238-b945-7475-88d5-bfda35797668",
       "01a02238-b945-79d3-9a2e-981bed8943f1", "01a02238-b945-77fb-8137-0609179f881a",
@@ -148,6 +152,12 @@
       "01a02238-b945-78dc-a92c-4938c9efe51e", "01a02238-b945-7581-a69c-aeb23a5bcd67",
       "01a02238-b945-7a07-ac10-dce5c7022290", "01a02238-b945-76fb-a7b4-bd1a0f6d20c8",
       "01a02238-b945-7b9f-a5b4-02297c14d266", "01a02238-b945-77a5-b8f8-8dfcffbca1cc"
+    ],
+    "model/entities/user.modeller": [
+      "01a02238-b945-7110-8d4f-d55cace51c53",
+      "01a02dd2-ec92-7467-81cf-b9f910124fdc", "01a02dd2-ec96-7e56-a6cd-0236133a9494",
+      "01a02dd2-ec96-73ac-b3dd-534b06019092", "01a02dd2-ec96-7b23-a7cb-0b1fcf66f26c",
+      "01a02dd2-ec96-7bd6-8f86-5612ab5cb9f4", "01a02dd2-ec96-7b2d-84dc-89dfedf615ce"
     ],
     "model/enumerations/account-type.modeller": [
       "01a0223e-3db7-72b7-9299-b7ea0acf91a2", "01a0223e-3db7-7ace-a856-3d04043ceb58",
