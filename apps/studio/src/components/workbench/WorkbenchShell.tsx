@@ -17,6 +17,9 @@ interface OpenDocument {
 
 export function WorkbenchShell() {
   const [sources, setSources] = useState<string[]>([]);
+  const [root, setRoot] = useState<string>('');
+  const [rootInput, setRootInput] = useState('');
+  const [rootError, setRootError] = useState<string | undefined>();
   const [openDocuments, setOpenDocuments] = useState<OpenDocument[]>([]);
   const [activePath, setActivePath] = useState<string | undefined>();
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -24,8 +27,30 @@ export function WorkbenchShell() {
   useEffect(() => {
     void fetch('/api/workspace')
       .then((response) => response.json())
-      .then((data: { sources: string[] }) => setSources(data.sources));
+      .then((data: { root: string; sources: string[] }) => {
+        setRoot(data.root);
+        setSources(data.sources);
+      });
   }, []);
+
+  const onLoadWorkspace = async () => {
+    if (!rootInput.trim()) return;
+    setRootError(undefined);
+    const response = await fetch('/api/workspace', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: rootInput.trim() }),
+    });
+    const data = (await response.json()) as { root?: string; sources?: string[]; error?: string };
+    if (!response.ok || !data.sources) {
+      setRootError(data.error ?? 'Could not load that workspace.');
+      return;
+    }
+    setRoot(data.root ?? rootInput.trim());
+    setSources(data.sources);
+    setOpenDocuments([]);
+    setActivePath(undefined);
+  };
 
   const openDocument = (path: string) => {
     setActivePath(path);
@@ -69,6 +94,24 @@ export function WorkbenchShell() {
       <div className="ribbon">
         <div className="brand">
           <span className="mark">M</span> Modeller Studio
+        </div>
+        <div className="workspace-switcher" aria-label="Workspace">
+          <input
+            type="text"
+            placeholder={root || 'Workspace directory path'}
+            value={rootInput}
+            onChange={(event) => setRootInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') void onLoadWorkspace();
+            }}
+            aria-label="Workspace directory path"
+          />
+          <button onClick={() => void onLoadWorkspace()}>Load workspace</button>
+          {rootError && (
+            <span className="workspace-switcher-error" role="alert">
+              {rootError}
+            </span>
+          )}
         </div>
       </div>
       <Group orientation="horizontal" className="panel-group">

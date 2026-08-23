@@ -411,3 +411,17 @@ test('downloading the workspace produces a zip with durable-identity content', a
   expect(download.suggestedFilename()).toBe('modeller-workspace.zip');
   await expect(page.getByRole('status')).toContainText('durable identities');
 });
+
+test('the public playground has no workspace-directory control and refuses to load a local workspace', async ({ page, request }) => {
+  await mockSupportedViews(page);
+  await mockAnalyze(page, cleanResponse);
+  await page.goto('/');
+
+  await expect(page.getByLabel('Workspace directory path')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Load workspace' })).toHaveCount(0);
+
+  // Even if something tried to call the underlying route directly, playground mode's
+  // localOnlyRouteGuard must refuse it — the visitor's session is otherwise untouched.
+  const response = await request.post('/api/workspace', { data: { path: 'samples/child-care' } });
+  expect(response.status()).toBe(404);
+});

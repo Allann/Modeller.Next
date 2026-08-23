@@ -19,6 +19,24 @@
   font-weight: 800;
 }
 
+.workspace-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.workspace-switcher input {
+  width: 22rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--modeller-line);
+  border-radius: 0.4rem;
+}
+
+.workspace-switcher-error {
+  color: #b3261e;
+  font-size: 0.85rem;
+}
+
 .mark {
   display: grid;
   place-items: center;
