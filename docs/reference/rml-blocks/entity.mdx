@@ -3,7 +3,7 @@ title: entity block
 description: Declare an entity and its structure.
 ---
 
-An `entity` is a document-root block. It can contain one `lifecycle` and any number of `field` and `relationship` blocks. An empty entity is valid.
+An `entity` is a document-root block. It can contain one `owner` statement, one `lifecycle`, and any number of `field` and `relationship` blocks. An empty entity is valid.
 
 ```text
 entity Order
@@ -13,5 +13,14 @@ entity Order
 end
 
 entity Orderline
+  owner "Order"
 end
 ```
+
+`owner` names the entity that owns this entity — the aggregate root this entity's lifecycle is bound to. It is optional: an entity with no `owner` statement is its own aggregate root. Give it the name of another entity in the workspace, in quotation marks:
+
+```text
+owner "Order"
+```
+
+`owner` cannot name the entity itself, and cannot form a cycle — for example, `Order` cannot declare `owner "Orderline"` while `Orderline` declares `owner "Order"`. Naming an entity that isn't declared anywhere is also an error.
