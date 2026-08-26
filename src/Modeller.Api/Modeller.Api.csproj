@@ -6,9 +6,36 @@
     <UserSecretsId>6e5acc69-3f94-4b86-ad13-3b835c45a166</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Modeller.Api.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../Modeller.Workspace/Modeller.Workspace.csproj" />
     <ProjectReference Include="../Modeller.Initiative/Modeller.Initiative.csproj" />
     <ProjectReference Include="../Modeller.Initiative.OpenAICompatible/Modeller.Initiative.OpenAICompatible.csproj" />
+    <ProjectReference Include="../Modeller.Generation/Modeller.Generation.csproj" />
+    <ProjectReference Include="../Modeller.Templates/Modeller.Templates.csproj" />
+    <ProjectReference Include="../Modeller.Rendering/Modeller.Rendering.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Generation preview (POST /v1/workspace/generate): the "csharp/domain-project" template
+         pack's manifest and templates are embedded so the endpoint can resolve a pack without a
+         host filesystem, per docs/architecture/decisions/hosted-workspace-api.mdx's stateless
+         design. Sourced from the same files the CLI/samples use for the Child Care scenario
+         (samples/child-care/templates/csharp/domain-project) rather than a duplicated copy, so the
+         embedded pack can never silently drift from the one exercised by
+         Modeller.Rendering.Tests/GoldenTemplateOutputTests. -->
+    <!-- WithCulture=false is required: MSBuild's AssignCulture logic treats any EmbeddedResource
+         item whose name looks like "name.culture.extension" as culture-specific, and several
+         template filenames (Entity.cs.sbn, Behaviour.cs.sbn, ...) have ".cs." in that position,
+         which collides with the "cs" (Czech) culture code — without this they silently get routed
+         into a "cs" satellite resource assembly instead of the main one, and GetManifestResourceStream
+         can never find them. -->
+    <EmbeddedResource Include="../../samples/child-care/templates/csharp/domain-project/pack.json" WithCulture="false">
+      <LogicalName>TemplatePacks/csharp-domain-project/pack.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="../../samples/child-care/templates/csharp/domain-project/*.sbn" WithCulture="false">
+      <LogicalName>TemplatePacks/csharp-domain-project/%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
@@ -19,6 +46,7 @@
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="Scalar.AspNetCore" />
     <PackageReference Include="Serilog.AspNetCore" />
   </ItemGroup>
 </Project>

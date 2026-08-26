@@ -5,6 +5,7 @@ using Modeller.Api;
 using Modeller.Api.Endpoints;
 using Modeller.Api.Initiative;
 using Modeller.Api.Analytics;
+using Modeller.Api.OpenApi;
 using Modeller.Initiative;
 using Modeller.Initiative.OpenAICompatible;
 using OpenTelemetry.Metrics;
@@ -19,9 +20,10 @@ var builder = WebApplication.CreateBuilder(args);
 // logging here is metadata only (method/path/status/duration), never a submitted document's text.
 builder.Host.UseSerilog((context, loggerConfig) => loggerConfig.ReadFrom.Configuration(context.Configuration));
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options => options.AddSchemaTransformer<ExampleSchemaTransformer>());
 builder.Services.AddHealthChecks();
 builder.Services.AddSingleton<WorkspaceAnalysisPipeline>();
+builder.Services.AddSingleton<WorkspaceGenerationPreviewPipeline>();
 builder.Services.AddHttpContextAccessor();
 var postHogKey = builder.Configuration["ProductAnalytics:ProjectKey"];
 if (!string.IsNullOrWhiteSpace(postHogKey))
@@ -183,7 +185,7 @@ app.MapHub<InitiativeHub>("/hubs/initiative");
 app.MapHealthChecks("/healthz/live");
 app.MapHealthChecks("/healthz/ready");
 
-if (app.Environment.IsDevelopment()) app.MapOpenApi();
+app.MapDevelopmentTooling();
 
 app.Run();
 

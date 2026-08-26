@@ -22,6 +22,8 @@ editors/vscode-modeller/server/
 **/bin/
 **/obj/
 *.tsbuildinfo
+TestResults/
+StrykerOutput/
 
 # misc
 .DS_Store

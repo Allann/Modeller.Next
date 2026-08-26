@@ -1,0 +1,97 @@
+---
+title: Read-only generation preview in the playground
+description: Panel layout, trigger cadence, and circuit breaker for showing generated code from a playground draft, without writing anywhere.
+---
+
+Status: **Accepted**
+
+## Canonical terms
+
+[Generation plan](/docs/concepts/ubiquitous-language#generation-plan) ·
+[Template pack](/docs/concepts/ubiquitous-language#template-pack) ·
+[Workspace](/docs/concepts/ubiquitous-language#workspace)
+
+## Context
+
+The playground (`apps/studio`, playground mode) analyzes a draft on every edit
+(`analyzeWorkspace`, 500ms debounce) and shows diagnostics and diagram
+projections, but never calls the generation pipeline. `GenerationPlanner.Plan`
+and template rendering (see [generation plans](/docs/reference/generation-plans)
+and [template rendering](/docs/reference/template-rendering)) already produce
+deterministic, ordered artifacts from a resolved snapshot and a template pack —
+that pipeline has no filesystem write step until a separate application stage,
+so it is safe to run read-only, same as analysis. Epic #68 names this
+explicitly as a planned follow-on: "Read-only generation preview may follow,"
+excluded from the first release pending its own decision.
+
+There is currently one template pack (`csharp/domain-project`), so a pack
+picker is not yet load-bearing; the plan's ordered artifact list (path, owner,
+pack ID, template ID) is what a file picker should be built from once one is
+needed.
+
+## Decision
+
+### Panel placement
+
+Generation preview lives in the same panel group as Diagram view, not a
+separate route:
+
+- **Narrow viewport**: a tab inside Diagram view, alongside the existing
+  projection tabs.
+- **Wide viewport** (a browser window spanning two or more monitors): its own
+  panel, docked right of Diagram view, both visible at once — because a
+  three-monitor setup has the width to spare and tabbing would hide one view
+  behind the other for no reason.
+- A width breakpoint on the panel group decides which mode applies. Starting
+  point: split above roughly 1800px of usable panel-group width. Tune once
+  live; this is not a hard constraint.
+
+A diff view (Monaco's diff editor — already loaded for the source editor) is
+used to compare each render against its immediately previous render, so a
+change to one entity is visible as a diff, not a full-file reread.
+
+### Trigger cadence and circuit breaker
+
+Generation reuses the draft-change debounce (500ms edit-settle, same as
+analysis) but adds two independent guards before a generate call is allowed to
+start, because render cost grows with model size and a busy editing session
+must not queue up stale or overlapping generate calls:
+
+1. **In-flight guard.** A trigger while a generate call is already running
+   does not start a second call and does not cancel the running one. It sets
+   a `pending` flag instead.
+2. **Minimum-interval guard.** A generate call may not start less than 5
+   seconds after the last one started. A trigger inside that window also sets
+   `pending` and schedules a retry for the remaining time.
+
+When a running call finishes, or a scheduled retry fires, the code checks
+`pending`; if set, it clears the flag and starts exactly one new call for the
+current draft state. This is trailing-edge throttling: a burst of edits
+produces at most one generate call per 5-second window, always ending on the
+latest state, never a backlog of stale calls. The existing `requestId`-supersede
+pattern from `runAnalysis` applies here too, so a slow response that lands
+after a newer one is discarded rather than shown.
+
+5 seconds is a deliberately conservative starting interval, not a benchmarked
+one — chosen because the model under active design (Child Care) is still
+growing, so render cost measured today would already be stale by the time
+this ships. Revisit the interval only if it is observed to be too slow or too
+fast in real use, not by pre-emptive benchmarking against today's model size.
+
+## Open dependency
+
+No endpoint in `Modeller.Api` currently exposes `GenerationPlanner.Plan` or
+template rendering — `analyze`, `complete`, and `export` (see
+[hosted-workspace-api](/docs/architecture/decisions/hosted-workspace-api)) are
+the only existing surface. A read-only "plan + render, no write" endpoint is a
+real API design decision (bounded like `analyze`: stateless, one round trip,
+resource and input-size limits) and is tracked separately rather than folded
+into this one.
+
+## Non-goals
+
+- Writing generated output anywhere — this stays read-only, matching the
+  playground's existing "no accounts, no server-side persistence" posture.
+- A template pack picker — deferred until a second pack exists.
+- Arbitrary or custom template execution — out of scope per epic #68's
+  product boundary.

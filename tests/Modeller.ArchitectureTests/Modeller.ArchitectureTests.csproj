@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable></PropertyGroup>
+  <ItemGroup>
+    <!-- Referenced only so the assemblies under test are on disk for NetArchTest.Rules to load by
+         name (Types.InAssembly loads the built DLL, not the ProjectReference graph itself) - this
+         project asserts constraints ProjectReference alone cannot express, such as "never gains a
+         reference to X even transitively" and reflection-level namespace/type usage checks. -->
+    <ProjectReference Include="../../src/Modeller.Api/Modeller.Api.csproj" />
+    <ProjectReference Include="../../src/Modeller.GenerationWorkflow/Modeller.GenerationWorkflow.csproj" />
+    <ProjectReference Include="../../src/Modeller.Output/Modeller.Output.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+</Project>

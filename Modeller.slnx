@@ -24,7 +24,9 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Modeller.AI.Tests/Modeller.AI.Tests.csproj" />
+    <Project Path="tests/Modeller.Api.Acceptance/Modeller.Api.Acceptance.csproj" />
     <Project Path="tests/Modeller.Api.Tests/Modeller.Api.Tests.csproj" />
+    <Project Path="tests/Modeller.ArchitectureTests/Modeller.ArchitectureTests.csproj" />
     <Project Path="tests/Modeller.Conformance.Tests/Modeller.Conformance.Tests.csproj" />
     <Project Path="tests/Modeller.Conformance.Python.Tests/Modeller.Conformance.Python.Tests.csproj" />
     <Project Path="tests/Modeller.Cli.Tests/Modeller.Cli.Tests.csproj" />

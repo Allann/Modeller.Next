@@ -59,6 +59,33 @@ public sealed record WorkspaceAnalyzeResponse(
 
 public sealed record SupportedViewsResponse(string ApiVersion, IReadOnlyList<ViewKind> Views);
 
+/// <summary>Request for <c>POST /v1/workspace/generate</c> (read-only generation preview):
+/// reuses <see cref="WorkspaceAnalyzeRequest"/>'s Documents/Identity/Configuration shape exactly —
+/// deliberately no <c>Projections</c> field, that's analyze-specific — plus the template pack to
+/// plan and render artifacts from.</summary>
+public sealed record WorkspaceGenerateRequest(
+    List<WorkspaceDocumentDto> Documents,
+    IdentityDto Identity,
+    ConfigurationDto Configuration,
+    string TemplatePackId);
+
+/// <summary>One proposed artifact a generation preview would produce: its logical output path, its
+/// owning definition slug (or "no owner" for a project-level artifact — see
+/// <c>GenerationPlanner</c>'s scope="context" outputs), the template pack and template that
+/// produced it, its fully rendered content, and a digest of that content.</summary>
+public sealed record GeneratedArtifactDto(string Path, string Owner, string PackId, string TemplateId, string Content, string ContentDigest);
+
+/// <summary>Response for <c>POST /v1/workspace/generate</c>. A parse/validation/plan/render content
+/// failure — including an unrecognized <see cref="WorkspaceGenerateRequest.TemplatePackId"/> or an
+/// incompatible generation contract version — returns 200 with <see cref="Diagnostics"/> populated
+/// and <see cref="Artifacts"/> empty, exactly as <see cref="WorkspaceAnalyzeResponse"/> already
+/// does; it is never a 400/500. <see cref="Artifacts"/> is ordered exactly as
+/// <c>GenerationPlanner.Plan</c> orders its proposed artifacts.</summary>
+public sealed record WorkspaceGenerateResponse(
+    string ApiVersion,
+    IReadOnlyList<ApiDiagnostic> Diagnostics,
+    IReadOnlyList<GeneratedArtifactDto> Artifacts);
+
 public sealed record WorkspaceCompletionRequest(WorkspaceAnalyzeRequest Workspace, string Path, int Line, int Column);
 public sealed record CompletionItemDto(string Label, string Kind, string Detail, string InsertText, int ReplacementStartColumn);
 public sealed record WorkspaceCompletionResponse(string ApiVersion, IReadOnlyList<CompletionItemDto> Items, IReadOnlyList<ApiDiagnostic> Diagnostics);
@@ -85,17 +112,27 @@ public sealed record WorkspaceExportResponse(
 /// is well-formed; they assume that precondition rather than re-checking it.</summary>
 public static class WorkspaceContractMappings
 {
-    public static WorkspaceInput ToWorkspaceInput(this WorkspaceAnalyzeRequest request)
+    public static WorkspaceInput ToWorkspaceInput(this WorkspaceAnalyzeRequest request) =>
+        BuildWorkspaceInput(request.Documents, request.Identity, request.Configuration);
+
+    public static WorkspaceInput ToWorkspaceInput(this WorkspaceGenerateRequest request) =>
+        BuildWorkspaceInput(request.Documents, request.Identity, request.Configuration);
+
+    /// <summary>Shared by both <c>ToWorkspaceInput</c> overloads above — <see cref="WorkspaceAnalyzeRequest"/>
+    /// and <see cref="WorkspaceGenerateRequest"/> carry the identical Documents/Identity/Configuration shape
+    /// (see <see cref="WorkspaceGenerateRequest"/>'s own doc comment), so mapping it to a
+    /// <see cref="WorkspaceInput"/> is one piece of logic, not two.</summary>
+    private static WorkspaceInput BuildWorkspaceInput(List<WorkspaceDocumentDto> documents, IdentityDto identity, ConfigurationDto configuration)
     {
-        var documents = request.Documents
+        var mappedDocuments = documents
             .Select(document => new WorkspaceDocument(LogicalPath.Create(document.Path), document.Content))
             .ToImmutableArray();
-        IdentityStrategy identity = request.Identity is DurableIdentityDto durable
+        IdentityStrategy mappedIdentity = identity is DurableIdentityDto durable
             ? new IdentityStrategy.Durable(durable.ToRegistry())
             : IdentityStrategy.Ephemeral.Instance;
-        var configuration = new WorkspaceConfigurationInput(
-            request.Configuration.GenerationContractVersion, request.Configuration.LogicalOutputRoot, request.Configuration.Profile);
-        return new WorkspaceInput(documents, identity, configuration);
+        var mappedConfiguration = new WorkspaceConfigurationInput(
+            configuration.GenerationContractVersion, configuration.LogicalOutputRoot, configuration.Profile);
+        return new WorkspaceInput(mappedDocuments, mappedIdentity, mappedConfiguration);
     }
 
     public static WorkspaceIdentityRegistry ToRegistry(this DurableIdentityDto durable) => new(

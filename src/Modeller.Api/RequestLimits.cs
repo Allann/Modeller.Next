@@ -49,6 +49,24 @@ public static class RequestLimits
         return diagnostics;
     }
 
+    /// <summary>The generation-preview counterpart to <see cref="Validate(WorkspaceAnalyzeRequest)"/>.
+    /// Shares every document/identity/configuration check with <c>analyze</c> — this request's own
+    /// shape ceilings (document count included) can never drift from <c>analyze</c>'s — and adds
+    /// only the one field unique to this request shape, <see cref="WorkspaceGenerateRequest.TemplatePackId"/>.
+    /// An unrecognized (but present) pack id is deliberately NOT checked here: per the Specifier
+    /// stage, "unknown template pack" is a content diagnostic on a 200 response, not a 400 — only a
+    /// missing/blank id is a request-shape problem.</summary>
+    public static IReadOnlyList<ApiDiagnostic> Validate(WorkspaceGenerateRequest request)
+    {
+        var diagnostics = new List<ApiDiagnostic>();
+        ValidateDocuments(request.Documents, diagnostics);
+        ValidateIdentity(request.Identity, diagnostics);
+        ValidateConfiguration(request.Configuration, diagnostics);
+        if (string.IsNullOrWhiteSpace(request.TemplatePackId))
+            diagnostics.Add(new("api.request.template-pack-id.required", "A template pack id is required."));
+        return diagnostics;
+    }
+
     private static void ValidateDocuments(List<WorkspaceDocumentDto>? documents, List<ApiDiagnostic> diagnostics)
     {
         if (documents is not { Count: > 0 })

@@ -1,8 +1,9 @@
 {
   "_comment": "Allow-list of ProjectReference edges, keyed by dependent -> [dependencies it may reference]. Seeded from the graph as of 2026-08-21 (aln.gauntlet setup) - review and tighten by hand; this only guarantees no NEW violations creep in, it does not vouch for the existing graph being correct.",
+  "_api_generation_edges_note": "Modeller.Api -> {Modeller.Generation, Modeller.Templates, Modeller.Rendering} added 2026-08-26 for issue #134 (POST /v1/workspace/generate). This is a deliberate edge, not a shortcut: docs/architecture/decisions/generation-preview-panel.mdx (Accepted) specifies a 'plan + render, no write' endpoint calling GenerationPlanner.Plan and template rendering directly, precisely because that pipeline has no filesystem write step until a separate application stage. Modeller.GenerationWorkflow was not used instead because its only entry point (GenerationExecution.ExecuteAsync) unconditionally performs Modeller.Output's filesystem-write step, which conflicts with the ADR's stateless/no-write requirement - going through it would mean either writing to disk in a hosted preview or forking its contract. Enforced going forward by tests/Modeller.ArchitectureTests: Modeller.Api must never reference Modeller.Output or Modeller.GenerationWorkflow, so the read-only invariant can't silently regress.",
   "allowedDependencies": {
     "Modeller.AI": ["Modeller.Model", "Modeller.Validation"],
-    "Modeller.Api": ["Modeller.Workspace", "Modeller.Initiative", "Modeller.Initiative.OpenAICompatible"],
+    "Modeller.Api": ["Modeller.Workspace", "Modeller.Initiative", "Modeller.Initiative.OpenAICompatible", "Modeller.Generation", "Modeller.Templates", "Modeller.Rendering"],
     "Modeller.Cli": ["*"],
     "Modeller.Contexts": ["Modeller.Model"],
     "Modeller.Editor": ["Modeller.Parsing", "Modeller.Projections", "Modeller.GenerationWorkflow"],
