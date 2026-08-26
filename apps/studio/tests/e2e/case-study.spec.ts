@@ -25,7 +25,7 @@ test('a reader discovers the Child Care story and verifies its model change in t
   await expect(page).toHaveURL(/localhost:3113\/\?example=child-care/);
   await expect(page.locator('.view-lines')).toContainText('context Child Care');
   await page.getByText('accs-determination-application.modeller', { exact: true }).click();
-  const editor = page.locator('.monaco-editor');
+  const editor = page.locator('.editor-container .monaco-editor');
   await editor.click();
   await page.keyboard.press('Control+A');
   await page.keyboard.type('rml 1.0\nentity ACCS determination application\n  lifecycle ACCS determination application lifecycle\n    stage Draft\n    stage Submitted\n    stage Awaiting information\n  end\nend');
