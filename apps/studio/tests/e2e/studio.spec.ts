@@ -82,9 +82,13 @@ test('loads a workspace directory outside samples/, and edits reach disk only on
     await page.getByLabel('Workspace directory path').fill(workspaceRoot);
     await page.getByRole('button', { name: 'Load workspace' }).click();
 
+    const documentLoad = page.waitForResponse(
+      (response) => response.url().includes('/api/document') && response.request().method() === 'GET' && response.status() === 200,
+    );
     await page.getByText('context.modeller', { exact: true }).click();
+    await documentLoad;
     const editor = page.locator('.monaco-editor');
-    await expect(editor).toBeVisible();
+    await expect(editor).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('.view-lines')).toContainText('Standalone Workspace');
 
     const savePut = page.waitForResponse(
