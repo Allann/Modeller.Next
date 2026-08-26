@@ -1,5 +1,11 @@
 namespace {{ csharp_namespace }}.Entities;
 
+{{ if definition.stage_type }}public enum {{ definition.stage_type }}
+{
+{{ for stage in definition.stages }}    {{ stage.name }}{{ if !for.last }},{{ end }}
+{{ end }}}
+
+{{ end }}
 public sealed record {{ definition.name }}(
     Guid Id
 {{ for property in definition.properties }}    , {{ property.type }}{{ if property.nullable }}?{{ end }} {{ property.name }}

@@ -1,10 +1,5 @@
 namespace {{ csharp_namespace }};
 
-public enum {{ definition.stage_type }}
-{
-{{ for stage in definition.stages }}    {{ stage.name }}{{ if !for.last }},{{ end }}
-{{ end }}}
-
 public static class {{ definition.name }}
 {
     public static {{ definition.stage_type }} Apply(

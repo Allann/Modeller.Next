@@ -48,7 +48,15 @@ public sealed class CSharpTemplateGlobalsProvider(
                 type = relationship.Cardinality == RelationshipCardinality.Many ? "IReadOnlyList<Guid>" : "Guid",
                 nullable = relationship.IsOptional
             })).ToArray();
-        return new { kind = "entity", name = Identifier(entity.Source.Name.Value), properties };
+        var lifecycle = entity.Source.Lifecycle;
+        return new
+        {
+            kind = "entity",
+            name = Identifier(entity.Source.Name.Value),
+            properties,
+            stage_type = lifecycle is null ? null : $"{Identifier(entity.Source.Name.Value)}Stage",
+            stages = lifecycle?.Stages.Select(stage => new { name = Identifier(stage.Name.Value) }).ToArray() ?? []
+        };
     }
 
     private static object Enumeration(ProjectedEnumeration enumeration) => new

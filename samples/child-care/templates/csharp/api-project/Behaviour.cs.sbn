@@ -1,11 +1,7 @@
 namespace {{ csharp_namespace }}.Behaviours;
 
 using {{ csharp_namespace }}.Rules;
-
-public enum {{ definition.stage_type }}
-{
-{{ for stage in definition.stages }}    {{ stage.name }}{{ if !for.last }},{{ end }}
-{{ end }}}
+using {{ csharp_namespace }}.Entities;
 
 public static class {{ definition.name }}
 {

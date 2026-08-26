@@ -1,6 +1,7 @@
 namespace {{ csharp_namespace }}.Apis;
 
 using {{ csharp_namespace }}.Behaviours;
+using {{ csharp_namespace }}.Entities;
 using {{ csharp_namespace }}.Rules;
 
 public sealed record {{ definition.name }}Request({{ definition.stage_type }} CurrentStage, {{ definition.facts_type }} Facts);

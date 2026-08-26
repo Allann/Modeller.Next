@@ -53,12 +53,16 @@
     "model/entities/non-chargeable-reason.modeller": [
       "01a02878-1dc7-7b03-906c-b56090d03a51", "01a02878-1dc7-7250-975c-371f8f95c606"
     ],
+    "model/entities/arrangement-end-reason.modeller": [
+      "01a03103-f09f-74db-bfba-3b1a4f4bc0b1", "01a03103-f0a3-7ac2-b89d-b67222513cab"
+    ],
     "model/entities/arrangement.modeller": [
       "01a02238-b945-7f43-be89-72890b06d62d", "01a02238-b945-74db-a2eb-6c458693f605",
       "01a02238-b945-7d98-9b06-96c18dc7e121", "01a02238-b945-711e-9d93-ad5482ff57ce",
       "01a02238-b945-77cc-83ab-ad22f3594edc", "01a02238-b945-76f6-a618-91961a616649",
       "01a02238-b945-7052-b039-86b4469c7e8b", "01a02238-b945-7838-bd4f-b60518bebc07",
-      "01a02238-b945-7233-b0bc-ab29469fdab5"
+      "01a02238-b945-7233-b0bc-ab29469fdab5", "01a03103-f0a4-7398-9941-e6eabb25d647",
+      "01a03103-f0a4-732b-8253-b3f6f5f446a6", "01a03103-f0a4-7c3d-b64e-fc5e127c885f"
     ],
     "model/entities/attendance.modeller": [
       "01a02238-b946-7006-b2e4-cc308f08e213", "01a02238-b946-7b40-a11b-e03f78164f87",

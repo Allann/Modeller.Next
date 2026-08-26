@@ -33,6 +33,51 @@ public sealed class GoldenTemplateOutputTests
     }
 
     [Fact]
+    public void CSharp_api_templates_emit_one_stage_type_for_behaviours_that_share_a_lifecycle()
+    {
+        var revision = AccsRevision(out var rule, out var firstBehaviour, out var entity);
+        var lifecycle = entity.Lifecycle!;
+        var outcome = new OutcomeDefinition(SemanticId.New(), new SemanticName("Application reviewed"),
+            new SemanticSlug("application-reviewed"));
+        var transition = new TransitionDefinition(SemanticId.New(), new SemanticName("Review application"),
+            new SemanticSlug("review-application"), new LifecycleReference(lifecycle.Id),
+            new LifecycleStageReference(lifecycle.Stages[0].Id), new LifecycleStageReference(lifecycle.Stages[1].Id),
+            new OutcomeReference(outcome.Id));
+        var binding = new RuleBinding(new RuleReference(rule.Id), RuleBindingPurpose.Requirement,
+            ImmutableDictionary<FactReference, FactReference>.Empty);
+        var secondBehaviour = new BehaviourDefinition(SemanticId.New(), new SemanticName("Review ACCS application"),
+            new SemanticSlug("review-accs-application"), new EntityReference(entity.Id), [outcome], [], [], [transition], [binding]);
+        revision = Apply(revision, new AddDefinition(secondBehaviour));
+        var provider = new CSharpTemplateGlobalsProvider(revision, "ChildCare", "ChildCare", "net10.0");
+
+        var outputs = new[]
+        {
+            Render(TemplatePath("csharp/api-project/Entity.cs.sbn"), provider, Context(revision, entity, "entity.cs")),
+            Render(TemplatePath("csharp/api-project/Behaviour.cs.sbn"), provider, Context(revision, firstBehaviour, "first.cs")),
+            Render(TemplatePath("csharp/api-project/Behaviour.cs.sbn"), provider, Context(revision, secondBehaviour, "second.cs"))
+        };
+
+        Assert.Equal(1, outputs.Sum(output => output.Split("public enum ACCSDeterminationApplicationStage", StringSplitOptions.None).Length - 1));
+        Assert.Contains("    Draft,", outputs[0], StringComparison.Ordinal);
+        Assert.Contains("    Submitted", outputs[0], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CSharp_api_entity_template_omits_stage_type_when_entity_has_no_lifecycle()
+    {
+        var revision = AccsRevision(out _, out _, out _);
+        var entity = new EntityDefinition(SemanticId.New(), new SemanticName("Provider"),
+            new SemanticSlug("provider"), null);
+        revision = Apply(revision, new AddDefinition(entity));
+        var provider = new CSharpTemplateGlobalsProvider(revision, "ChildCare", "ChildCare", "net10.0");
+
+        var output = Render(TemplatePath("csharp/api-project/Entity.cs.sbn"), provider,
+            Context(revision, entity, "provider.cs"));
+
+        Assert.DoesNotContain("public enum ProviderStage", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Python_behaviour_template_renders_an_unconditional_transition_without_a_dangling_and()
     {
         var revision = UnconditionalTransitionRevision(out var behaviour);

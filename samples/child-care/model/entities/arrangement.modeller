@@ -1,7 +1,6 @@
 rml 1.0
 # The care arrangement a family holds, driving which routine and casual
-# sessions are booked. Payee/end-reason/CRN-holder relationships are added in
-# a later increment; see gaps.md.
+# sessions are booked.
 entity Arrangement
   field Is casual only
     type boolean
@@ -30,5 +29,19 @@ entity Arrangement
   relationship Casual booking sessions
     target "Casual booking session"
     cardinality many
+  end
+  relationship Payee
+    target "Account"
+    cardinality one
+  end
+  relationship End reason
+    target "Arrangement end reason"
+    cardinality one
+    optional
+  end
+  relationship CRN holder
+    target "Adult"
+    cardinality one
+    optional
   end
 end

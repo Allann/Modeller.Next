@@ -31,6 +31,8 @@ simplified or left out):
   absence's general absence reason;
 - the Determine charge amount Rule and Run billing for booking Behaviour,
   chained off a Booking's attendance outcome;
+- an Arrangement records its required payee Account, optional end reason,
+  and optional CRN-holding Adult;
 - Centre/Room/Room age group structure for a richer entity graph; and
 - Account, Family account, Charge, Charge type, and Charge reason for the
   billing side.

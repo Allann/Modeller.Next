@@ -7,8 +7,6 @@ every entity. What was simplified or left out, by area:
 - **Child**: only core identity fields are ported. Medical records, consent,
   community support, additional-needs, school, and CCSS-confirmation
   relationships are out of scope.
-- **Arrangement**: `Payee` (Account), `EndReason` (ArrangementEndReason), and
-  `CRNHolder` (Adult) are not yet ported.
 - **Room**: `RoomNickname` is not ported. `Status` is simplified from the
   legacy audit-log-style `RoomStatus` entity to a plain `Room status type`
   enumeration field.

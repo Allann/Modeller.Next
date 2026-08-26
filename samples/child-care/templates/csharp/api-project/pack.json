@@ -13,7 +13,7 @@
     { "id": "global-usings", "path": "GlobalUsings.cs.sbn", "digest": "sha256:b583fb177fbfeb2c09597a11437c5ea41019cc49ce93c4969a14bdc11aa4a9f5" },
     { "id": "app-settings", "path": "AppSettings.json.sbn", "digest": "sha256:2d8bb40059df22089b94c025be8baad5a869b72d4d755d199c872f03bfe6f225" },
     { "id": "endpoint-module", "path": "EndpointModule.cs.sbn", "digest": "sha256:8091cd67281888c912bc04cb1a733414ba5cc824f357df74d40c77d083007bc8" },
-    { "id": "entity", "path": "Entity.cs.sbn", "digest": "sha256:d394175df1ab677e5d1410cdec5979468778bebcf6905f8958b2ea5a8150b553" },
+    { "id": "entity", "path": "Entity.cs.sbn", "digest": "sha256:91ece3829e23d37a43b7db80f84e98fabb9eaed863fde1f780e6d8116cb3572d" },
     { "id": "repository", "path": "Repository.cs.sbn", "digest": "sha256:c31a1177e183f7f61430ae6c994c9b9cb7ccb300c84fc367f166133a82915778" },
     { "id": "commands", "path": "Commands.cs.sbn", "digest": "sha256:9189e895f077f1fcfb103ee5413a4e44f4b2d4a83a7b8f5623bee8e804705c65" },
     { "id": "queries", "path": "Queries.cs.sbn", "digest": "sha256:b3f7d0036e714a33a681d8fa9978d012d489eb78efe5431cfcc09ba600bb0425" },
@@ -21,8 +21,8 @@
     { "id": "enumeration", "path": "Enumeration.cs.sbn", "digest": "sha256:d2881f913fe3796d324dc237658783e2c2034d1c5a7245d0bf21390a8b60a60f" },
     { "id": "rule", "path": "Rule.cs.sbn", "digest": "sha256:fbe51bd96f366d3472d1b81f1523f022d56444d95eb8e22a56d3cb28a363b8d8" },
     { "id": "rule-api", "path": "RuleApi.cs.sbn", "digest": "sha256:d2dd5ae5dfe59b4db29bf544edd60907548764d156e5b3b88781becaf42ad073" },
-    { "id": "behaviour", "path": "Behaviour.cs.sbn", "digest": "sha256:2dd89b045bebee6b01dafaf3278a5eea793bcb7839ea36cda46f34c197a7e6f5" },
-    { "id": "behaviour-api", "path": "BehaviourApi.cs.sbn", "digest": "sha256:2efb99d54388e3ca39c68d0e414ed71a46a3c059f37ce517a635abe951742926" }
+    { "id": "behaviour", "path": "Behaviour.cs.sbn", "digest": "sha256:7eaa3bf3330a11dc6fdd90da7f661553d78cf3d1e34a1f114f4a0afc05ea95f9" },
+    { "id": "behaviour-api", "path": "BehaviourApi.cs.sbn", "digest": "sha256:1eeb6b300507206ff7e956a97dcbe80a76e8ba930a27ef09ce64d4339d4ab269" }
   ],
   "outputs": [
     { "id": "solution", "scope": "context", "templateId": "solution", "logicalPath": "{projectName}.slnx", "owner": "csharp-api-project" },

@@ -9,10 +9,10 @@
   "templates": [
     { "id": "solution", "path": "Solution.slnx.sbn", "digest": "sha256:83de235a04176e248fbc75cf2155b932ee4a4a2841529ec56a6b858370aec10a" },
     { "id": "project", "path": "DomainProject.csproj.sbn", "digest": "sha256:592070c8bc957c50d09f5b1bf70bfa1e63e76e56c948219f612a047a88eef48e" },
-    { "id": "entity", "path": "Entity.cs.sbn", "digest": "sha256:8d78315565c4142feeac6a758b3d03c647a56075b6b3d1da35b39b3a08d88551" },
+    { "id": "entity", "path": "Entity.cs.sbn", "digest": "sha256:0aff976c593b1114c35c0a7da099012d57d26fbce1b843113e84c4ea66050261" },
     { "id": "enumeration", "path": "Enumeration.cs.sbn", "digest": "sha256:da121a0ad1daada82766d7f6e5564a1f586370769b39bdb5fd74190e2f1c547e" },
     { "id": "rule", "path": "Rule.cs.sbn", "digest": "sha256:ce40a83420c470d5b6c1ee599ce10a92470836692c8f5007d0dbd001e4353595" },
-    { "id": "behaviour", "path": "Behaviour.cs.sbn", "digest": "sha256:e2a501749fe99980133878c8575b69563d760494071a4a600aedfb46a38a53db" }
+    { "id": "behaviour", "path": "Behaviour.cs.sbn", "digest": "sha256:b405cd42775071473a65724e3819f3c41601a473abab80cfaefd29d023052e6f" }
   ],
   "outputs": [
     { "id": "solution", "scope": "context", "templateId": "solution", "logicalPath": "{projectName}.slnx", "owner": "csharp-domain-project" },

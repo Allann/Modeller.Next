@@ -10,6 +10,7 @@
     "model/entities/absence.modeller",
     "model/entities/account.modeller",
     "model/entities/adult.modeller",
+    "model/entities/arrangement-end-reason.modeller",
     "model/entities/arrangement.modeller",
     "model/entities/attendance.modeller",
     "model/entities/booking.modeller",

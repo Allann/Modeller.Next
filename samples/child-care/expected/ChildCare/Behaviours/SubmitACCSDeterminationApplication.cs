@@ -1,11 +1,5 @@
 namespace ChildCare;
 
-public enum ACCSDeterminationApplicationStage
-{
-    Draft,
-    Submitted
-}
-
 public static class SubmitACCSDeterminationApplication
 {
     public static ACCSDeterminationApplicationStage Apply(
