@@ -545,4 +545,60 @@ test.describe('generation preview panel (issue #135)', () => {
     expect(generateCallCount).toBeLessThan(edits.length);
     expect(callTimestamps[1] - callTimestamps[0]).toBeGreaterThanOrEqual(shortMinIntervalMs - 50); // small tolerance for timer scheduling jitter
   });
+
+  test('a failed generation is not used as the previous-render baseline for the next diff', async ({ page }) => {
+    await page.setViewportSize({ width: 2200, height: 1000 });
+    await mockSupportedViews(page);
+    await mockAnalyze(page, cleanResponse);
+
+    const shortMinIntervalMs = 200;
+    await page.addInitScript((intervalMs) => {
+      window.__playgroundTestGenerateMinIntervalMs__ = intervalMs;
+    }, shortMinIntervalMs);
+
+    // Three successive /generate responses: a real success, then a content failure (200 with
+    // diagnostics and no artifacts — the shape a parse/validate/plan/render failure actually
+    // returns), then a real success again. The bug: the failed attempt's empty artifact list was
+    // captured as the "previous render" baseline, so the third response's diff showed everything
+    // as newly added instead of comparing against the first response's real content.
+    let call = 0;
+    await page.route('**/v1/workspace/generate', (route) => {
+      call += 1;
+      if (call === 1) {
+        route.fulfill({ json: { apiVersion: '1.0', diagnostics: [], artifacts: [
+          { path: 'Order.g.cs', owner: 'order', packId: 'csharp/domain-project', templateId: 'entity', content: 'FIRST_SUCCESSFUL_CONTENT\n', digest: 'd1' },
+        ] } });
+      } else if (call === 2) {
+        route.fulfill({ json: { apiVersion: '1.0', diagnostics: [{ code: 'rml.parse.error', message: 'Simulated parse failure.' }], artifacts: [] } });
+      } else {
+        route.fulfill({ json: { apiVersion: '1.0', diagnostics: [], artifacts: [
+          { path: 'Order.g.cs', owner: 'order', packId: 'csharp/domain-project', templateId: 'entity', content: 'SECOND_SUCCESSFUL_CONTENT\n', digest: 'd2' },
+        ] } });
+      }
+    });
+
+    await page.goto('/');
+    await expect.poll(() => call).toBe(1);
+
+    // Force the second (failing) and third (succeeding) calls past the minimum-interval guard.
+    await page.waitForTimeout(shortMinIntervalMs);
+    await page.getByText('order.modeller', { exact: true }).click();
+    const editor = page.locator('.editor-container .monaco-editor');
+    await editor.click();
+    await page.keyboard.press('End');
+    await page.keyboard.type('X', { delay: 0 });
+    await expect.poll(() => call).toBe(2);
+
+    await page.waitForTimeout(shortMinIntervalMs);
+    await page.keyboard.type('Y', { delay: 0 });
+    await expect.poll(() => call).toBe(3);
+
+    // The diff's "before" side must show the first success's real content, not an empty baseline
+    // left behind by the failed second call.
+    // Scoped to role="presentation": Monaco's diff decorations (line-delete/line-insert view
+    // zones) also carry the plain ".view-lines" class, so an unscoped locator matches more than
+    // one element.
+    await expect(page.locator('.generation-preview-editor .editor.original .view-lines[role="presentation"]')).toContainText('FIRST_SUCCESSFUL_CONTENT');
+    await expect(page.locator('.generation-preview-editor .editor.modified .view-lines[role="presentation"]')).toContainText('SECOND_SUCCESSFUL_CONTENT');
+  });
 });

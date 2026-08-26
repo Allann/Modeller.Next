@@ -259,11 +259,18 @@ export function PlaygroundWorkbench() {
     try {
       const response = await generateWorkspace(currentDraft.documents, currentDraft.identity, currentDraft.configuration, DEFAULT_TEMPLATE_PACK_ID);
       if (requestId === generateRequestIdRef.current) {
-        // Diff each artifact against its immediately previous render, captured before this
-        // response's content overwrites it.
-        setPreviousGeneratedContent(new Map(lastGeneratedContentByPathRef.current));
-        lastGeneratedContentByPathRef.current = new Map(response.artifacts.map((artifact) => [artifact.path, artifact.content]));
-        setGeneratedArtifacts(response.artifacts);
+        // A content failure (parse/validate/plan/render) still comes back as a 200 with
+        // `diagnostics` populated and `artifacts` empty, per the API's own contract — it must not
+        // advance the "previous render" baseline, or the next successful generation would diff
+        // against nothing (an empty failed attempt) instead of the last real version. Only a
+        // response that actually produced artifacts counts as a new baseline.
+        if (response.artifacts.length > 0) {
+          // Diff each artifact against its immediately previous render, captured before this
+          // response's content overwrites it.
+          setPreviousGeneratedContent(new Map(lastGeneratedContentByPathRef.current));
+          lastGeneratedContentByPathRef.current = new Map(response.artifacts.map((artifact) => [artifact.path, artifact.content]));
+          setGeneratedArtifacts(response.artifacts);
+        }
         setGenerateDiagnostics(response.diagnostics);
         setGenerateStatus('idle');
         setGenerateErrorMessage(undefined);
