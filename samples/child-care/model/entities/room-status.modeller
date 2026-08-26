@@ -1,0 +1,18 @@
+rml 1.0
+# An auditable room status change.
+entity Room status
+  owner "Room"
+  field Status
+    type enumeration "Room status type"
+  end
+  field Reason
+    type string
+  end
+  field Date
+    type datetimeoffset
+  end
+  field Notes
+    type string
+    optional
+  end
+end

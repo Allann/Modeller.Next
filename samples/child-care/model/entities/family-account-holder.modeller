@@ -1,0 +1,12 @@
+rml 1.0
+# One ranked Adult who shares responsibility for a Family account.
+entity Family account holder
+  owner "Family account"
+  relationship Adult
+    target "Adult"
+    cardinality one
+  end
+  field Account holder rank
+    type integer
+  end
+end

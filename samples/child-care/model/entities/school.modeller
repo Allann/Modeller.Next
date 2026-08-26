@@ -1,0 +1,7 @@
+rml 1.0
+entity School
+  owner "Organisation"
+  field Name
+    type string
+  end
+end

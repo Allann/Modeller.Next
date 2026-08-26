@@ -1,0 +1,36 @@
+rml 1.0
+# The subsidy entitlement returned for one delivered booking.
+entity Session entitlement
+  field Processed date
+    type date
+  end
+  field Processed time
+    type time
+  end
+  field Charged amount
+    type decimal(12,2)
+  end
+  field Is absence
+    type boolean
+  end
+  field Entitlement type
+    type string
+  end
+  field Entitlement amount
+    type decimal(12,2)
+  end
+  field Subsidised hours
+    type decimal(12,2)
+  end
+  field Recipient
+    type string
+  end
+  field Nil or partial reason
+    type string
+    optional
+  end
+  relationship Delivered booking
+    target "Booking"
+    cardinality one
+  end
+end

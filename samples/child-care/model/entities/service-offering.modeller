@@ -1,0 +1,11 @@
+rml 1.0
+# A reusable service in the service-offering catalogue.
+entity Service offering
+  owner "Organisation"
+  field Name
+    type string
+  end
+  field Description
+    type string
+  end
+end

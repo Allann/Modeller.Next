@@ -1,0 +1,8 @@
+rml 1.0
+# A reusable label that describes an enrolment.
+entity Enrolment tag
+  owner "Organisation"
+  field Description
+    type string
+  end
+end

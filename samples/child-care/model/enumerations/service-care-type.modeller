@@ -1,0 +1,12 @@
+rml 1.0
+enumeration Service care type
+  member CBC
+    value 1
+  end
+  member FDC
+    value 2
+  end
+  member OSHC
+    value 3
+  end
+end

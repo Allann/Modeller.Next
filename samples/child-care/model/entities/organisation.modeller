@@ -1,0 +1,23 @@
+rml 1.0
+# An operator that employs people, defines roles, and owns structure nodes.
+entity Organisation
+  field Name
+    type string
+  end
+  field Short name
+    type string
+  end
+  field Abbreviation
+    type string
+  end
+  relationship Employees
+    target "Employee"
+    cardinality many
+    optional
+  end
+  relationship Roles
+    target "Role"
+    cardinality many
+    optional
+  end
+end

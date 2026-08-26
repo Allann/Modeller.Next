@@ -1,0 +1,12 @@
+rml 1.0
+# A role is defined within one organisation.
+entity Role
+  owner "Organisation"
+  field Name
+    type string
+  end
+  relationship Rights groups
+    target "Rights group"
+    cardinality many
+  end
+end

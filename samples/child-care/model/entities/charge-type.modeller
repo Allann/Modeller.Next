@@ -1,5 +1,6 @@
 rml 1.0
 entity Charge type
+  owner "Organisation"
   field Code
     type string
   end

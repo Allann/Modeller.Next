@@ -1,5 +1,6 @@
 rml 1.0
 entity Account
+  owner "Organisation"
   field Account number
     type string
   end

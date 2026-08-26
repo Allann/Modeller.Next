@@ -1,0 +1,29 @@
+rml 1.0
+# One centre submission of delivered bookings for an arrangement and week.
+entity Weekly session report
+  lifecycle Weekly session report lifecycle
+    stage Report Draft
+    stage Report Submitted
+  end
+  field Week start date
+    type date
+  end
+  field Government stage
+    type string
+  end
+  field Visible stage
+    type string
+  end
+  relationship Arrangement
+    target "Arrangement"
+    cardinality one
+  end
+  relationship Government enrolment occurrence
+    target "Government enrolment occurrence"
+    cardinality one
+  end
+  relationship Delivered bookings
+    target "Booking"
+    cardinality many
+  end
+end

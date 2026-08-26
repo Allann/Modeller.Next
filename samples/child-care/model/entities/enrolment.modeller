@@ -1,0 +1,21 @@
+rml 1.0
+# A child's connection to its family and care at one centre.
+entity Enrolment
+  owner "Centre"
+  relationship Child
+    target "Child"
+    cardinality one
+  end
+  relationship Family
+    target "Family"
+    cardinality one
+  end
+  relationship Arrangements
+    target "Arrangement"
+    cardinality many
+  end
+  relationship Tags
+    target "Enrolment tag"
+    cardinality many
+  end
+end

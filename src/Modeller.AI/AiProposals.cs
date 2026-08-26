@@ -11,32 +11,22 @@ public interface IAiProposalProvider
     ValueTask<ProviderProposal> ProposeAsync(AiProviderRequest request, CancellationToken cancellationToken = default);
 }
 
-public sealed record AiProposalRequest(
-    AuthoredContextRevision Revision,
-    long ExpectedRevision,
-    string Intent,
-    ImmutableArray<SemanticId> PermittedConcepts);
-
-public sealed record AiProviderRequest(
-    string Intent,
-    string ContextName,
-    long Revision,
-    ImmutableArray<AiConceptSummary> Concepts);
-
+public sealed record AiProposalRequest(AuthoredContextRevision Revision, long ExpectedRevision, string Intent, ImmutableArray<SemanticId> PermittedConcepts);
+public sealed record AiProviderRequest(string Intent, string ContextName, long Revision, ImmutableArray<AiConceptSummary> Concepts);
 public sealed record AiConceptSummary(SemanticId Id, string Kind, string Name, string Slug);
 public sealed record ProviderProposal(ImmutableArray<ModelOperation> Operations, string Explanation);
 public sealed record AiProposalProvenance(string ProviderId, string ProviderVersion, long SourceRevision);
 public sealed record AiProposalDiagnostic(string Code, string Message);
-public sealed record AiProposal(
-    string Id,
-    long SourceRevision,
-    ImmutableArray<ModelOperation> Operations,
-    string Explanation,
-    AiProposalProvenance Provenance);
+public sealed record AiProposal(string Id, long SourceRevision, ImmutableArray<ModelOperation> Operations, string Explanation, AiProposalProvenance Provenance);
 public sealed record AiProposalResult(AiProposal? Proposal, ImmutableArray<AiProposalDiagnostic> Diagnostics)
-{ public bool IsSuccess => Proposal is not null && Diagnostics.IsEmpty; }
+{ 
+    public bool IsSuccess => Proposal is not null && Diagnostics.IsEmpty; 
+}
+
 public sealed record AiAcceptanceResult(AuthoredContextRevision Revision, ImmutableArray<AiProposalDiagnostic> Diagnostics)
-{ public bool IsSuccess => Diagnostics.IsEmpty; }
+{ 
+    public bool IsSuccess => Diagnostics.IsEmpty; 
+}
 
 public static class AiProposalWorkflow
 {

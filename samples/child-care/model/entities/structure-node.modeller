@@ -1,0 +1,30 @@
+rml 1.0
+# One node in the organisation hierarchy. Rooms remain linked to Centre.
+entity Structure node
+  owner "Organisation"
+  relationship Type
+    target "Structure node type"
+    cardinality one
+  end
+  field Name
+    type string
+  end
+  field Description
+    type string
+    optional
+  end
+  field Previous name
+    type string
+    optional
+  end
+  relationship Parent
+    target "Structure node"
+    cardinality one
+    optional
+  end
+  relationship Centres
+    target "Centre"
+    cardinality many
+    optional
+  end
+end

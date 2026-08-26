@@ -1,0 +1,16 @@
+rml 1.0
+rule Determine session report readiness
+  input "Active government enrolment occurrence exists"
+  input "Delivered booking exists"
+  when all
+    fact "Active government enrolment occurrence exists"
+    fact "Delivered booking exists"
+  end
+  conclusion Ready for weekly session report submission
+  end
+  finding "Active government enrolment occurrence exists" true subsidy.active-occurrence-found
+  finding "Delivered booking exists" true subsidy.delivered-booking-found
+  finding "Active government enrolment occurrence exists" missing subsidy.active-occurrence-required
+  finding "Delivered booking exists" missing subsidy.delivered-booking-required
+  export
+end

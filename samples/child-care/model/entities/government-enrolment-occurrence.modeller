@@ -1,0 +1,32 @@
+rml 1.0
+# A government-recognised occurrence that connects confirmed child details to a care arrangement.
+entity Government enrolment occurrence
+  lifecycle Government enrolment occurrence lifecycle
+    stage Active
+    stage Ended
+  end
+  field Government enrolment identifier
+    type string
+  end
+  field Occurrence number
+    type int32
+  end
+  field Government stage
+    type string
+  end
+  field Government end date
+    type date
+    optional
+  end
+  field Visible stage
+    type string
+  end
+  relationship Arrangement
+    target "Arrangement"
+    cardinality one
+  end
+  relationship Confirmed child details
+    target "CCSS confirmed child"
+    cardinality one
+  end
+end

@@ -1,6 +1,7 @@
 rml 1.0
 # A one-off booking session for a child on a specific date.
 entity Casual booking session
+  owner "Arrangement"
   field Date
     type date
   end

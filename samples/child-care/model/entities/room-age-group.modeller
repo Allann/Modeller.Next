@@ -1,5 +1,6 @@
 rml 1.0
 entity Room age group
+  owner "Room"
   field Max number of children for age
     type int32
   end

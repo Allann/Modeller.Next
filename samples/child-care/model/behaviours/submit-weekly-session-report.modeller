@@ -1,0 +1,15 @@
+rml 1.0
+behaviour Submit weekly session report
+  for "Weekly session report"
+  requires "Determine session report readiness"
+  outcome Weekly session report submitted
+  end
+  outcome Weekly session report rejected
+  end
+  transition Submit report
+    lifecycle "Weekly session report lifecycle"
+    from "Report Draft"
+    to "Report Submitted"
+    outcome "Weekly session report submitted"
+  end
+end

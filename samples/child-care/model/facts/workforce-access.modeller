@@ -1,0 +1,21 @@
+rml 1.0
+fact User is an organisation member
+  type truth
+  export
+end
+fact Security assignment is current
+  type truth
+  export
+end
+fact Security assignment matches exact structure node
+  type truth
+  export
+end
+fact Assigned role grants required right
+  type truth
+  export
+end
+fact Security assignment is organisation consistent
+  type truth
+  export
+end

@@ -1,0 +1,7 @@
+rml 1.0
+# Reusable highest education received reference data.
+entity Adult highest education received
+  field Description
+    type string
+  end
+end

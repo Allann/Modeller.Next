@@ -1,0 +1,12 @@
+rml 1.0
+rule Determine user notification readiness
+  input "User notification content exists"
+  when all
+    fact "User notification content exists"
+  end
+  conclusion Ready for user notification workflow
+  end
+  finding "User notification content exists" true notification.content-found
+  finding "User notification content exists" missing notification.content-required
+  export
+end

@@ -1,0 +1,12 @@
+rml 1.0
+enumeration User notification status
+  member New
+    value 1
+  end
+  member Viewed
+    value 2
+  end
+  member Completed
+    value 3
+  end
+end

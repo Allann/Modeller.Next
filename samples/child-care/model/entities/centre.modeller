@@ -1,8 +1,7 @@
 rml 1.0
-# Service-offering, operating-hours, and structure-node relationships are out
-# of scope for this slice; see gaps.md. The direct Centre/Room relationship
-# simplifies the legacy StructureNode-mediated link.
+# A child-care service and its operational and organisational details.
 entity Centre
+  owner "Organisation"
   field Name
     type string
   end
@@ -38,12 +37,41 @@ entity Centre
   field Iana time zone
     type string
   end
+  field Australian Company Number
+    type string
+    optional
+  end
+  field Service care type
+    type enumeration "Service care type"
+  end
+  field Latitude
+    type coordinate
+  end
+  field Longitude
+    type coordinate
+  end
   relationship Addresses
     target "Centre address"
     cardinality many
   end
-  relationship Rooms
-    target "Room"
+  relationship Service offerings
+    target "Centre service offering"
+    cardinality many
+  end
+  relationship Operating hours
+    target "Centre operating hours"
+    cardinality many
+  end
+  relationship Structure nodes
+    target "Structure node"
+    cardinality many
+  end
+  relationship Enrolments
+    target "Enrolment"
+    cardinality many
+  end
+  relationship Waitlists
+    target "Waitlist"
     cardinality many
   end
 end

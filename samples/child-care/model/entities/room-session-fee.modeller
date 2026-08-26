@@ -1,6 +1,7 @@
 rml 1.0
 # The fee schedule charged for a Room/Session combination.
 entity Room session fee
+  owner "Centre"
   field Name
     type string
   end

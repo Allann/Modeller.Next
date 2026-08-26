@@ -1,7 +1,7 @@
 rml 1.0
-# The State reference-data relationship is simplified to a plain field for
-# this slice; see gaps.md.
+# A centre address that selects its state from shared reference data.
 entity Centre address
+  owner "Centre"
   field Address type
     type enumeration "Address type"
   end
@@ -15,8 +15,9 @@ entity Centre address
   field Suburb
     type string
   end
-  field State
-    type string
+  relationship State
+    target "State"
+    cardinality one
   end
   field Postcode
     type string

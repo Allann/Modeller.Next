@@ -1,0 +1,20 @@
+rml 1.0
+# An Adult's relationship, ordering, and permissions within one Family.
+entity Related adult
+  owner "Family"
+  relationship Adult
+    target "Adult"
+    cardinality one
+  end
+  relationship Relationship type
+    target "Related adult relationship type"
+    cardinality one
+  end
+  relationship Authorisations
+    target "Related adult authorisation"
+    cardinality many
+  end
+  field Display priority
+    type integer
+  end
+end

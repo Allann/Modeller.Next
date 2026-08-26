@@ -1,0 +1,7 @@
+rml 1.0
+entity Waitlist end reason
+  owner "Organisation"
+  field Description
+    type string
+  end
+end

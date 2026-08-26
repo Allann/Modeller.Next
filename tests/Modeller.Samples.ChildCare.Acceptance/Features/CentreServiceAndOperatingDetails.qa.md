@@ -1,8 +1,9 @@
-# QA procedure: A centre records its service offerings, operating hours, and registration details
+# QA procedure: A centre records its operations and organisational structure
 
-Proves that `samples/child-care` can capture a centre's service offerings,
-weekly operating hours, service care type, Australian Company Number, and
-geographic location, as a deterministic addition to the sample.
+Proves that the child-care sample records a centre's service offerings,
+weekly operating hours, service care type, Australian Company Number,
+coordinates, and place in the organisation. It also proves that rooms are
+reached through the centre structure instead of a separate direct link.
 
 ## Preconditions
 
@@ -11,41 +12,29 @@ geographic location, as a deterministic addition to the sample.
 
 ## Steps
 
-1. **Confirm the current gap.**
-   Open `samples/child-care/model/entities/centre.modeller`. Confirm none
-   of ServiceOfferings, OperatingHours, ACN, ServiceCareType, or a location
-   field are present.
+1. Review the centre in the sample. Confirm it records at least two service
+   offerings, operating hours for at least one weekday, one service care
+   type, an Australian Company Number, latitude, and longitude.
 
-2. **Add the service offering entity and relationship.**
-   Add a new entity file for a service offering (name and description
-   fields), and a "many" relationship "Service offerings" on Centre
-   targeting it.
+2. Review the service offering catalogue. Confirm each centre offering
+   identifies one catalogue offering, and that each catalogue offering has
+   a name and description.
 
-3. **Add the operating hours entity and relationship.**
-   Add a new entity file for an operating-hours entry: a day-of-week
-   enumeration field, an opening time field, and a closing time field. Add
-   a "many" relationship "Operating hours" on Centre targeting it. Reuse an
-   existing week-day enumeration if one is already declared in the
-   workspace; otherwise add one.
+3. Review the centre operating hours. Confirm each entry identifies a day,
+   an opening time, and a closing time.
 
-4. **Add the service care type enumeration and field.**
-   Add a "Service care type" enumeration (`CBC`, `FDC`, `OSHC`, matching the
-   legacy `ServiceCareType` enum) and a required "Service care type" field
-   on Centre using it.
+4. Review the organisation structure. Confirm a structure-node type states
+   whether nodes of that type can contain centres. Confirm one child node
+   refers to its parent and the centre belongs to a structure node.
 
-5. **Add the ACN and location fields.**
-   Add an optional "Australian Company Number" string field on Centre. Add
-   a "Location" field on Centre using the `coordinate` data type (a single
-   geographic-coordinate field replaces the legacy's separate
-   Latitude/Longitude pair).
+5. Review the room connection. Confirm a room belongs to its centre and that
+   the old separate direct Rooms relationship is absent from Centre.
 
-6. **Declare the new sources and mint identities.**
-   Add every new file to `samples/child-care/.modeller/config.json`. Follow
-   `docs/getting-started/create-definition.md` to mint UUIDv7 identities for
-   each new entity, enumeration, and field/relationship line, in document
-   order.
+6. Review the workspace sources and identities. Confirm each new definition
+   is included in the workspace and each new semantic line has one stable
+   UUIDv7 identity.
 
-7. **Preview the change.**
+7. Preview generation.
    Run:
    ```
    dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care --dry-run
@@ -53,45 +42,41 @@ geographic location, as a deterministic addition to the sample.
    Confirm the preview lists only the expected files as changed, and every
    other file as unchanged. Confirm the command exits successfully.
 
-8. **Generate for real.**
+8. Generate the workspace.
    Run:
    ```
    dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care
    ```
-   Confirm it exits successfully. Open Centre's generated file and confirm
-   it exposes the service-offerings and operating-hours relationships, the
-   service-care-type field, the optional ACN field, and the location field.
+   Confirm it exits successfully. Confirm the generated domain represents
+   the operational details and structure reviewed in steps 1–5.
 
-9. **Confirm idempotence.**
+9. Build the generated solution. Confirm the build succeeds without errors.
+
+10. Generate the workspace again. Confirm every output is unchanged.
    Run the same `generate` command a second time. Confirm every file is
    reported as `Unchanged`.
 
-10. **Confirm the projections still work.**
+11. Project the Structural view.
     Run:
     ```
     dotnet run --project src/Modeller.Cli -- project --workspace samples/child-care --view Structural
     ```
-    Confirm Centre shows edges to the new service-offering and
-    operating-hours entities, and still shows its existing Rooms
-    relationship unchanged (Rooms stays a direct relationship — this change
-    does not touch it).
+   Confirm the view shows the centre's service offerings, operating hours,
+   and structure nodes. Confirm the room is connected through the centre
+   structure and there is no separate direct Rooms relationship on Centre.
 
-11. **Update the sample's own documentation.**
-    In `samples/child-care/gaps.md`, remove `ServiceOfferings`,
-    `OperatingHours`, `ACN`, `ServiceCareType`, and `Longitude`/`Latitude`
-    from the Centre bullet, keeping the sentence about `StructureNodes` and
-    the direct Rooms relationship (that part is still an accurate,
-    deliberate simplification). Update `samples/child-care/README.md`'s
-    "Current slice" section to mention the centre's service offerings,
-    operating hours, and registration details.
+12. Review the sample README and gap list. Confirm they describe centre
+    operations and structure as present and no longer describe direct Rooms
+    or missing structure nodes as simplifications.
 
 ## Pass criteria
 
-- Steps 7–9 all succeed with no errors, and step 9's second generation
+- Steps 7–11 succeed with no errors, and step 10's second generation
   reports no changes.
-- A centre can be authored with service offerings, operating hours, a
-  service care type, an ACN, and a location.
+- A centre records catalogue-backed service offerings, operating hours, a
+  service care type, an ACN, latitude, and longitude.
 - A centre with no ACN still compiles (the field is optional).
-- Centre's Rooms relationship and structure-node simplification are
-  untouched.
+- Parent and child structure nodes place a centre in the organisation.
+- Centre exposes its structure nodes instead of a separate direct Rooms
+  relationship. A room still identifies its centre.
 - `gaps.md` and `README.md` reflect what is now covered.

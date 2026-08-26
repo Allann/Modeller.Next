@@ -1,6 +1,7 @@
 rml 1.0
 # A session definition at the organisation level, e.g. "Before School Care".
 entity Session
+  owner "Centre"
   field Name
     type string
   end

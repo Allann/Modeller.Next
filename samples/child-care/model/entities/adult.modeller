@@ -1,8 +1,7 @@
 rml 1.0
-# Core identity and contact fields only. Title, gender, ethnic background,
-# languages, addresses, employment status, education, and CCSS confirmation
-# are out of scope for this slice; see gaps.md.
+# Identity, contact, demographic, and reference-backed details for an adult.
 entity Adult
+  owner "Organisation"
   field First name
     type string
   end
@@ -31,6 +30,46 @@ entity Adult
   end
   field Email
     type string
+    optional
+  end
+  relationship Title
+    target "Title"
+    cardinality one
+    optional
+  end
+  relationship Gender
+    target "Gender"
+    cardinality one
+    optional
+  end
+  relationship Ethnic backgrounds
+    target "Ethnic background"
+    cardinality many
+    optional
+  end
+  relationship Languages
+    target "Language"
+    cardinality many
+    optional
+  end
+  relationship Addresses
+    target "Adult address"
+    cardinality many
+    optional
+  end
+  relationship Employment statuses
+    target "Adult employment status"
+    cardinality many
+    optional
+  end
+  relationship Highest education received
+    target "Adult highest education received"
+    cardinality one
+    optional
+  end
+  relationship CCSS confirmed adult
+    target "CCSS confirmed adult"
+    cardinality one
     optional
   end
 end

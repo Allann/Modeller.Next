@@ -1,10 +1,8 @@
 # QA procedure: A centre address records its state from a shared state list
 
-Proves that `samples/child-care` can relate a centre address to a shared
-State entity in place of a free-text field, as a deterministic addition to
-the sample. This State entity is designed to be reused by School in a
-later increment, so give it a stable, general shape now (a code and a
-name) rather than one scoped only to addresses.
+Proves that the child-care sample relates a centre address to a shared State
+entity instead of free text. The State has a stable code and name and can be
+reused by other addresses.
 
 ## Preconditions
 
@@ -13,28 +11,20 @@ name) rather than one scoped only to addresses.
 
 ## Steps
 
-1. **Confirm the current gap.**
-   Open `samples/child-care/model/entities/centre-address.modeller`.
-   Confirm "State" is a plain string field.
+1. Review the State list. Confirm Queensland has the code `QLD` and the name
+   `Queensland`.
 
-2. **Add the state entity.**
-   Add a new entity file (for example
-   `samples/child-care/model/entities/state.modeller`) with a state code
-   field (short, unique) and a state name field, matching the legacy
-   `State` domain's shape.
+2. Review a centre address. Confirm its State identifies the shared State
+   entry and is not free text.
 
-3. **Replace the field with a relationship.**
-   In `centre-address.modeller`, replace the "State" field with a required
-   "State" relationship targeting the new entity. Remove the file's leading
-   comment about the simplification once it no longer applies.
+3. Review two centre addresses in different states. Confirm each identifies
+   its correct State entry.
 
-4. **Declare the new source and mint identities.**
-   Add the new entity file to `samples/child-care/.modeller/config.json`.
-   Follow `docs/getting-started/create-definition.md` to mint UUIDv7
-   identities for the new entity and the changed relationship line, in
-   document order.
+4. Review the workspace sources and identities. Confirm the State definition
+   is included in the workspace and each new semantic line has one stable
+   UUIDv7 identity.
 
-5. **Preview the change.**
+5. Preview generation.
    Run:
    ```
    dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care --dry-run
@@ -42,7 +32,7 @@ name) rather than one scoped only to addresses.
    Confirm the preview lists only the expected files as changed, and every
    other file as unchanged. Confirm the command exits successfully.
 
-6. **Generate for real.**
+6. Generate the workspace.
    Run:
    ```
    dotnet run --project src/Modeller.Cli -- generate --workspace samples/child-care
@@ -51,23 +41,25 @@ name) rather than one scoped only to addresses.
    confirm State is now a relationship to the new State entity, not a
    string field.
 
-7. **Confirm idempotence.**
+7. Build the generated solution. Confirm the build succeeds without errors.
+
+8. Generate the workspace again. Confirm every output is unchanged.
    Run the same `generate` command a second time. Confirm every file is
    reported as `Unchanged`.
 
-8. **Confirm the projections still work.**
+9. Project the Structural view.
    Run:
    ```
    dotnet run --project src/Modeller.Cli -- project --workspace samples/child-care --view Structural
    ```
    Confirm Centre address shows an edge to the new State entity.
 
-9. **Update the sample's own documentation.**
-   In `samples/child-care/gaps.md`, remove the "Centre address" bullet.
+10. Review the sample README and gap list. Confirm the plain-State
+   simplification is no longer listed.
 
 ## Pass criteria
 
-- Steps 5–7 all succeed with no errors, and step 7's second generation
+- Steps 5–9 succeed with no errors, and step 8's second generation
   reports no changes.
 - A centre address's state reads as a relationship to a distinct State
   entity, not free text.

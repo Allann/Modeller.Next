@@ -1,0 +1,24 @@
+rml 1.0
+# Fail closed: access is allowed only when every required fact is true.
+rule Determine workforce access
+  input "User is an organisation member"
+  input "Security assignment is current"
+  input "Security assignment matches exact structure node"
+  input "Assigned role grants required right"
+  input "Security assignment is organisation consistent"
+  when all
+    fact "User is an organisation member"
+    fact "Security assignment is current"
+    fact "Security assignment matches exact structure node"
+    fact "Assigned role grants required right"
+    fact "Security assignment is organisation consistent"
+  end
+  conclusion Allowed
+  end
+  finding "User is an organisation member" missing access.organisation-membership-required
+  finding "Security assignment is current" missing access.current-assignment-required
+  finding "Security assignment matches exact structure node" missing access.exact-structure-node-required
+  finding "Assigned role grants required right" missing access.required-right-not-granted
+  finding "Security assignment is organisation consistent" missing access.organisation-boundary-violation
+  export
+end

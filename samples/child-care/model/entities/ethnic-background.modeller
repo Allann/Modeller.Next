@@ -1,0 +1,7 @@
+rml 1.0
+# Reusable ethnic background reference data.
+entity Ethnic background
+  field Description
+    type string
+  end
+end

@@ -1,0 +1,13 @@
+rml 1.0
+fact Confirmed child details exist
+  type truth
+  export
+end
+fact Active government enrolment occurrence exists
+  type truth
+  export
+end
+fact Delivered booking exists
+  type truth
+  export
+end

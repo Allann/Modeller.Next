@@ -1,7 +1,7 @@
 rml 1.0
-# Core identity fields only. Medical, consent, community-support, and school
-# relationships are out of scope for this slice; see gaps.md.
+# Identity and wellbeing details for a child.
 entity Child
+  owner "Organisation"
   field First name
     type string
   end
@@ -46,5 +46,48 @@ entity Child
   end
   field Child number
     type string
+  end
+  field Classroom
+    type string
+    optional
+  end
+  field School start year
+    type int32
+    optional
+  end
+  relationship Community support
+    target "Child community support"
+    cardinality many
+    optional
+  end
+  relationship Support required
+    target "Child specialised support required"
+    cardinality many
+    optional
+  end
+  relationship School
+    target "School"
+    cardinality one
+    optional
+  end
+  relationship Consents
+    target "Consent"
+    cardinality many
+    optional
+  end
+  relationship Medical record
+    target "Medical record"
+    cardinality one
+    optional
+  end
+  relationship Additional needs
+    target "Child additional need"
+    cardinality many
+    optional
+  end
+  relationship CCSS confirmed child
+    target "CCSS confirmed child"
+    cardinality one
+    optional
   end
 end

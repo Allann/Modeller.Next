@@ -1,0 +1,25 @@
+rml 1.0
+# An address belonging to one adult and using shared address type and state data.
+entity Adult address
+  owner "Adult"
+  field Address line 1
+    type string
+  end
+  field Address line 2
+    type string
+    optional
+  end
+  field Suburb
+    type string
+  end
+  field Postcode
+    type string
+  end
+  field Address type
+    type enumeration "Address type"
+  end
+  relationship State
+    target "State"
+    cardinality one
+  end
+end

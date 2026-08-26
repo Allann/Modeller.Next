@@ -1,0 +1,31 @@
+rml 1.0
+# A notification record for one user inside one organisation.
+entity User notification
+  owner "Organisation"
+  lifecycle User notification lifecycle
+    stage Notification Draft
+    stage Notification New
+    stage Notification Viewed
+    stage Notification Completed
+  end
+  relationship User
+    target "User"
+    cardinality one
+  end
+  field Subject
+    type string
+  end
+  field Description
+    type string
+  end
+  field Url
+    type string
+    optional
+  end
+  field Type
+    type enumeration "User notification type"
+  end
+  field Status
+    type enumeration "User notification status"
+  end
+end

@@ -1,0 +1,31 @@
+rml 1.0
+# A family groups its care relationships without replacing person identities.
+entity Family
+  owner "Organisation"
+  field Family name
+    type string
+    optional
+  end
+  relationship Pathway to centre
+    target "Pathway to centre"
+    cardinality one
+    optional
+  end
+  relationship Referral source
+    target "Referral source"
+    cardinality one
+    optional
+  end
+  relationship Children
+    target "Child"
+    cardinality many
+  end
+  relationship Related adults
+    target "Related adult"
+    cardinality many
+  end
+  relationship Family account
+    target "Family account"
+    cardinality one
+  end
+end

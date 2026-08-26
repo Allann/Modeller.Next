@@ -22,6 +22,234 @@ public sealed class WorkspaceGenerationSteps
     private RecordingCliHost? _host;
     private JsonDocument? _secondDryRun;
 
+    [Given("an enrolment connects a child, a centre, arrangements, tags, and payee accounts")]
+    public void GivenAnEnrolmentHasBeenAddedToTheSampleWorkspace()
+    {
+        const string modelSource = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Centre
+            end
+            entity Child
+            end
+            entity Account
+            end
+            entity Arrangement
+              relationship Payee
+                target "Account"
+                cardinality one
+              end
+            end
+            entity Enrolment tag
+              field Description
+                type string
+              end
+            end
+            entity Enrolment
+              owner "Centre"
+              relationship Child
+                target "Child"
+                cardinality one
+              end
+              relationship Arrangements
+                target "Arrangement"
+                cardinality many
+              end
+              relationship Tags
+                target "Enrolment tag"
+                cardinality many
+              end
+            end
+            """;
+        _host = BuildWorkspaceHost(modelSource);
+    }
+
+    [Given("a family connects its children, related adults, family account, enrolment, and arrangements")]
+    public void GivenAFamilyCapabilityHasBeenAddedToTheSampleWorkspace()
+    {
+        const string modelSource = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Adult
+            end
+            entity Child
+            end
+            entity Account
+            end
+            entity Family account holder
+              relationship Adult
+                target "Adult"
+                cardinality one
+              end
+              field Account holder rank
+                type integer
+              end
+            end
+            entity Family account
+              relationship Account
+                target "Account"
+                cardinality one
+              end
+              relationship Account holders
+                target "Family account holder"
+                cardinality many
+              end
+            end
+            entity Related adult
+              relationship Adult
+                target "Adult"
+                cardinality one
+              end
+            end
+            entity Family
+              relationship Children
+                target "Child"
+                cardinality many
+              end
+              relationship Related adults
+                target "Related adult"
+                cardinality many
+              end
+              relationship Family account
+                target "Family account"
+                cardinality one
+              end
+            end
+            entity Arrangement
+              relationship Payee
+                target "Account"
+                cardinality one
+              end
+            end
+            entity Enrolment
+              relationship Child
+                target "Child"
+                cardinality one
+              end
+              relationship Family
+                target "Family"
+                cardinality one
+              end
+              relationship Arrangements
+                target "Arrangement"
+                cardinality many
+              end
+            end
+            """;
+        _host = BuildWorkspaceHost(modelSource);
+    }
+
+    [Given("a waitlist entry connects a child, a centre, waitlist days, a room, and an end reason")]
+    public void GivenAWaitlistEntryHasBeenAddedToTheSampleWorkspace()
+    {
+        const string modelSource = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Centre
+            end
+            entity Child
+            end
+            entity Room
+            end
+            entity Waitlist end reason
+              field Description
+                type string
+              end
+            end
+            enumeration Waitlist preference type
+              member Required
+                value 1
+              end
+              member Flexible
+                value 2
+              end
+            end
+            entity Waitlist day
+              owner "Waitlist"
+              field Week day
+                type string
+              end
+              field Preference
+                type enumeration "Waitlist preference type"
+              end
+            end
+            entity Waitlist
+              owner "Centre"
+              relationship Child
+                target "Child"
+                cardinality one
+              end
+              relationship Days
+                target "Waitlist day"
+                cardinality many
+              end
+              relationship Preferred room
+                target "Room"
+                cardinality one
+                optional
+              end
+              relationship End reason
+                target "Waitlist end reason"
+                cardinality one
+                optional
+              end
+            end
+            """;
+        _host = BuildWorkspaceHost(modelSource);
+    }
+
+    [Given("confirmed child details, an enrolment occurrence, a weekly session report, and subsidy entitlements")]
+    public void GivenGovernmentSubsidyReportingHasBeenAddedToTheSampleWorkspace()
+    {
+        const string modelSource = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Arrangement
+            end
+            entity Booking
+            end
+            entity CCSS confirmed child
+            end
+            entity Government enrolment occurrence
+              relationship Arrangement
+                target "Arrangement"
+                cardinality one
+              end
+              relationship Confirmed child details
+                target "CCSS confirmed child"
+                cardinality one
+              end
+            end
+            entity Session entitlement
+              relationship Delivered booking
+                target "Booking"
+                cardinality one
+              end
+            end
+            entity Weekly session report
+              relationship Delivered bookings
+                target "Booking"
+                cardinality many
+              end
+            end
+            entity Weekly subsidy result
+              relationship Session entitlements
+                target "Session entitlement"
+                cardinality many
+              end
+            end
+            """;
+        _host = BuildWorkspaceHost(modelSource);
+    }
+
     [Given("the non-chargeable reason {string} has been added to the sample workspace")]
     public void GivenTheNonChargeableReasonHasBeenAddedToTheSampleWorkspace(string reasonName)
     {
@@ -271,6 +499,94 @@ public sealed class WorkspaceGenerationSteps
         _host = BuildWorkspaceHost(modelSource);
     }
 
+    [Given("an adult has demographic, language, address, employment, education, and government-confirmed details")]
+    public void GivenAdultDemographicAndReferenceDetailsHaveBeenAdded()
+    {
+        const string modelSource = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            enumeration Address type
+              member Residential
+                value 1
+              end
+            end
+            entity State
+            end
+            entity Title
+            end
+            entity Gender
+            end
+            entity Ethnic background
+            end
+            entity Language
+            end
+            entity Adult employment status
+            end
+            entity Adult highest education received
+            end
+            entity Adult address
+              relationship State
+                target "State"
+                cardinality one
+              end
+              field Address type
+                type enumeration "Address type"
+              end
+            end
+            entity CCSS confirmed adult
+              field Service identifier
+                type string
+                optional
+              end
+            end
+            entity Adult
+              relationship Title
+                target "Title"
+                cardinality one
+                optional
+              end
+              relationship Gender
+                target "Gender"
+                cardinality one
+                optional
+              end
+              relationship Ethnic backgrounds
+                target "Ethnic background"
+                cardinality many
+                optional
+              end
+              relationship Languages
+                target "Language"
+                cardinality many
+                optional
+              end
+              relationship Addresses
+                target "Adult address"
+                cardinality many
+                optional
+              end
+              relationship Employment statuses
+                target "Adult employment status"
+                cardinality many
+                optional
+              end
+              relationship Highest education received
+                target "Adult highest education received"
+                cardinality one
+                optional
+              end
+              relationship CCSS confirmed adult
+                target "CCSS confirmed adult"
+                cardinality one
+                optional
+              end
+            end
+            """;
+        _host = BuildWorkspaceHost(modelSource);
+    }
+
     [Given("the user {string} has been added to the sample workspace")]
     public void GivenTheUserHasBeenAddedToTheSampleWorkspace(string userName)
     {
@@ -299,6 +615,163 @@ public sealed class WorkspaceGenerationSteps
               field Authentication user identifier
                 type string
               end
+            end
+            """;
+        _host = BuildWorkspaceHost(modelSource);
+    }
+
+    [Given("the bounded workforce and access-control model has been added to the sample workspace")]
+    public void GivenTheBoundedWorkforceModelHasBeenAdded()
+    {
+        const string modelSource = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Organisation
+            end
+            entity User
+              relationship Organisations
+                target "Organisation"
+                cardinality many
+                optional
+              end
+            end
+            entity Structure node
+              owner "Organisation"
+            end
+            entity Right
+            end
+            entity Rights group
+              relationship Rights
+                target "Right"
+                cardinality many
+              end
+            end
+            entity Role
+              owner "Organisation"
+              relationship Rights groups
+                target "Rights group"
+                cardinality many
+              end
+            end
+            entity Employee
+              owner "Organisation"
+              relationship User
+                target "User"
+                cardinality one
+              end
+            end
+            entity Security assignment
+              owner "Organisation"
+              relationship User
+                target "User"
+                cardinality one
+              end
+              relationship Role
+                target "Role"
+                cardinality one
+              end
+              relationship Structure node
+                target "Structure node"
+                cardinality one
+              end
+            end
+            """;
+        _host = BuildWorkspaceHost(modelSource);
+    }
+
+    [Given("the bounded user notification generation model has been added to the sample workspace")]
+    public void GivenTheBoundedUserNotificationModelHasBeenAdded()
+    {
+        const string modelSource = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Organisation
+            end
+            entity User
+            end
+            enumeration User notification type
+              member User
+                value 1
+              end
+              member Centre
+                value 2
+              end
+              member Provider
+                value 3
+              end
+            end
+            enumeration User notification status
+              member New
+                value 1
+              end
+              member Viewed
+                value 2
+              end
+              member Completed
+                value 3
+              end
+            end
+            entity User notification
+              owner "Organisation"
+              lifecycle User notification lifecycle
+                stage Notification Draft
+                stage Notification New
+                stage Notification Viewed
+                stage Notification Completed
+              end
+              relationship User
+                target "User"
+                cardinality one
+              end
+              field Subject
+                type string
+              end
+              field Description
+                type string
+              end
+              field Url
+                type string
+                optional
+              end
+              field Type
+                type enumeration "User notification type"
+              end
+              field Status
+                type enumeration "User notification status"
+              end
+            end
+            """;
+        _host = BuildWorkspaceHost(modelSource);
+    }
+
+    [Given("the aggregate ownership audit generation model has been added to the sample workspace")]
+    public void GivenTheAggregateOwnershipAuditGenerationModelHasBeenAdded()
+    {
+        const string modelSource = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Organisation
+            end
+            entity Centre
+              owner "Organisation"
+            end
+            entity Enrolment
+              owner "Centre"
+            end
+            entity Arrangement
+              owner "Enrolment"
+            end
+            entity Booking
+              owner "Enrolment"
+            end
+            entity Routine booking session
+              owner "Arrangement"
             end
             """;
         _host = BuildWorkspaceHost(modelSource);
@@ -360,7 +833,7 @@ public sealed class WorkspaceGenerationSteps
     {
         var exit = await CliApplication.RunAsync(
             ["generate", "--workspace", "samples/child-care"], _host!, TestContext.Current.CancellationToken);
-        Assert.Equal(CliExitCode.Success, exit);
+        Assert.True(exit == CliExitCode.Success, $"Expected generation success but got {exit}: {_host!.StandardError}");
     }
 
     [When("the workspace is generated again")]
@@ -389,6 +862,7 @@ public sealed class WorkspaceGenerationSteps
         private readonly StringWriter _output = new();
         private readonly StringWriter _error = new();
         public string StandardOutput => _output.ToString();
+        public string StandardError => _error.ToString();
         public TextWriter Output => _output;
         public TextWriter Error => _error;
         public void ClearOutput() => _output.GetStringBuilder().Clear();

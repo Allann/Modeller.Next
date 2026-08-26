@@ -1,0 +1,7 @@
+rml 1.0
+entity Immunisation status
+  owner "Organisation"
+  field Description
+    type string
+  end
+end

@@ -1,0 +1,14 @@
+rml 1.0
+# A centre's opening and closing time for one day of the week.
+entity Centre operating hours
+  owner "Centre"
+  field Day
+    type enumeration "Week day"
+  end
+  field Opening time
+    type time
+  end
+  field Closing time
+    type time
+  end
+end

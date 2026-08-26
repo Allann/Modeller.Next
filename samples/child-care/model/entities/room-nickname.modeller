@@ -1,0 +1,8 @@
+rml 1.0
+# A reusable informal room name.
+entity Room nickname
+  owner "Organisation"
+  field Description
+    type string
+  end
+end

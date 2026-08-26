@@ -1,0 +1,16 @@
+rml 1.0
+entity CCSS confirmed child
+  owner "Child"
+  field Service identifier
+    type string
+    optional
+  end
+  field CRN
+    type string
+    optional
+  end
+  field Date of birth
+    type date
+    optional
+  end
+end

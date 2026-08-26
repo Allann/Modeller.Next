@@ -1,0 +1,32 @@
+rml 1.0
+entity Medical record
+  owner "Child"
+  field Medical support plan
+    type string
+    optional
+  end
+  field Has medical alert
+    type boolean
+  end
+  field Immunisation review date
+    type date
+    optional
+  end
+  field Dietary requirements
+    type string
+    optional
+  end
+  field Has additional needs alert
+    type boolean
+  end
+  relationship Medical conditions
+    target "Medical condition"
+    cardinality many
+    optional
+  end
+  relationship Immunisation statuses
+    target "Immunisation status"
+    cardinality many
+    optional
+  end
+end

@@ -1,0 +1,29 @@
+rml 1.0
+behaviour Manage user notification
+  for "User notification"
+  requires "Determine user notification readiness"
+  outcome User notification created
+  end
+  outcome User notification viewed
+  end
+  outcome User notification completed
+  end
+  transition Create user notification
+    lifecycle "User notification lifecycle"
+    from "Notification Draft"
+    to "Notification New"
+    outcome "User notification created"
+  end
+  transition View user notification
+    lifecycle "User notification lifecycle"
+    from "Notification New"
+    to "Notification Viewed"
+    outcome "User notification viewed"
+  end
+  transition Complete user notification
+    lifecycle "User notification lifecycle"
+    from "Notification Viewed"
+    to "Notification Completed"
+    outcome "User notification completed"
+  end
+end

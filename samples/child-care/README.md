@@ -33,9 +33,70 @@ simplified or left out):
   chained off a Booking's attendance outcome;
 - an Arrangement records its required payee Account, optional end reason,
   and optional CRN-holding Adult;
+- an Enrolment identifies one Child, is owned by its Centre, and groups the
+  child's Arrangements and reusable Enrolment tags; each Arrangement retains
+  its payee Account;
+- a Centre-owned Waitlist identifies one Child and records its fortnightly
+  requested-care pattern, optional preferred Room, and optional end reason;
+  it remains separate from Booking and Session;
+- a Child records reusable community-support, specialised-support, and
+  consent lists; optional School details; its Medical record and additional
+  needs; and the child's CCSS-confirmed details;
+- catalogue-backed Centre service offerings, weekly operating hours, service
+  care type, optional ACN, coordinates, and organisational Structure nodes;
+- Centre addresses select a reusable State, while Rooms belong to their Centre
+  and record an optional nickname and auditable status history; and
+- Adults select reusable title, gender, ethnic background, language,
+  employment, and education references; own typed addresses that reuse State;
+  and can identify optional government-confirmed adult details; and
 - Centre/Room/Room age group structure for a richer entity graph; and
 - Account, Family account, Charge, Charge type, and Charge reason for the
   billing side.
+
+**Family and related adults** — the family care and responsibility graph:
+
+- a Family groups its Children and family-specific Related adults, records an
+  optional name and origin, and owns one Family account;
+- each Related adult links one Adult to a relationship type, display priority,
+  and authorisations without changing the Adult identity;
+- ranked Family account holders link financial responsibility to Adults; and
+- each Enrolment identifies its Family while each Arrangement retains its
+  direct payee Account.
+
+**Government subsidy reporting** — a bounded reporting path:
+
+- a government enrolment occurrence connects one Arrangement to the Child's
+  CCSS-confirmed details and records government and visible stages;
+- separate readiness rules require confirmed child details before an
+  occurrence and an active occurrence plus a delivered Booking before a report;
+- a Weekly session report groups delivered Bookings for one week and moves
+  from report Draft to report Submitted through a guarded behaviour;
+- a returned Weekly subsidy result records weekly totals and groups complete
+  per-session entitlements, including an optional nil-or-partial reason; and
+- ACCS Arrangements reuse this path after the existing ACCS eligibility and
+  determination workflow. The reporting path does not duplicate that workflow.
+
+**Workforce and organisation access** — a fail-closed authorisation boundary:
+
+- Users can belong to more than one Organisation, while each Employee and Role
+  belongs to one Organisation;
+- Roles grant named Rights through Rights groups;
+- dated Security assignments join one User, Role, and exact Structure node; and
+- access requires a current, organisation-consistent assignment, membership,
+  an exact node match, and the required right. The model does not infer access
+  through parent or child structure nodes and does not model credentials.
+
+**User notifications** — a bounded user-message workflow:
+
+- an Organisation owns each User notification and each notification identifies
+  one User;
+- the notification records subject, description, optional URL, audience type,
+  and current status;
+- User notification type keeps the legacy User, Centre, and Provider audience
+  reference values; and
+- the bounded workflow creates a User-audience notification, then moves it
+  from New to Viewed to Completed. Delivery channels, retry queues, templates,
+  external providers, and read receipts stay outside this sample slice.
 
 Compile and validate the complete declared model with a generation preview:
 

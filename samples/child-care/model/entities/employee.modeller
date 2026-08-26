@@ -1,0 +1,33 @@
+rml 1.0
+# An organisation-owned employment record for one system user.
+entity Employee
+  owner "Organisation"
+  field External employee identifier
+    type string
+  end
+  field Name
+    type string
+  end
+  field Occupation code
+    type string
+  end
+  field Authentication subject identifier
+    type string
+  end
+  field Government person identifier
+    type string
+    optional
+  end
+  field Hire date
+    type date
+    optional
+  end
+  field Termination date
+    type date
+    optional
+  end
+  relationship User
+    target "User"
+    cardinality one
+  end
+end

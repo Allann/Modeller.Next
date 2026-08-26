@@ -1,0 +1,9 @@
+rml 1.0
+enumeration Waitlist preference type
+  member Required
+    value 1
+  end
+  member Flexible
+    value 2
+  end
+end

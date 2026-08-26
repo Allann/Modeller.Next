@@ -1,0 +1,32 @@
+rml 1.0
+entity Child additional need
+  owner "Child"
+  field Comments
+    type string
+    optional
+  end
+  field Date advised
+    type date
+  end
+  field Review date
+    type date
+    optional
+  end
+  field End date
+    type date
+    optional
+  end
+  relationship Additional need
+    target "Child additional need type"
+    cardinality one
+  end
+  relationship Specialised support required
+    target "Child specialised support required"
+    cardinality many
+    optional
+  end
+  relationship Diagnosed
+    target "Child additional needs diagnosed"
+    cardinality one
+  end
+end

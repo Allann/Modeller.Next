@@ -1,0 +1,12 @@
+rml 1.0
+rule Determine government enrolment readiness
+  input "Confirmed child details exist"
+  when all
+    fact "Confirmed child details exist"
+  end
+  conclusion Ready for government enrolment occurrence
+  end
+  finding "Confirmed child details exist" true subsidy.confirmed-child-details-found
+  finding "Confirmed child details exist" missing subsidy.confirmed-child-details-required
+  export
+end

@@ -1,0 +1,10 @@
+rml 1.0
+entity Rights group
+  field Name
+    type string
+  end
+  relationship Rights
+    target "Right"
+    cardinality many
+  end
+end

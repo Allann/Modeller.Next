@@ -1,0 +1,37 @@
+rml 1.0
+# The government result returned for one submitted weekly session report.
+entity Weekly subsidy result
+  field Weekly fee
+    type decimal(12,2)
+  end
+  field Care hours
+    type decimal(12,2)
+  end
+  field Entitlement amount
+    type decimal(12,2)
+  end
+  field Subsidised hours
+    type decimal(12,2)
+  end
+  field Preschool subsidised hours
+    type decimal(12,2)
+  end
+  field Absence count
+    type int32
+  end
+  field Processing stage
+    type string
+  end
+  field Error details
+    type string
+    optional
+  end
+  relationship Weekly session report
+    target "Weekly session report"
+    cardinality one
+  end
+  relationship Session entitlements
+    target "Session entitlement"
+    cardinality many
+  end
+end

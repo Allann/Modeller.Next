@@ -1,6 +1,7 @@
 rml 1.0
 # A Booking of attendance for a child at a centre for a session.
 entity Booking
+  owner "Enrolment"
   lifecycle Booking lifecycle
     stage Planned
     stage Attending

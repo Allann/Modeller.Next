@@ -1,0 +1,7 @@
+rml 1.0
+# Reusable adult employment status reference data.
+entity Adult employment status
+  field Description
+    type string
+  end
+end

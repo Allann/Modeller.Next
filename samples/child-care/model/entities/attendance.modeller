@@ -1,5 +1,6 @@
 rml 1.0
 entity Attendance
+  owner "Centre"
   field Date
     type date
   end

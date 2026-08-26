@@ -1,0 +1,15 @@
+rml 1.0
+# A reusable organisational hierarchy level.
+entity Structure node type
+  owner "Organisation"
+  field Name
+    type string
+  end
+  field Description
+    type string
+    optional
+  end
+  field Can contain centres
+    type boolean
+  end
+end

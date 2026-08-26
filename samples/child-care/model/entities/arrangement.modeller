@@ -2,6 +2,7 @@ rml 1.0
 # The care arrangement a family holds, driving which routine and casual
 # sessions are booked.
 entity Arrangement
+  owner "Enrolment"
   field Is casual only
     type boolean
   end

@@ -1,0 +1,37 @@
+rml 1.0
+# A request for care at one centre. It does not create a Booking or Session.
+# Family and related-adult details are deferred to issue 128.
+entity Waitlist
+  owner "Centre"
+  field Cycle week
+    type int32
+  end
+  field Created date
+    type date
+  end
+  field Preferred start date
+    type date
+  end
+  field Preferred end date
+    type date
+    optional
+  end
+  relationship Child
+    target "Child"
+    cardinality one
+  end
+  relationship Days
+    target "Waitlist day"
+    cardinality many
+  end
+  relationship Preferred room
+    target "Room"
+    cardinality one
+    optional
+  end
+  relationship End reason
+    target "Waitlist end reason"
+    cardinality one
+    optional
+  end
+end

@@ -1,6 +1,7 @@
 rml 1.0
 # A physical room at a centre.
 entity Room
+  owner "Centre"
   field Room number
     type int32
   end
@@ -23,8 +24,14 @@ entity Room
     type string
     optional
   end
-  field Status
-    type enumeration "Room status type"
+  relationship Room nickname
+    target "Room nickname"
+    cardinality one
+    optional
+  end
+  relationship Status
+    target "Room status"
+    cardinality one
   end
   relationship Age groups
     target "Room age group"

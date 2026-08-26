@@ -1,0 +1,7 @@
+rml 1.0
+# Reusable gender reference data.
+entity Gender
+  field Description
+    type string
+  end
+end

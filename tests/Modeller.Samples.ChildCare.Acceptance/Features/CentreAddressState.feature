@@ -22,6 +22,13 @@ Feature: A centre address records its state from a shared state list
     And the first centre address's state is "Queensland"
     And the second centre address's state is "New South Wales"
 
+  Scenario: A state has a reusable code and name
+    Given the shared state "Queensland" has the code "QLD"
+    When the workspace is compiled
+    Then compilation succeeds
+    And the state code is "QLD"
+    And the state name is "Queensland"
+
   Scenario: Generating the sample workspace a second time reports no changes
     Given the state "Queensland" has been added to the sample workspace
     When the workspace is generated

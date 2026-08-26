@@ -1,0 +1,5 @@
+rml 1.0
+fact User notification content exists
+  type truth
+  export
+end

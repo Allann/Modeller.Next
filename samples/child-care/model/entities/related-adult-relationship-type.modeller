@@ -1,0 +1,7 @@
+rml 1.0
+entity Related adult relationship type
+  owner "Organisation"
+  field Description
+    type string
+  end
+end

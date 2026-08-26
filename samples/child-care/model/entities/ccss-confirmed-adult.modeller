@@ -1,0 +1,17 @@
+rml 1.0
+# Optional government-confirmed adult identifiers.
+entity CCSS confirmed adult
+  owner "Adult"
+  field Service identifier
+    type string
+    optional
+  end
+  field CRN
+    type string
+    optional
+  end
+  field Date of birth
+    type date
+    optional
+  end
+end

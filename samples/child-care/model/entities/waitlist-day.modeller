@@ -1,0 +1,11 @@
+rml 1.0
+# A requested weekday owned by its Waitlist.
+entity Waitlist day
+  owner "Waitlist"
+  field Week day
+    type enumeration "Week day"
+  end
+  field Preference
+    type enumeration "Waitlist preference type"
+  end
+end

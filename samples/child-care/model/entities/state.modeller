@@ -1,0 +1,10 @@
+rml 1.0
+# Shared Australian state and territory reference data.
+entity State
+  field State code
+    type string
+  end
+  field State name
+    type string
+  end
+end

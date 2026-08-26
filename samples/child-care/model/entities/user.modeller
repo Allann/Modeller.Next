@@ -1,6 +1,5 @@
 rml 1.0
-# Core identity and authentication fields only. Organisation memberships
-# are out of scope for this slice; see gaps.md.
+# Core identity, authentication fields, and organisation memberships.
 entity User
   field User name
     type string
@@ -19,5 +18,10 @@ entity User
   end
   field Authentication user identifier
     type string
+  end
+  relationship Organisations
+    target "Organisation"
+    cardinality many
+    optional
   end
 end

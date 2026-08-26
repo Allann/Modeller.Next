@@ -1,0 +1,12 @@
+rml 1.0
+enumeration User notification type
+  member User
+    value 1
+  end
+  member Centre
+    value 2
+  end
+  member Provider
+    value 3
+  end
+end

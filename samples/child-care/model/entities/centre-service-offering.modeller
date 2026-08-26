@@ -1,0 +1,9 @@
+rml 1.0
+# A catalogue service offered by one centre.
+entity Centre service offering
+  owner "Centre"
+  relationship Service offering
+    target "Service offering"
+    cardinality one
+  end
+end

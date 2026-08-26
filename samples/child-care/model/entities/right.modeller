@@ -1,0 +1,10 @@
+rml 1.0
+entity Right
+  field Name
+    type string
+  end
+  field Description
+    type string
+    optional
+  end
+end

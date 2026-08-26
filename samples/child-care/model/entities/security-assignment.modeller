@@ -1,0 +1,24 @@
+rml 1.0
+# A dated role assignment. All linked records must belong to this organisation.
+entity Security assignment
+  owner "Organisation"
+  relationship User
+    target "User"
+    cardinality one
+  end
+  relationship Role
+    target "Role"
+    cardinality one
+  end
+  relationship Structure node
+    target "Structure node"
+    cardinality one
+  end
+  field Effective start date
+    type date
+  end
+  field Effective end date
+    type date
+    optional
+  end
+end

@@ -6,7 +6,7 @@ entity Family account
     cardinality one
   end
   relationship Account holders
-    target "Adult"
+    target "Family account holder"
     cardinality many
   end
 end
