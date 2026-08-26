@@ -99,3 +99,63 @@
 
 .playground-docs-link { align-self: center; color: inherit; font-size: .8rem; opacity: .8; text-decoration: none; }
 .playground-docs-link:hover { opacity: 1; text-decoration: underline; }
+
+/* Generation preview panel (issue #135). */
+.generation-preview-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.generation-preview-toolbar select {
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  .generation-preview-toolbar select {
+    color-scheme: dark;
+  }
+}
+.generation-preview-meta {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.7rem;
+  opacity: 0.7;
+  border-bottom: 1px solid var(--modeller-line);
+}
+.generation-preview-editor {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Narrow-viewport tab switcher between Diagram view and the generation preview (issue #135). */
+.diagram-generation-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.diagram-generation-tabbar {
+  display: flex;
+  border-bottom: 1px solid var(--modeller-line);
+}
+.diagram-generation-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.diagram-generation-tab.active {
+  opacity: 1;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--modeller-mint) 16%, transparent);
+}
+.diagram-generation-tab-panel {
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}

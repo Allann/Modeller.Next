@@ -12,13 +12,19 @@ import { useViewRootSelection } from '@/lib/useViewRootSelection';
 import './playground.css';
 import { PlaygroundEditor, applyDiagnosticMarkers } from './PlaygroundEditor';
 import { StatusBanner, type Notice } from './StatusBanner';
+import { GenerationPreview } from './GenerationPreview';
+import { DiagramGenerationTabs, type DiagramGenerationTab } from './DiagramGenerationTabs';
 import { loadDraft, resetToExample, saveDraft, type PlaygroundDraft } from '@/lib/playground/session-store';
 import {
   analyzeWorkspace,
   completeWorkspace,
   exportWorkspace,
+  generateWorkspace,
   fetchSupportedViews,
   EPHEMERAL_IDENTITY,
+  DEFAULT_TEMPLATE_PACK_ID,
+  type ApiDiagnostic,
+  type GeneratedArtifactDto,
   type ProjectionResponseDto,
   type RootSummaryDto,
   type SemanticOutlineItemDto,
@@ -27,10 +33,38 @@ import {
 import { decodeShareLink, encodeShareLink, type ShareDecodeResult } from '@/lib/playground/share-link';
 import { buildWorkspaceZip, downloadWorkspaceZip } from '@/lib/playground/workspace-bundle';
 import { capture } from '@/lib/productAnalytics';
+import { useElementWidthBreakpoint } from '@/lib/useElementWidthBreakpoint';
 
 const VIEW_KINDS = ['BehaviourMap', 'Lifecycle', 'CausalityAndEventFlow', 'ContextMap', 'Structural', 'RuleDecision'] as const;
 type ViewKind = (typeof VIEW_KINDS)[number];
 const ANALYZE_DEBOUNCE_MS = 500;
+// The generation preview (issue #135) is debounced on the same cadence as analysis, but is further
+// throttled by its own circuit breaker below: at most one /v1/workspace/generate call may be
+// in flight at a time, and calls may not start less than GENERATE_MIN_INTERVAL_MS apart.
+const GENERATE_DEBOUNCE_MS = 500;
+const GENERATE_MIN_INTERVAL_MS = 5000;
+// The panel-group width (not the browser window's) at or above which the generation preview gets
+// its own docked panel instead of sharing a tab with Diagram view.
+const GENERATION_SPLIT_BREAKPOINT_PX = 1800;
+
+declare global {
+  interface Window {
+    // Playwright's fake-clock (`page.clock`) conflicts with Monaco's own use of the `performance`
+    // API (see the failing "Cannot read properties of undefined (reading 'duration')" error it
+    // throws from inside Monaco when a page using both is time-advanced), so the circuit breaker's
+    // acceptance test instead shortens this real interval via `page.addInitScript` — a deliberately
+    // narrow test hook, inert unless a test sets it, that lets the 5s minimum interval be exercised
+    // in real time without a multi-second test. Never set outside a test.
+    __playgroundTestGenerateMinIntervalMs__?: number;
+  }
+}
+
+function getGenerateMinIntervalMs(): number {
+  if (typeof window !== 'undefined' && typeof window.__playgroundTestGenerateMinIntervalMs__ === 'number') {
+    return window.__playgroundTestGenerateMinIntervalMs__;
+  }
+  return GENERATE_MIN_INTERVAL_MS;
+}
 
 function shareDecodeErrorNotice(reason: Exclude<ShareDecodeResult, { ok: true }>['reason']): Notice {
   const text =
@@ -83,6 +117,27 @@ export function PlaygroundWorkbench() {
   const requestIdRef = useRef(0);
   const firstEditCapturedRef = useRef(false);
   const navigationKeyRef = useRef(0);
+
+  // Generation preview (issue #135) state.
+  const [generatedArtifacts, setGeneratedArtifacts] = useState<GeneratedArtifactDto[]>([]);
+  const [previousGeneratedContent, setPreviousGeneratedContent] = useState<ReadonlyMap<string, string>>(new Map());
+  const [generateStatus, setGenerateStatus] = useState<'idle' | 'generating' | 'error'>('idle');
+  const [generateDiagnostics, setGenerateDiagnostics] = useState<ApiDiagnostic[]>([]);
+  const [generateErrorMessage, setGenerateErrorMessage] = useState<string | undefined>();
+  const [diagramGenerationTab, setDiagramGenerationTab] = useState<DiagramGenerationTab>('diagram');
+  const draftRef = useRef(draft);
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
+  const generateDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const generateRetryTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const generateRequestIdRef = useRef(0);
+  const generateInFlightRef = useRef(false);
+  const generatePendingRef = useRef(false);
+  const generateLastStartRef = useRef(0);
+  const lastGeneratedContentByPathRef = useRef<Map<string, string>>(new Map());
+  const groupElementRef = useRef<HTMLDivElement | null>(null);
+  const isWideForGeneration = useElementWidthBreakpoint(groupElementRef, GENERATION_SPLIT_BREAKPOINT_PX);
 
   const loadSharedDraft = useCallback((shared: PlaygroundDraft) => {
     setDraft(shared);
@@ -158,6 +213,85 @@ export function PlaygroundWorkbench() {
     debounceRef.current = setTimeout(() => void runAnalysis(), ANALYZE_DEBOUNCE_MS);
     return () => clearTimeout(debounceRef.current);
   }, [runAnalysis]);
+
+  // Generation preview (issue #135) circuit breaker. A trigger (the debounced effect below, or a
+  // scheduled retry) always calls this same function; the guards decide whether it actually starts
+  // a call or just records that one is wanted:
+  //  - in-flight guard: a call already running -> set `pending`, do nothing else.
+  //  - minimum-interval guard: less than GENERATE_MIN_INTERVAL_MS since the last call *started* ->
+  //    set `pending` and schedule a timer for the remaining time.
+  //  - otherwise: start the call now.
+  // When a running call finishes, or a scheduled retry timer fires, `pending` is checked; if set,
+  // it's cleared and exactly one new call starts for the current draft (read from `draftRef` so it
+  // always reflects the latest edits, not whatever `draft` was when this closure was created).
+  // This is trailing-edge throttling: a burst of edits produces at most one call per
+  // GENERATE_MIN_INTERVAL_MS window, always ending on the latest state.
+  //
+  // `runGeneration` calls itself (from the retry timer, and from its own `finally` block) to start
+  // that queued trailing call. It reaches itself through `runGenerationRef` rather than its own
+  // name — the function is created once (empty dependency array) so the indirection changes
+  // nothing at runtime, but referencing the not-yet-initialized `const` directly from inside its
+  // own body reads as a temporal-dead-zone hazard to the linter.
+  const runGenerationRef = useRef<() => void>(() => {});
+  const runGeneration = useCallback(async () => {
+    if (generateInFlightRef.current) {
+      generatePendingRef.current = true;
+      return;
+    }
+    const minIntervalMs = getGenerateMinIntervalMs();
+    const elapsedSinceLastStart = Date.now() - generateLastStartRef.current;
+    if (elapsedSinceLastStart < minIntervalMs) {
+      generatePendingRef.current = true;
+      clearTimeout(generateRetryTimerRef.current);
+      generateRetryTimerRef.current = setTimeout(() => {
+        if (!generatePendingRef.current) return;
+        generatePendingRef.current = false;
+        runGenerationRef.current();
+      }, minIntervalMs - elapsedSinceLastStart);
+      return;
+    }
+
+    generateInFlightRef.current = true;
+    generateLastStartRef.current = Date.now();
+    const requestId = ++generateRequestIdRef.current;
+    setGenerateStatus('generating');
+    const currentDraft = draftRef.current;
+    try {
+      const response = await generateWorkspace(currentDraft.documents, currentDraft.identity, currentDraft.configuration, DEFAULT_TEMPLATE_PACK_ID);
+      if (requestId === generateRequestIdRef.current) {
+        // Diff each artifact against its immediately previous render, captured before this
+        // response's content overwrites it.
+        setPreviousGeneratedContent(new Map(lastGeneratedContentByPathRef.current));
+        lastGeneratedContentByPathRef.current = new Map(response.artifacts.map((artifact) => [artifact.path, artifact.content]));
+        setGeneratedArtifacts(response.artifacts);
+        setGenerateDiagnostics(response.diagnostics);
+        setGenerateStatus('idle');
+        setGenerateErrorMessage(undefined);
+      }
+    } catch (error) {
+      if (requestId === generateRequestIdRef.current) {
+        setGenerateStatus('error');
+        setGenerateErrorMessage(error instanceof Error ? error.message : 'Failed to generate the workspace preview.');
+      }
+    } finally {
+      generateInFlightRef.current = false;
+      if (generatePendingRef.current) {
+        generatePendingRef.current = false;
+        runGenerationRef.current();
+      }
+    }
+  }, []);
+  useEffect(() => {
+    runGenerationRef.current = () => void runGeneration();
+  }, [runGeneration]);
+
+  useEffect(() => {
+    clearTimeout(generateDebounceRef.current);
+    generateDebounceRef.current = setTimeout(() => void runGeneration(), GENERATE_DEBOUNCE_MS);
+    return () => clearTimeout(generateDebounceRef.current);
+  }, [draft.documents, draft.identity, draft.configuration, runGeneration]);
+
+  useEffect(() => () => clearTimeout(generateRetryTimerRef.current), []);
 
   const onDocumentChange = (path: string, value: string) => {
     if (!firstEditCapturedRef.current) {
@@ -261,6 +395,31 @@ export function PlaygroundWorkbench() {
           text: `Couldn't reach the analysis service${errorMessage ? ` (${errorMessage})` : ''}. Your draft is unaffected — it will retry on your next edit.`,
         }
       : undefined);
+  const diagramView = (
+    <DiagramView
+      view={view}
+      onViewChange={(next) => {
+        setView(next as ViewKind);
+        capture('projection_viewed', { view: next });
+      }}
+      viewOptions={availableViews}
+      rootId={rootId}
+      onRootChange={setRootId}
+      rootOptions={roots.filter((root) => root.kind === view)}
+      diagnostics={projection && !projection.succeeded ? projection.diagnostics : []}
+      graph={projection?.graph}
+      loading={!!rootId && (!projection || projection.succeeded) && !projection?.graph}
+    />
+  );
+  const generationPreview = (
+    <GenerationPreview
+      artifacts={generatedArtifacts}
+      previousContentByPath={previousGeneratedContent}
+      status={generateStatus}
+      diagnostics={generateDiagnostics}
+      errorMessage={generateErrorMessage}
+    />
+  );
   const renderConcept = (item: SemanticOutlineItemDto, depth = 0): React.ReactNode => (
     <div key={item.id} className="model-outline-group">
       <button style={{ paddingLeft: `${depth}rem` }} onClick={() => navigateToConcept(item)}>{kindLabel(item.kind)} {item.name}</button>
@@ -302,7 +461,7 @@ export function PlaygroundWorkbench() {
           </div>
         )}
       </div>
-      <Group orientation="horizontal" className="panel-group">
+      <Group orientation="horizontal" className="panel-group" elementRef={groupElementRef}>
         <Panel defaultSize="20" minSize="12">
           <div className="explorer">
             <section className="file-explorer" aria-label="Files">
@@ -340,22 +499,21 @@ export function PlaygroundWorkbench() {
           </div>
         </Panel>
         <Separator className="resize-handle" />
-        <Panel defaultSize="25" minSize="15">
-          <DiagramView
-            view={view}
-            onViewChange={(next) => {
-              setView(next as ViewKind);
-              capture('projection_viewed', { view: next });
-            }}
-            viewOptions={availableViews}
-            rootId={rootId}
-            onRootChange={setRootId}
-            rootOptions={roots.filter((root) => root.kind === view)}
-            diagnostics={projection && !projection.succeeded ? projection.diagnostics : []}
-            graph={projection?.graph}
-            loading={!!rootId && (!projection || projection.succeeded) && !projection?.graph}
-          />
-        </Panel>
+        {isWideForGeneration ? (
+          <>
+            <Panel defaultSize="12.5" minSize="10">
+              {diagramView}
+            </Panel>
+            <Separator className="resize-handle" />
+            <Panel defaultSize="12.5" minSize="10">
+              {generationPreview}
+            </Panel>
+          </>
+        ) : (
+          <Panel defaultSize="25" minSize="15">
+            <DiagramGenerationTabs active={diagramGenerationTab} onChange={setDiagramGenerationTab} diagram={diagramView} generation={generationPreview} />
+          </Panel>
+        )}
       </Group>
       <footer className="playground-status-line" role="status">
         <StatusBanner notice={analysisStatus} />

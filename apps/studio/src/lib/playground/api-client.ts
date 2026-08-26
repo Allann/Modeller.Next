@@ -126,6 +126,49 @@ interface SupportedViewsResponse {
   views: string[];
 }
 
+// The only template pack the generation preview (issue #135) currently offers — there is no
+// picker UI yet (out of scope), but `generateWorkspace` still takes `templatePackId` as a real
+// parameter rather than hard-coding it into the request body, so adding a picker later is additive
+// rather than a breaking change to this function's signature.
+export const DEFAULT_TEMPLATE_PACK_ID = 'csharp/domain-project';
+
+// One proposed generated artifact — mirrors Modeller.Api.Contracts.GeneratedArtifactDto.
+export interface GeneratedArtifactDto {
+  path: string;
+  owner: string;
+  packId: string;
+  templateId: string;
+  content: string;
+  digest: string;
+}
+
+// Response of POST /v1/workspace/generate (issue #135): a read-only generation preview. Like
+// analyze/export, a parse/validation/plan/render failure comes back as 200 with `diagnostics`
+// populated and `artifacts` empty rather than a 400/500.
+export interface WorkspaceGenerateResponse {
+  apiVersion: string;
+  diagnostics: ApiDiagnostic[];
+  artifacts: GeneratedArtifactDto[];
+}
+
+// Deliberately no `projections` field on the request — that's analyze-specific.
+export async function generateWorkspace(
+  documents: readonly WorkspaceDocumentDto[],
+  identity: IdentityDto,
+  configuration: ConfigurationDto,
+  templatePackId: string = DEFAULT_TEMPLATE_PACK_ID,
+  signal?: AbortSignal,
+): Promise<WorkspaceGenerateResponse> {
+  const response = await fetch(`${API_BASE}/v1/workspace/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ documents, identity, configuration, templatePackId }),
+    signal,
+  });
+  if (!response.ok) throw new Error(`Workspace generation failed with status ${response.status}.`);
+  return (await response.json()) as WorkspaceGenerateResponse;
+}
+
 export async function analyzeWorkspace(
   documents: readonly WorkspaceDocumentDto[],
   identity: IdentityDto,

@@ -40,6 +40,29 @@ async function mockExport(page: Page) {
   });
 }
 
+interface GenerateRequestBody {
+  documents: { path: string; content: string }[];
+  identity: { kind: 'ephemeral' } | { kind: 'durable'; version: string; documents: Record<string, string[]> };
+  configuration: { generationContractVersion: string; logicalOutputRoot: string; profile?: string };
+  templatePackId: string;
+}
+
+const GENERATED_ARTIFACTS = [
+  { path: 'Order.g.cs', owner: 'order', packId: 'csharp/domain-project', templateId: 'entity', content: 'public partial class Order {}\n', digest: 'digest-order-1' },
+  { path: 'Orderline.g.cs', owner: 'orderline', packId: 'csharp/domain-project', templateId: 'entity', content: 'public partial class Orderline {}\n', digest: 'digest-orderline-1' },
+];
+
+async function mockGenerate(page: Page, respond: (body: GenerateRequestBody) => Record<string, unknown> = () => ({
+  apiVersion: '1.0',
+  diagnostics: [],
+  artifacts: GENERATED_ARTIFACTS,
+})) {
+  await page.route('**/v1/workspace/generate', (route) => {
+    const body = route.request().postDataJSON() as GenerateRequestBody;
+    route.fulfill({ json: respond(body) });
+  });
+}
+
 async function mockCompletion(page: Page) {
   await page.route('**/v1/workspace/complete', (route) => route.fulfill({ json: {
     apiVersion: '1.0',
@@ -85,7 +108,7 @@ test('playground loads with the Ordering example, not a blank workbench', async 
   await page.goto('/');
 
   await expect(page.getByText('order.modeller', { exact: true })).toBeVisible();
-  await expect(page.locator('.monaco-editor')).toBeVisible();
+  await expect(page.locator('.editor-container .monaco-editor')).toBeVisible();
   await expect(page.locator('.view-lines')).toContainText('context Ordering');
   await expect(page.getByText('browser draft')).toBeVisible();
   await expect(page.getByRole('link', { name: 'RML syntax reference' })).toHaveAttribute(
@@ -106,7 +129,7 @@ test('a second entity in one file appears in the model explorer and summary', as
   const footerHeight = await page.locator('.playground-status-line').evaluate((element) => element.getBoundingClientRect().height);
 
   await page.getByText('order.modeller', { exact: true }).click();
-  const editor = page.locator('.monaco-editor');
+  const editor = page.locator('.editor-container .monaco-editor');
   await editor.click();
   await page.keyboard.press('Control+A');
   await page.keyboard.type('rml 1.0\nentity Order\nend\nentity Orderline\nend');
@@ -204,7 +227,7 @@ test('editing the model re-analyzes and surfaces a source-mapped diagnostic', as
 
   await page.goto('/');
   await page.getByText('order.modeller', { exact: true }).click();
-  const editor = page.locator('.monaco-editor');
+  const editor = page.locator('.editor-container .monaco-editor');
   await editor.click();
   await page.keyboard.press('Control+A');
   await page.keyboard.type('INVALID_MARKER');
@@ -221,7 +244,7 @@ test('context completion inserts a quoted workspace reference without changing i
   await page.goto('/');
   await page.getByText('place-order.modeller', { exact: true }).click();
 
-  const editor = page.locator('.monaco-editor');
+  const editor = page.locator('.editor-container .monaco-editor');
   await editor.click();
   await page.keyboard.press('Control+A');
   await page.keyboard.type('rml 1.0\nbehaviour Place order\n  requires "');
@@ -267,7 +290,7 @@ test('reset discards edits and restores the pristine example', async ({ page }) 
 
   await page.goto('/');
   await page.getByText('order.modeller', { exact: true }).click();
-  const editor = page.locator('.monaco-editor');
+  const editor = page.locator('.editor-container .monaco-editor');
   await editor.click();
   await page.keyboard.press('Control+A');
   await page.keyboard.type('entity Something Else');
@@ -284,7 +307,7 @@ test('a refresh restores the in-progress draft from sessionStorage, not the pris
 
   await page.goto('/');
   await page.getByText('order.modeller', { exact: true }).click();
-  const editor = page.locator('.monaco-editor');
+  const editor = page.locator('.editor-container .monaco-editor');
   await editor.click();
   await page.keyboard.press('Control+A');
   await page.keyboard.type('entity Something Else');
@@ -305,7 +328,7 @@ test('an analysis-service failure surfaces a status banner without crashing the 
   await page.goto('/');
 
   await expect(page.getByRole('status')).toContainText("Couldn't reach the analysis service");
-  await expect(page.locator('.monaco-editor')).toBeVisible();
+  await expect(page.locator('.editor-container .monaco-editor')).toBeVisible();
 });
 
 test('local-only filesystem/CLI-subprocess API routes are disabled in playground mode', async ({ request }) => {
@@ -321,7 +344,7 @@ test('a share link reproduces the edited model for a fresh recipient, without se
 
   await page.goto('/');
   await page.getByText('order.modeller', { exact: true }).click();
-  const editor = page.locator('.monaco-editor');
+  const editor = page.locator('.editor-container .monaco-editor');
   await editor.click();
   await page.keyboard.press('Control+A');
   await page.keyboard.type('entity Shared Widget');
@@ -424,4 +447,102 @@ test('the public playground has no workspace-directory control and refuses to lo
   // localOnlyRouteGuard must refuse it — the visitor's session is otherwise untouched.
   const response = await request.post('/api/workspace', { data: { path: 'samples/child-care' } });
   expect(response.status()).toBe(404);
+});
+
+test.describe('generation preview panel (issue #135)', () => {
+  test('on a narrow viewport, the generation preview is a tab alongside Diagram view', async ({ page }) => {
+    await page.setViewportSize({ width: 1200, height: 800 });
+    await mockSupportedViews(page);
+    await mockAnalyze(page, cleanResponse);
+    await mockGenerate(page);
+
+    await page.goto('/');
+
+    const tabbar = page.getByRole('tablist', { name: 'Diagram and generation preview' });
+    await expect(tabbar).toBeVisible();
+    const diagramTab = page.getByRole('tab', { name: 'Diagram' });
+    const generationTab = page.getByRole('tab', { name: 'Generated files' });
+    await expect(diagramTab).toHaveAttribute('aria-selected', 'true');
+    // Wide-split panels never appear alongside the tab bar.
+    await expect(page.locator('.generation-preview-pane')).toHaveCount(1);
+
+    await generationTab.click();
+    await expect(generationTab).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByLabel('Generated file')).toBeVisible();
+  });
+
+  test('on a wide viewport, Diagram view and the generation preview are both visible as separate panels', async ({ page }) => {
+    await page.setViewportSize({ width: 2200, height: 1000 });
+    await mockSupportedViews(page);
+    await mockAnalyze(page, cleanResponse);
+    await mockGenerate(page);
+
+    await page.goto('/');
+
+    // No tab switcher when split — both panels are simply visible at once.
+    await expect(page.getByRole('tablist', { name: 'Diagram and generation preview' })).toHaveCount(0);
+    await expect(page.locator('.diagram-pane')).toBeVisible();
+    await expect(page.locator('.generation-preview-pane')).toBeVisible();
+    await expect(page.getByLabel('Generated file')).toBeVisible();
+  });
+
+  test('the file dropdown is populated from the generate response', async ({ page }) => {
+    await page.setViewportSize({ width: 2200, height: 1000 });
+    await mockSupportedViews(page);
+    await mockAnalyze(page, cleanResponse);
+    await mockGenerate(page);
+
+    await page.goto('/');
+
+    const fileSelect = page.getByLabel('Generated file');
+    await expect(fileSelect).toBeVisible();
+    // The first generate call fires after the 500ms debounce — poll rather than asserting
+    // immediately after navigation.
+    await expect.poll(() => fileSelect.locator('option').allTextContents()).toEqual(GENERATED_ARTIFACTS.map((artifact) => artifact.path));
+  });
+
+  test('a burst of rapid edits produces far fewer generate calls than edits, spaced at least the minimum interval apart', async ({ page }) => {
+    await mockSupportedViews(page);
+    await mockAnalyze(page, cleanResponse);
+
+    // Playwright's fake clock (page.clock) conflicts with Monaco's own use of the `performance`
+    // API — advancing it throws from inside Monaco's internals. So this exercises the real
+    // GENERATE_MIN_INTERVAL_MS=5000 breaker in real time, but through a test-only hook
+    // (window.__playgroundTestGenerateMinIntervalMs__, wired up in PlaygroundWorkbench.tsx) that
+    // shortens the interval — otherwise this scenario would need to run for 5+ real seconds.
+    const shortMinIntervalMs = 1_200;
+    await page.addInitScript((intervalMs) => {
+      window.__playgroundTestGenerateMinIntervalMs__ = intervalMs;
+    }, shortMinIntervalMs);
+
+    let generateCallCount = 0;
+    const callTimestamps: number[] = [];
+    await page.route('**/v1/workspace/generate', (route) => {
+      generateCallCount += 1;
+      callTimestamps.push(Date.now());
+      route.fulfill({ json: { apiVersion: '1.0', diagnostics: [], artifacts: GENERATED_ARTIFACTS } });
+    });
+
+    await page.goto('/');
+
+    // Let the initial mount's debounce (500ms) fire the first generate call.
+    await expect.poll(() => generateCallCount).toBe(1);
+
+    // A burst of edits, fired well inside the shortened minimum-interval window.
+    await page.getByText('order.modeller', { exact: true }).click();
+    const editor = page.locator('.editor-container .monaco-editor');
+    await editor.click();
+    await page.keyboard.press('End');
+    const edits = ['A', 'B', 'C', 'D', 'E'];
+    for (const character of edits) {
+      await page.keyboard.type(character, { delay: 0 });
+    }
+
+    // The whole burst collapses into at most one trailing call, started no sooner than
+    // shortMinIntervalMs after the first one — never once per edit.
+    await expect.poll(() => generateCallCount, { timeout: 5_000 }).toBe(2);
+
+    expect(generateCallCount).toBeLessThan(edits.length);
+    expect(callTimestamps[1] - callTimestamps[0]).toBeGreaterThanOrEqual(shortMinIntervalMs - 50); // small tolerance for timer scheduling jitter
+  });
 });
