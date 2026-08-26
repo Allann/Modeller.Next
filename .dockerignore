@@ -5,6 +5,10 @@
 apps
 docs
 samples
+# Modeller.Api embeds this template pack directly from the sample (see Modeller.Api.csproj) —
+# re-included despite the blanket "samples" exclude above.
+!samples/child-care/templates/csharp/domain-project
+!samples/child-care/templates/csharp/domain-project/**
 conformance
 tests
 .next

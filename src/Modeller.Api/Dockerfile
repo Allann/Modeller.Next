@@ -16,7 +16,14 @@ COPY src/Modeller.Projections/Modeller.Projections.csproj src/Modeller.Projectio
 COPY src/Modeller.Contexts/Modeller.Contexts.csproj src/Modeller.Contexts/
 COPY src/Modeller.Validation/Modeller.Validation.csproj src/Modeller.Validation/
 COPY src/Modeller.Model/Modeller.Model.csproj src/Modeller.Model/
+COPY src/Modeller.Generation/Modeller.Generation.csproj src/Modeller.Generation/
+COPY src/Modeller.Templates/Modeller.Templates.csproj src/Modeller.Templates/
+COPY src/Modeller.Rendering/Modeller.Rendering.csproj src/Modeller.Rendering/
 RUN dotnet restore src/Modeller.Api/Modeller.Api.csproj
+
+# The embedded csharp/domain-project template pack (Modeller.Api.csproj's EmbeddedResource items)
+# is sourced straight from the sample, not a duplicated copy — see that csproj's comment.
+COPY samples/child-care/templates/csharp/domain-project/ samples/child-care/templates/csharp/domain-project/
 
 COPY src/Modeller.Api/ src/Modeller.Api/
 COPY src/Modeller.Initiative/ src/Modeller.Initiative/
@@ -28,6 +35,9 @@ COPY src/Modeller.Projections/ src/Modeller.Projections/
 COPY src/Modeller.Contexts/ src/Modeller.Contexts/
 COPY src/Modeller.Validation/ src/Modeller.Validation/
 COPY src/Modeller.Model/ src/Modeller.Model/
+COPY src/Modeller.Generation/ src/Modeller.Generation/
+COPY src/Modeller.Templates/ src/Modeller.Templates/
+COPY src/Modeller.Rendering/ src/Modeller.Rendering/
 RUN dotnet publish src/Modeller.Api/Modeller.Api.csproj -c Release --no-restore -o /app
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0.11 AS runtime
