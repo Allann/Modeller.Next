@@ -69,3 +69,10 @@ test('an unsupported package fails with a plain user message', async () => {
     await rm(targetRoot, { recursive: true, force: true });
   }
 });
+
+test('the Windows installer registers workspace files with the opened file placeholder', async () => {
+  const script = await readFile(path.join(process.cwd(), 'scripts', 'create-windows-dist.mjs'), 'utf-8');
+
+  assert.ok(script.includes('ModellerStudio.Workspace\\\\shell\\\\open\\\\command'));
+  assert.ok(script.includes('ModellerStudio.cmd\\\\" \\\\"%%1'));
+});

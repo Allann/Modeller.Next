@@ -40,8 +40,45 @@ writeFileSync(
     'set "PORT=3100"',
     'set "NODE_ENV=production"',
     'pushd "%~dp0"',
+    'start "" /min powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Sleep -Milliseconds 1500; Start-Process \'http://localhost:3100\'"',
     'runtime\\node.exe node_modules\\tsx\\dist\\cli.mjs server.ts %*',
     'popd',
+  ].join('\r\n'),
+);
+
+writeFileSync(
+  path.join(distRoot, 'InstallModellerStudio.cmd'),
+  [
+    '@echo off',
+    'setlocal',
+    'set "APPDIR=%~dp0"',
+    'set "COMMAND=\\"%APPDIR%ModellerStudio.cmd\\" \\"%%1\\""',
+    'reg add HKCU\\Software\\Classes\\.modeller-workspace /ve /d ModellerStudio.Workspace /f >nul',
+    'reg add HKCU\\Software\\Classes\\ModellerStudio.Workspace /ve /d "Modeller Studio workspace" /f >nul',
+    'reg add HKCU\\Software\\Classes\\ModellerStudio.Workspace\\DefaultIcon /ve /d "\\"%APPDIR%ModellerStudio.cmd\\",0" /f >nul',
+    'reg add HKCU\\Software\\Classes\\ModellerStudio.Workspace\\shell\\open\\command /ve /d "%COMMAND%" /f >nul',
+    'echo Modeller Studio is installed for this Windows user.',
+    'echo You can now double-click .modeller-workspace files to open them locally.',
+    'pause',
+  ].join('\r\n'),
+);
+
+writeFileSync(
+  path.join(distRoot, 'README.txt'),
+  [
+    'Modeller Studio for Windows',
+    '',
+    'Install once:',
+    '1. Double-click InstallModellerStudio.cmd.',
+    '2. Windows registers .modeller-workspace files for this user.',
+    '',
+    'Open a downloaded playground workspace:',
+    '1. Go to the wiki landing page.',
+    '2. Click Download workspace.',
+    '3. Double-click the downloaded .modeller-workspace file.',
+    '4. Modeller Studio starts a local server and opens http://localhost:3100.',
+    '',
+    'You can also start Studio directly with ModellerStudio.cmd.',
   ].join('\r\n'),
 );
 
