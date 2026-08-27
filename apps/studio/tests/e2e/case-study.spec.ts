@@ -14,6 +14,12 @@ test('a reader discovers the Child Care story and verifies its model change in t
     json: { apiVersion: '1.0', items: [], diagnostics: [] },
   }));
   await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Install Studio, then open the workspace.' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Install Studio for Windows/ })).toHaveAttribute(
+    'href',
+    'https://github.com/Allann/Modeller.Next/releases/download/studio-windows-latest/ModellerStudioSetup.exe',
+  );
+  await expect(page.getByText('when the installer is ready')).toHaveCount(0);
   const caseStudyLink = page.getByRole('link', { name: 'Read the case study', exact: true });
   const caseStudyHref = await caseStudyLink.getAttribute('href');
   expect(caseStudyHref).toBe('/docs/case-studies/child-care-request-more-information');
