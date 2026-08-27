@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+import { unzipSync } from 'fflate';
 
 // Every scenario mocks Modeller.Api rather than hitting the live deployment —
 // deterministic, offline-safe, and the only reliable way to trigger the
@@ -30,7 +32,10 @@ async function mockAnalyze(page: Page, respond: (body: AnalyzeRequestBody) => Re
 async function mockExport(page: Page) {
   await page.route('**/v1/workspace/export', (route) => {
     const body = route.request().postDataJSON() as AnalyzeRequestBody;
-    const documents = body.documents.map((document) => ({ ...document, content: `${document.content}\n# @id=test-identity\n` }));
+    const documents = body.documents.map((document) => ({
+      ...document,
+      content: document.content.includes('# @id=test-identity') ? document.content : `${document.content}\n# @id=test-identity\n`,
+    }));
     const identity = {
       kind: 'durable',
       version: '1.0',
@@ -421,17 +426,58 @@ test('an unsupported share-link version fails safely', async ({ page }) => {
   await expect(page.locator('.view-lines')).toContainText('context Ordering');
 });
 
-test('downloading the workspace produces a zip with durable-identity content', async ({ page }) => {
+function unzipTextFiles(bytes: Uint8Array): Record<string, string> {
+  const decoder = new TextDecoder();
+  return Object.fromEntries(
+    Object.entries(unzipSync(bytes)).map(([name, content]) => [name, decoder.decode(content)]),
+  );
+}
+
+test('downloading the workspace produces a deterministic Studio package with durable-identity content', async ({ page }) => {
   await mockSupportedViews(page);
   await mockAnalyze(page, cleanResponse);
   await mockExport(page);
 
   await page.goto('/');
-  const downloadPromise = page.waitForEvent('download');
+  const firstDownloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download workspace' }).click();
-  const download = await downloadPromise;
+  const firstDownload = await firstDownloadPromise;
 
-  expect(download.suggestedFilename()).toBe('modeller-workspace.zip');
+  const secondDownloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download workspace' }).click();
+  const secondDownload = await secondDownloadPromise;
+
+  expect(firstDownload.suggestedFilename()).toBe('modeller-workspace.modeller-workspace');
+  expect(secondDownload.suggestedFilename()).toBe('modeller-workspace.modeller-workspace');
+
+  const firstPath = await firstDownload.path();
+  const secondPath = await secondDownload.path();
+  expect(firstPath).not.toBeNull();
+  expect(secondPath).not.toBeNull();
+
+  const firstBytes = await readFile(firstPath!);
+  const secondBytes = await readFile(secondPath!);
+  expect(firstBytes.equals(secondBytes)).toBe(true);
+
+  const files = unzipTextFiles(firstBytes);
+  expect(Object.keys(files).sort()).toEqual(expect.arrayContaining([
+    '.modeller/config.json',
+    '.modeller/identities.json',
+    '.modeller/package.json',
+    'README.md',
+    'model/entities/order.modeller',
+  ]));
+  expect(JSON.parse(files['.modeller/package.json'])).toMatchObject({
+    packageKind: 'ModellerStudioWorkspace',
+    windowsFileExtension: '.modeller-workspace',
+    opensWith: 'Modeller Studio',
+  });
+  expect(files['.modeller/config.json']).toContain('"identityRegistry": ".modeller/identities.json"');
+  expect(files['.modeller/identities.json']).toContain('test-identity');
+  expect(files['model/entities/order.modeller']).toContain('# @id=test-identity');
+  expect(files['README.md']).toMatch(/install Studio for\s+Windows, open the package, and see the workspace/);
+  expect(files['README.md']).not.toMatch(/\b(clone|npm|dotnet|build|checkout|SDK|package manager)\b/i);
+
   await expect(page.getByRole('status')).toContainText('durable identities');
 });
 

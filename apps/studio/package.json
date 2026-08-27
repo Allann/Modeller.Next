@@ -12,7 +12,9 @@
     "lint": "eslint .",
     "types:check": "tsc --noEmit",
     "server:build": "dotnet publish ../../src/Modeller.LanguageServer/Modeller.LanguageServer.csproj -c Release -o server-bin && dotnet publish ../../src/Modeller.Cli/Modeller.Cli.csproj -c Release -o server-bin",
-    "test:e2e": "playwright test"
+    "dist:windows": "node scripts/create-windows-dist.mjs",
+    "test:e2e": "playwright test",
+    "test:windows-open": "tsx --test tests/unit/windows-open.test.ts"
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.1.0",

@@ -2,34 +2,45 @@
 // the CLI, local Studio, or VS Code. Assembled entirely client-side from the export response
 // (see api-client.ts's exportWorkspace) plus the bundled template pack (template-pack.ts); nothing
 // here reads local disk or calls a server beyond the one /v1/workspace/export round trip.
-import { strToU8, zipSync } from 'fflate';
+import { strToU8, zipSync, type Zippable } from 'fflate';
 import { TEMPLATE_PACK_FILES, TEMPLATE_PACK_ROOT } from './template-pack';
 import type { ConfigurationDto, DurableIdentityDto, WorkspaceDocumentDto } from './api-client';
 
-const HANDOFF_README = `# Modeller workspace
+export const MODELLER_WORKSPACE_FILE_NAME = 'modeller-workspace.modeller-workspace';
+export const MODELLER_WORKSPACE_MEDIA_TYPE = 'application/vnd.modeller.workspace+zip';
+
+const DETERMINISTIC_PACKAGE_MTIME = new Date('1980-01-01T00:00:00.000Z');
+const DETERMINISTIC_PACKAGE_OPTIONS = { mtime: DETERMINISTIC_PACKAGE_MTIME } as const;
+
+const HANDOFF_README = `# Modeller Studio workspace
 
 Downloaded from the Modeller playground. This is a complete local workspace — RML documents,
-configuration, a durable identity registry, and a C# generation template pack.
+configuration, a durable identity registry, and generation templates.
 
-## Command line
+## Open locally
 
-\`\`\`
-dotnet run --project src/Modeller.Cli -- validate model/context.modeller
-dotnet run --project src/Modeller.Cli -- project --workspace . --view Lifecycle
-dotnet run --project src/Modeller.Cli -- generate --workspace . --dry-run
-\`\`\`
+1. Install Modeller Studio for Windows from the reader path.
+2. Open this package.
+3. Studio opens the workspace and shows diagnostics and generation locally.
 
-(run from inside a checkout of https://github.com/Allann/Modeller.Next, with this folder as the
-workspace — see the CLI's own \`--help\` for every command.)
-
-## Local Studio
-
-Set \`MODELLER_STUDIO_WORKSPACE\` to this folder's path and run \`npm run dev\` in \`apps/studio\`.
-
-## VS Code
-
-Install the Modeller VS Code extension (\`editors/vscode-modeller\`) and open this folder.
+The primary reader path is: try the playground, download the workspace, install Studio for
+Windows, open the package, and see the workspace.
 `;
+
+function buildPackageJson(): string {
+  return JSON.stringify(
+    {
+      packageVersion: '1.0',
+      packageKind: 'ModellerStudioWorkspace',
+      displayName: 'Modeller Studio workspace package',
+      windowsFileExtension: '.modeller-workspace',
+      opensWith: 'Modeller Studio',
+      createdBy: 'Modeller Playground',
+    },
+    null,
+    2,
+  );
+}
 
 function buildConfigJson(configuration: ConfigurationDto, sources: readonly string[]): string {
   return JSON.stringify(
@@ -58,24 +69,29 @@ function buildIdentitiesJson(identity: DurableIdentityDto): string {
   return JSON.stringify({ version: identity.version, documents: identity.documents }, null, 2);
 }
 
+function zipTextEntry(content: string): [Uint8Array, typeof DETERMINISTIC_PACKAGE_OPTIONS] {
+  return [strToU8(content), DETERMINISTIC_PACKAGE_OPTIONS];
+}
+
 export function buildWorkspaceZip(
   documents: readonly WorkspaceDocumentDto[],
   identity: DurableIdentityDto,
   configuration: ConfigurationDto,
 ): Uint8Array {
-  const files: Record<string, Uint8Array> = {
-    '.modeller/config.json': strToU8(buildConfigJson(configuration, documents.map((document) => document.path))),
-    '.modeller/identities.json': strToU8(buildIdentitiesJson(identity)),
-    'README.md': strToU8(HANDOFF_README),
+  const files: Zippable = {
+    '.modeller/config.json': zipTextEntry(buildConfigJson(configuration, documents.map((document) => document.path))),
+    '.modeller/identities.json': zipTextEntry(buildIdentitiesJson(identity)),
+    '.modeller/package.json': zipTextEntry(buildPackageJson()),
+    'README.md': zipTextEntry(HANDOFF_README),
   };
-  for (const document of documents) files[document.path] = strToU8(document.content);
-  for (const template of TEMPLATE_PACK_FILES) files[template.path] = strToU8(template.content);
+  for (const document of documents) files[document.path] = zipTextEntry(document.content);
+  for (const template of TEMPLATE_PACK_FILES) files[template.path] = zipTextEntry(template.content);
 
-  return zipSync(files);
+  return zipSync(files, DETERMINISTIC_PACKAGE_OPTIONS);
 }
 
-export function downloadWorkspaceZip(bytes: Uint8Array, fileName = 'modeller-workspace.zip'): void {
-  const blob = new Blob([bytes as BlobPart], { type: 'application/zip' });
+export function downloadWorkspaceZip(bytes: Uint8Array, fileName = MODELLER_WORKSPACE_FILE_NAME): void {
+  const blob = new Blob([bytes as BlobPart], { type: MODELLER_WORKSPACE_MEDIA_TYPE });
   const url = URL.createObjectURL(blob);
   try {
     const anchor = document.createElement('a');

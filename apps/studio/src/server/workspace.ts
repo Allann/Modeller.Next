@@ -1,6 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { isWorkspaceRelative } from './path-safety';
+import {
+  openWorkspacePackage,
+  resolveWorkspacePackageArgument,
+  WorkspacePackageOpenError,
+} from './workspace-package';
 
 export interface ModellerConfig {
   version: string;
@@ -22,6 +27,8 @@ export class WorkspaceNotFoundError extends Error {
     this.name = 'WorkspaceNotFoundError';
   }
 }
+
+export { WorkspacePackageOpenError };
 
 // The active workspace, switchable at runtime (see setWorkspaceRoot) rather than fixed for the
 // life of the process — a local developer can point Studio at a different sample, or any other
@@ -49,6 +56,12 @@ async function readWorkspace(root: string): Promise<Workspace> {
 
 export async function loadWorkspace(): Promise<Workspace> {
   if (current) return current;
+  const packagePath = resolveWorkspacePackageArgument();
+  if (packagePath) {
+    const root = await openWorkspacePackage(packagePath);
+    current = await readWorkspace(root);
+    return current;
+  }
   current = await readWorkspace(resolveWorkspaceRoot());
   return current;
 }
