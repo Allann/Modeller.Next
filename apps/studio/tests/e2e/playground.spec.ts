@@ -447,8 +447,8 @@ test('downloading the workspace produces a deterministic Studio package with dur
   await page.getByRole('button', { name: 'Download workspace' }).click();
   const secondDownload = await secondDownloadPromise;
 
-  expect(firstDownload.suggestedFilename()).toBe('modeller-workspace.modeller-workspace');
-  expect(secondDownload.suggestedFilename()).toBe('modeller-workspace.modeller-workspace');
+  expect(firstDownload.suggestedFilename()).toBe('ordering.modeller-workspace');
+  expect(secondDownload.suggestedFilename()).toBe('ordering.modeller-workspace');
 
   const firstPath = await firstDownload.path();
   const secondPath = await secondDownload.path();

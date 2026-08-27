@@ -6,7 +6,6 @@ import { strToU8, zipSync, type Zippable } from 'fflate';
 import { TEMPLATE_PACK_FILES, TEMPLATE_PACK_ROOT } from './template-pack';
 import type { ConfigurationDto, DurableIdentityDto, WorkspaceDocumentDto } from './api-client';
 
-export const MODELLER_WORKSPACE_FILE_NAME = 'modeller-workspace.modeller-workspace';
 export const MODELLER_WORKSPACE_MEDIA_TYPE = 'application/vnd.modeller.workspace+zip';
 
 const DETERMINISTIC_PACKAGE_MTIME = new Date('1980-01-01T00:00:00.000Z');
@@ -19,13 +18,18 @@ configuration, a durable identity registry, and generation templates.
 
 ## Open locally
 
-1. Install Modeller Studio for Windows from the reader path.
-2. Open this package.
+1. Install Modeller Studio for Windows.
+2. Double-click this package.
 3. Studio opens the workspace and shows diagnostics and generation locally.
 
 The primary reader path is: try the playground, download the workspace, install Studio for
 Windows, open the package, and see the workspace.
 `;
+
+const WORKSPACE_FILE_NAMES_BY_PROFILE: Record<string, string> = {
+  'child-care-csharp': 'child-care.modeller-workspace',
+  'ordering-csharp': 'ordering.modeller-workspace',
+};
 
 function buildPackageJson(): string {
   return JSON.stringify(
@@ -90,7 +94,12 @@ export function buildWorkspaceZip(
   return zipSync(files, DETERMINISTIC_PACKAGE_OPTIONS);
 }
 
-export function downloadWorkspaceZip(bytes: Uint8Array, fileName = MODELLER_WORKSPACE_FILE_NAME): void {
+export function workspacePackageFileName(configuration: ConfigurationDto): string {
+  const profile = configuration.profile;
+  return profile ? (WORKSPACE_FILE_NAMES_BY_PROFILE[profile] ?? 'workspace.modeller-workspace') : 'workspace.modeller-workspace';
+}
+
+export function downloadWorkspaceZip(bytes: Uint8Array, fileName = 'workspace.modeller-workspace'): void {
   const blob = new Blob([bytes as BlobPart], { type: MODELLER_WORKSPACE_MEDIA_TYPE });
   const url = URL.createObjectURL(blob);
   try {

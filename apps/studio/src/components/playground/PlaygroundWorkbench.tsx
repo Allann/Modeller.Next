@@ -31,7 +31,7 @@ import {
   type SemanticCountDto,
 } from '@/lib/playground/api-client';
 import { decodeShareLink, encodeShareLink, type ShareDecodeResult } from '@/lib/playground/share-link';
-import { buildWorkspaceZip, downloadWorkspaceZip } from '@/lib/playground/workspace-bundle';
+import { buildWorkspaceZip, downloadWorkspaceZip, workspacePackageFileName } from '@/lib/playground/workspace-bundle';
 import { capture } from '@/lib/productAnalytics';
 import { useElementWidthBreakpoint } from '@/lib/useElementWidthBreakpoint';
 
@@ -354,7 +354,7 @@ export function PlaygroundWorkbench() {
       setDraft(nextDraft);
       saveDraft(nextDraft);
       setDraftRevision((revision) => revision + 1); // documents now carry embedded "# @id=" identities — remount the editor to show them
-      downloadWorkspaceZip(buildWorkspaceZip(response.documents, response.identity, draft.configuration));
+      downloadWorkspaceZip(buildWorkspaceZip(response.documents, response.identity, draft.configuration), workspacePackageFileName(draft.configuration));
       capture('workspace_downloaded');
       setUiNotice({ kind: 'info', text: 'Workspace downloaded. Documents now carry durable identities (the "# @id=" comments) — repeat downloads reuse them.' });
     } catch (error) {
