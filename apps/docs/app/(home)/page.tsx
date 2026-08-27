@@ -217,8 +217,14 @@ const outcomes = [
   'AI assistance grounded in an explicit model',
 ];
 
+function withWorkspaceDownload(url: string): string {
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}download=workspace`;
+}
+
 export default function HomePage() {
   const playgroundUrl = process.env.NEXT_PUBLIC_PLAYGROUND_URL ?? 'https://modeller.website/playground?example=child-care';
+  const playgroundDownloadUrl = withWorkspaceDownload(playgroundUrl);
   return (
     <div className="modeller-home">
       <section className="marketing-hero">
@@ -397,13 +403,13 @@ export default function HomePage() {
       <IconBanner
         className="download-banner"
         icon={Download}
-        eyebrow={<>Get System Design <span className="coming-soon-badge">Coming soon</span></>}
-        title="A desktop app for the System Design workflow."
-        text="Model, generate, and review projects without leaving your machine. The System Design desktop app for macOS, Windows, and Linux is on its way."
+        eyebrow="Take the model local"
+        title="Download a workspace from the playground."
+        text="Open the Child Care model, download the workspace package, and keep the model files with you. The Windows Studio app will open this package directly when the installer is ready."
         trailing={
-          <span className="primary-action download-action" aria-disabled="true">
-            Download <span className="coming-soon-badge">Coming soon</span>
-          </span>
+          <a className="primary-action download-action" href={playgroundDownloadUrl}>
+            Download workspace <ArrowRight size={17} />
+          </a>
         }
       />
 

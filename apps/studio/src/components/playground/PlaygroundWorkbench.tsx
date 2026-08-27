@@ -117,6 +117,7 @@ export function PlaygroundWorkbench() {
   const requestIdRef = useRef(0);
   const firstEditCapturedRef = useRef(false);
   const navigationKeyRef = useRef(0);
+  const autoDownloadStartedRef = useRef(false);
 
   // Generation preview (issue #135) state.
   const [generatedArtifacts, setGeneratedArtifacts] = useState<GeneratedArtifactDto[]>([]);
@@ -362,6 +363,20 @@ export function PlaygroundWorkbench() {
       setDownloading(false);
     }
   };
+
+  useEffect(() => {
+    if (autoDownloadStartedRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('download') !== 'workspace') return;
+    autoDownloadStartedRef.current = true;
+    params.delete('download');
+    const nextSearch = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`);
+    window.setTimeout(() => void onDownload(), 0);
+    // This runs only once on initial playground entry. It deliberately uses the initial draft
+    // loaded for that URL, so the wiki download link behaves like a direct package download.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const openDocument = (path: string) => {
     setActivePath(path);
