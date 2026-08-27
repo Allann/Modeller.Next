@@ -16,6 +16,7 @@ export interface ModellerConfig {
 export interface Workspace {
   root: string;
   sources: string[];
+  openedFromPackage?: boolean;
 }
 
 // Thrown for a directory that doesn't have a `.modeller/config.json` — distinguished from other
@@ -59,7 +60,7 @@ export async function loadWorkspace(): Promise<Workspace> {
   const packagePath = resolveWorkspacePackageArgument();
   if (packagePath) {
     const root = await openWorkspacePackage(packagePath);
-    current = await readWorkspace(root);
+    current = { ...(await readWorkspace(root)), openedFromPackage: true };
     return current;
   }
   current = await readWorkspace(resolveWorkspaceRoot());

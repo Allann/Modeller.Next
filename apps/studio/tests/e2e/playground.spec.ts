@@ -471,11 +471,13 @@ test('downloading the workspace produces a deterministic Studio package with dur
     packageKind: 'ModellerStudioWorkspace',
     windowsFileExtension: '.modeller-workspace',
     opensWith: 'Modeller Studio',
+    windowsInstallerUrl: 'https://github.com/Allann/Modeller.Next/releases/download/studio-windows-latest/ModellerStudioSetup.exe',
   });
   expect(files['.modeller/config.json']).toContain('"identityRegistry": ".modeller/identities.json"');
   expect(files['.modeller/identities.json']).toContain('test-identity');
   expect(files['model/entities/order.modeller']).toContain('# @id=test-identity');
   expect(files['README.md']).toMatch(/install Studio for\s+Windows, open the package, and see the workspace/);
+  expect(files['README.md']).toContain('ModellerStudioSetup.exe');
   expect(files['README.md']).not.toMatch(/\b(clone|npm|dotnet|build|checkout|SDK|package manager)\b/i);
 
   await expect(page.getByRole('status')).toContainText('durable identities');

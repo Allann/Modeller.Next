@@ -20,16 +20,22 @@ export function WorkbenchShell() {
   const [root, setRoot] = useState<string>('');
   const [rootInput, setRootInput] = useState('');
   const [rootError, setRootError] = useState<string | undefined>();
+  const [openedFromPackage, setOpenedFromPackage] = useState(false);
   const [openDocuments, setOpenDocuments] = useState<OpenDocument[]>([]);
   const [activePath, setActivePath] = useState<string | undefined>();
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
     void fetch('/api/workspace')
-      .then((response) => response.json())
-      .then((data: { root: string; sources: string[] }) => {
-        setRoot(data.root);
+      .then(async (response) => {
+        const data = (await response.json()) as { root?: string; sources?: string[]; openedFromPackage?: boolean; error?: string };
+        if (!response.ok || !data.sources) {
+          setRootError(data.error ?? 'Could not open the workspace.');
+          return;
+        }
+        setRoot(data.root ?? '');
         setSources(data.sources);
+        setOpenedFromPackage(data.openedFromPackage ?? false);
       });
   }, []);
 
@@ -48,6 +54,7 @@ export function WorkbenchShell() {
     }
     setRoot(data.root ?? rootInput.trim());
     setSources(data.sources);
+    setOpenedFromPackage(false);
     setOpenDocuments([]);
     setActivePath(undefined);
   };
@@ -95,24 +102,31 @@ export function WorkbenchShell() {
         <div className="brand">
           <span className="mark">M</span> Modeller Studio
         </div>
-        <div className="workspace-switcher" aria-label="Workspace">
-          <input
-            type="text"
-            placeholder={root || 'Workspace directory path'}
-            value={rootInput}
-            onChange={(event) => setRootInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') void onLoadWorkspace();
-            }}
-            aria-label="Workspace directory path"
-          />
-          <button onClick={() => void onLoadWorkspace()}>Load workspace</button>
-          {rootError && (
-            <span className="workspace-switcher-error" role="alert">
-              {rootError}
-            </span>
-          )}
-        </div>
+        {!openedFromPackage && (
+          <div className="workspace-switcher" aria-label="Workspace">
+            <input
+              type="text"
+              placeholder={root || 'Workspace directory path'}
+              value={rootInput}
+              onChange={(event) => setRootInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void onLoadWorkspace();
+              }}
+              aria-label="Workspace directory path"
+            />
+            <button onClick={() => void onLoadWorkspace()}>Load workspace</button>
+          </div>
+        )}
+        {openedFromPackage && (
+          <div className="workspace-switcher" aria-label="Workspace">
+            <span>Opened workspace package</span>
+          </div>
+        )}
+        {!openedFromPackage && rootError && (
+          <span className="workspace-switcher-error" role="alert">
+            {rootError}
+          </span>
+        )}
       </div>
       <Group orientation="horizontal" className="panel-group">
         <Panel defaultSize="20" minSize="12">

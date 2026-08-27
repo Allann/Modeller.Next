@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadWorkspace, setWorkspaceRoot, WorkspaceNotFoundError } from '@/server/workspace';
+import { loadWorkspace, setWorkspaceRoot, WorkspaceNotFoundError, WorkspacePackageOpenError } from '@/server/workspace';
 import { localOnlyRouteGuard } from '@/server/playground-guard';
 
 export async function GET() {
   const guarded = localOnlyRouteGuard();
   if (guarded) return guarded;
 
-  const workspace = await loadWorkspace();
-  return NextResponse.json({ root: workspace.root, sources: workspace.sources });
+  try {
+    const workspace = await loadWorkspace();
+    return NextResponse.json({ root: workspace.root, sources: workspace.sources, openedFromPackage: workspace.openedFromPackage ?? false });
+  } catch (error) {
+    if (error instanceof WorkspacePackageOpenError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    throw error;
+  }
 }
 
 // Switches the active workspace to a different local directory (issue: load samples/child-care's

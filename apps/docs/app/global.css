@@ -185,6 +185,7 @@ html > body[data-scroll-locked] { margin-right: 0 !important; --removed-body-scr
 
 .coming-soon-badge { display: inline-flex; align-items: center; border-radius: var(--radius-pill); background: color-mix(in srgb,var(--modeller-mint) 32%,transparent); padding: .18rem .6rem; font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: none; }
 .dark .coming-soon-badge { background: rgba(94,234,212,.14); }
+.download-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-xs); justify-content: flex-end; }
 .download-action { display: inline-flex; align-items: center; gap: var(--spacing-xs); border-radius: .65rem; padding: .82rem 1.1rem; font-weight: 750; }
 .download-action .coming-soon-badge { background: rgba(255,255,255,.22); color: white; }
 

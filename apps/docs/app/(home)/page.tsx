@@ -222,6 +222,9 @@ function withWorkspaceDownload(url: string): string {
   return `${url}${separator}download=workspace`;
 }
 
+const windowsStudioInstallerUrl =
+  'https://github.com/Allann/Modeller.Next/releases/download/studio-windows-latest/ModellerStudioSetup.exe';
+
 export default function HomePage() {
   const playgroundUrl = process.env.NEXT_PUBLIC_PLAYGROUND_URL ?? 'https://modeller.website/playground?example=child-care';
   const playgroundDownloadUrl = withWorkspaceDownload(playgroundUrl);
@@ -404,12 +407,17 @@ export default function HomePage() {
         className="download-banner"
         icon={Download}
         eyebrow="Take the model local"
-        title="Download a workspace from the playground."
-        text="Open the Child Care model, download the workspace package, and keep the model files with you. The Windows Studio app will open this package directly when the installer is ready."
+        title="Install Studio, then open the workspace."
+        text="Install Modeller Studio for Windows, download the Child Care workspace, then double-click the package. Studio opens it locally with the bundled Modeller tools."
         trailing={
-          <a className="primary-action download-action" href={playgroundDownloadUrl}>
-            Download workspace <ArrowRight size={17} />
-          </a>
+          <div className="download-actions">
+            <a className="primary-action download-action" href={windowsStudioInstallerUrl}>
+              Install Studio for Windows <ArrowRight size={17} />
+            </a>
+            <a className="secondary-action download-action" href={playgroundDownloadUrl}>
+              Download workspace
+            </a>
+          </div>
         }
       />
 

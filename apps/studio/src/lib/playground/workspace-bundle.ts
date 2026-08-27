@@ -7,6 +7,8 @@ import { TEMPLATE_PACK_FILES, TEMPLATE_PACK_ROOT } from './template-pack';
 import type { ConfigurationDto, DurableIdentityDto, WorkspaceDocumentDto } from './api-client';
 
 export const MODELLER_WORKSPACE_MEDIA_TYPE = 'application/vnd.modeller.workspace+zip';
+export const WINDOWS_STUDIO_INSTALLER_URL =
+  'https://github.com/Allann/Modeller.Next/releases/download/studio-windows-latest/ModellerStudioSetup.exe';
 
 const DETERMINISTIC_PACKAGE_MTIME = new Date('1980-01-01T00:00:00.000Z');
 const DETERMINISTIC_PACKAGE_OPTIONS = { mtime: DETERMINISTIC_PACKAGE_MTIME } as const;
@@ -21,6 +23,8 @@ configuration, a durable identity registry, and generation templates.
 1. Install Modeller Studio for Windows.
 2. Double-click this package.
 3. Studio opens the workspace and shows diagnostics and generation locally.
+
+If Studio is not installed, get the Windows installer from ${WINDOWS_STUDIO_INSTALLER_URL}.
 
 The primary reader path is: try the playground, download the workspace, install Studio for
 Windows, open the package, and see the workspace.
@@ -39,6 +43,7 @@ function buildPackageJson(): string {
       displayName: 'Modeller Studio workspace package',
       windowsFileExtension: '.modeller-workspace',
       opensWith: 'Modeller Studio',
+      windowsInstallerUrl: WINDOWS_STUDIO_INSTALLER_URL,
       createdBy: 'Modeller Playground',
     },
     null,

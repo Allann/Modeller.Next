@@ -74,5 +74,9 @@ test('the Windows installer registers workspace files with the opened file place
   const script = await readFile(path.join(process.cwd(), 'scripts', 'create-windows-dist.mjs'), 'utf-8');
 
   assert.ok(script.includes('ModellerStudio.Workspace\\\\shell\\\\open\\\\command'));
-  assert.ok(script.includes('ModellerStudio.cmd\\\\" \\\\"%%1'));
+  assert.ok(script.includes('wscript.exe \\\\"%APPDIR%ModellerStudio.vbs\\\\" \\\\"%%1'));
+  assert.ok(script.includes('shell.Run command, 0, False'));
+  assert.ok(script.includes('OutputBaseFilename=ModellerStudioSetup'));
+  assert.ok(script.includes('ValueData: "wscript.exe ""{app}\\\\ModellerStudio.vbs"" ""%1"""'));
+  assert.ok(script.includes('Run ModellerStudioSetup.exe.'));
 });

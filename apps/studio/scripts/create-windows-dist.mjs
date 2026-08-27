@@ -47,12 +47,25 @@ writeFileSync(
 );
 
 writeFileSync(
+  path.join(distRoot, 'ModellerStudio.vbs'),
+  [
+    'Set shell = CreateObject("WScript.Shell")',
+    'Set args = WScript.Arguments',
+    'command = Chr(34) & Replace(WScript.ScriptFullName, "ModellerStudio.vbs", "ModellerStudio.cmd") & Chr(34)',
+    'For Each arg In args',
+    '  command = command & " " & Chr(34) & arg & Chr(34)',
+    'Next',
+    'shell.Run command, 0, False',
+  ].join('\r\n'),
+);
+
+writeFileSync(
   path.join(distRoot, 'InstallModellerStudio.cmd'),
   [
     '@echo off',
     'setlocal',
     'set "APPDIR=%~dp0"',
-    'set "COMMAND=\\"%APPDIR%ModellerStudio.cmd\\" \\"%%1\\""',
+    'set "COMMAND=wscript.exe \\"%APPDIR%ModellerStudio.vbs\\" \\"%%1\\""',
     'reg add HKCU\\Software\\Classes\\.modeller-workspace /ve /d ModellerStudio.Workspace /f >nul',
     'reg add HKCU\\Software\\Classes\\ModellerStudio.Workspace /ve /d "Modeller Studio workspace" /f >nul',
     'reg add HKCU\\Software\\Classes\\ModellerStudio.Workspace\\DefaultIcon /ve /d "\\"%APPDIR%ModellerStudio.cmd\\",0" /f >nul',
@@ -64,21 +77,59 @@ writeFileSync(
 );
 
 writeFileSync(
+  path.join(distRoot, 'ModellerStudioSetup.iss'),
+  [
+    '#define MyAppName "Modeller Studio"',
+    '#define MyAppVersion "0.1.0"',
+    '#define MyAppPublisher "Modeller"',
+    '',
+    '[Setup]',
+    'AppId={{7B2B48FA-A7CE-48F0-845B-4B3F4826D795}',
+    'AppName={#MyAppName}',
+    'AppVersion={#MyAppVersion}',
+    'AppPublisher={#MyAppPublisher}',
+    'DefaultDirName={localappdata}\\Modeller Studio',
+    'DefaultGroupName={#MyAppName}',
+    'OutputDir=.',
+    'OutputBaseFilename=ModellerStudioSetup',
+    'Compression=lzma2',
+    'SolidCompression=yes',
+    'PrivilegesRequired=lowest',
+    '',
+    '[Files]',
+    'Source: "*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "ModellerStudioSetup.iss"',
+    '',
+    '[Registry]',
+    'Root: HKCU; Subkey: "Software\\Classes\\.modeller-workspace"; ValueType: string; ValueName: ""; ValueData: "ModellerStudio.Workspace"; Flags: uninsdeletevalue',
+    'Root: HKCU; Subkey: "Software\\Classes\\ModellerStudio.Workspace"; ValueType: string; ValueName: ""; ValueData: "Modeller Studio workspace"; Flags: uninsdeletekey',
+    'Root: HKCU; Subkey: "Software\\Classes\\ModellerStudio.Workspace\\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\\ModellerStudio.cmd,0"',
+    'Root: HKCU; Subkey: "Software\\Classes\\ModellerStudio.Workspace\\shell\\open\\command"; ValueType: string; ValueName: ""; ValueData: "wscript.exe ""{app}\\ModellerStudio.vbs"" ""%1"""',
+    '',
+    '[Icons]',
+    'Name: "{group}\\Modeller Studio"; Filename: "{app}\\ModellerStudio.vbs"',
+    '',
+    '[Run]',
+    'Filename: "{app}\\ModellerStudio.vbs"; Description: "Start Modeller Studio"; Flags: nowait postinstall skipifsilent',
+  ].join('\r\n'),
+);
+
+writeFileSync(
   path.join(distRoot, 'README.txt'),
   [
     'Modeller Studio for Windows',
     '',
-    'Install once:',
-    '1. Double-click InstallModellerStudio.cmd.',
+    'Install once from the public reader path:',
+    '1. Run ModellerStudioSetup.exe.',
     '2. Windows registers .modeller-workspace files for this user.',
     '',
     'Open a downloaded playground workspace:',
     '1. Go to the wiki landing page.',
-    '2. Click Download workspace.',
-    '3. Double-click the downloaded .modeller-workspace file.',
-    '4. Modeller Studio starts a local server and opens http://localhost:3100.',
+    '2. Open the playground.',
+    '3. Download the workspace.',
+    '4. Double-click the downloaded .modeller-workspace file.',
+    '5. Modeller Studio starts and opens the workspace.',
     '',
-    'You can also start Studio directly with ModellerStudio.cmd.',
+    'For local packaging checks, InstallModellerStudio.cmd registers the same file association without building the setup executable.',
   ].join('\r\n'),
 );
 

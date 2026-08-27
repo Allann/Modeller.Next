@@ -1,0 +1,74 @@
+name: Windows Studio installer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/studio/**"
+      - ".github/workflows/windows-studio-installer.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: apps/studio/package-lock.json
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.400"
+
+      - name: Install dependencies
+        working-directory: apps/studio
+        run: npm ci
+
+      - name: Lint
+        working-directory: apps/studio
+        run: npm run lint
+
+      - name: Type check
+        working-directory: apps/studio
+        run: npm run types:check
+
+      - name: Build Studio
+        working-directory: apps/studio
+        run: npm run build
+
+      - name: Build local Modeller tools
+        working-directory: apps/studio
+        run: npm run server:build
+
+      - name: Prepare Windows app files
+        working-directory: apps/studio
+        run: npm run dist:windows
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress --yes
+
+      - name: Build installer
+        working-directory: apps/studio
+        run: iscc packaging/windows/ModellerStudio.iss
+
+      - name: Publish latest Windows installer
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "studio-windows-latest"
+          $installer = "apps/studio/packaging/windows/Output/ModellerStudioSetup.exe"
+          git tag -f $tag $env:GITHUB_SHA
+          git push origin "refs/tags/$tag" --force
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --repo $env:GITHUB_REPOSITORY --title "Latest Windows Studio installer" --notes "Latest Windows installer for Modeller Studio."
+          }
+          gh release upload $tag $installer --repo $env:GITHUB_REPOSITORY --clobber
