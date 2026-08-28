@@ -7,3 +7,5 @@ public/grammars
 *.tsbuildinfo
 test-results
 playwright-report
+electron-dist
+packaging/dist

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Local definition design tool for Modeller — workspace explorer, readable-source editor with live LSP diagnostics.",
+  "main": "electron-dist/main.js",
   "scripts": {
     "predev": "node scripts/copy-grammars.mjs && npm run server:build",
     "dev": "tsx server.ts",
@@ -10,11 +11,14 @@
     "build": "next build",
     "start": "cross-env NODE_ENV=production tsx server.ts",
     "lint": "eslint .",
-    "types:check": "tsc --noEmit",
+    "types:check": "tsc --noEmit && tsc -p electron/tsconfig.json --noEmit",
     "server:build": "dotnet publish ../../src/Modeller.LanguageServer/Modeller.LanguageServer.csproj -c Release -o server-bin && dotnet publish ../../src/Modeller.Cli/Modeller.Cli.csproj -c Release -o server-bin",
-    "dist:windows": "node scripts/create-windows-dist.mjs",
+    "electron:build": "tsc -p electron/tsconfig.json",
+    "electron:dev": "npm run electron:build && electron .",
+    "dist:windows": "node scripts/create-windows-dist.mjs && npm run electron:build && electron-builder --win --config electron-builder.json",
     "test:e2e": "playwright test",
-    "test:windows-open": "tsx --test tests/unit/windows-open.test.ts"
+    "test:windows-open": "tsx --test tests/unit/windows-open.test.ts",
+    "test:unit": "tsx --test tests/unit/*.test.ts"
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.1.0",
@@ -38,6 +42,8 @@
     "@types/react-dom": "^19.2.3",
     "@types/ws": "^8.5.13",
     "cross-env": "^7.0.3",
+    "electron": "^44.0.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.2.12",
     "tsx": "^4.23.5",

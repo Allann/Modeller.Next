@@ -146,13 +146,33 @@ test('an unsupported package fails with a plain user message', async () => {
   }
 });
 
-test('the Windows installer registers workspace files with the opened file placeholder', async () => {
-  const script = await readFile(path.join(process.cwd(), 'scripts', 'create-windows-dist.mjs'), 'utf-8');
+test('the electron-builder config registers the workspace file association and per-user NSIS install', async () => {
+  const config = JSON.parse(await readFile(path.join(process.cwd(), 'electron-builder.json'), 'utf-8'));
 
-  assert.ok(script.includes('ModellerStudio.Workspace\\\\shell\\\\open\\\\command'));
-  assert.ok(script.includes('wscript.exe \\\\"%APPDIR%ModellerStudio.vbs\\\\" \\\\"%%1'));
-  assert.ok(script.includes('shell.Run command, 0, False'));
-  assert.ok(script.includes('OutputBaseFilename=ModellerStudioSetup'));
-  assert.ok(script.includes('ValueData: "wscript.exe ""{app}\\\\ModellerStudio.vbs"" ""%1"""'));
-  assert.ok(script.includes('Run ModellerStudioSetup.exe.'));
+  assert.deepEqual(
+    config.fileAssociations.map((association: { ext: string }) => association.ext),
+    ['modeller-workspace'],
+  );
+  assert.equal(config.win.target, 'nsis');
+  assert.equal(config.nsis.perMachine, false);
+  // Preserved from the previous Inno Setup installer: workspace-bundle.ts's
+  // WINDOWS_STUDIO_INSTALLER_URL points at a GitHub release asset with this exact filename.
+  assert.equal(config.artifactName, 'ModellerStudioSetup.exe');
+  assert.equal(config.asar, false);
+});
+
+test('the Electron main process forwards a file-association argument to the spawned server', async () => {
+  const { resolveForwardedArgs } = await import('../../electron/server-supervisor');
+
+  // Dev (`electron .`): argv is [electronExe, mainJsPath, ...userArgs].
+  assert.deepEqual(
+    resolveForwardedArgs(['electron.exe', 'main.js', 'C:\\Users\\Reader\\Downloads\\sample.modeller-workspace'], true),
+    ['C:\\Users\\Reader\\Downloads\\sample.modeller-workspace'],
+  );
+  // Packaged: argv is [appExe, ...userArgs] — no separate script entry.
+  assert.deepEqual(
+    resolveForwardedArgs(['ModellerStudio.exe', 'C:\\Users\\Reader\\Downloads\\sample.modeller-workspace'], false),
+    ['C:\\Users\\Reader\\Downloads\\sample.modeller-workspace'],
+  );
+  assert.deepEqual(resolveForwardedArgs(['electron.exe', 'main.js'], true), []);
 });

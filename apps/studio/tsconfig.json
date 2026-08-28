@@ -46,6 +46,7 @@
     "node_modules",
     "packaging/dist",
     "server-bin",
-    "tests"
+    "tests",
+    "electron"
   ]
 }
