@@ -47,16 +47,9 @@ jobs:
         working-directory: apps/studio
         run: npm run server:build
 
-      - name: Prepare Windows app files
+      - name: Build Windows installer
         working-directory: apps/studio
         run: npm run dist:windows
-
-      - name: Install Inno Setup
-        run: choco install innosetup --no-progress --yes
-
-      - name: Build installer
-        working-directory: apps/studio
-        run: iscc packaging/windows/ModellerStudio.iss
 
       - name: Publish latest Windows installer
         shell: pwsh
@@ -64,7 +57,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = "studio-windows-latest"
-          $installer = "apps/studio/packaging/windows/Output/ModellerStudioSetup.exe"
+          $installer = "apps/studio/packaging/dist/ModellerStudioSetup.exe"
           git tag -f $tag $env:GITHUB_SHA
           git push origin "refs/tags/$tag" --force
           gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null

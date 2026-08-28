@@ -9,7 +9,7 @@ test('studio loads, lists sample documents, opens one in Monaco', async ({ page 
   await expect(page.getByText('booking.modeller', { exact: true })).toBeVisible();
 
   await page.getByText('booking.modeller', { exact: true }).click();
-  const editor = page.locator('.monaco-editor');
+  const editor = page.locator('.editor-container .monaco-editor');
   await expect(editor).toBeVisible();
   await expect(page.locator('.view-lines')).toContainText('entity Booking');
 });
@@ -23,7 +23,7 @@ test('opening a single package document does not show a false context-declaratio
   await page.goto('/');
 
   await page.getByText('booking.modeller', { exact: true }).click();
-  const editor = page.locator('.monaco-editor');
+  const editor = page.locator('.editor-container .monaco-editor');
   await expect(editor).toBeVisible();
   await expect(page.locator('.view-lines')).toContainText('entity Booking');
 
@@ -44,7 +44,7 @@ test('loads a different local workspace directory without restarting', async ({ 
   await expect(page.getByText('booking.modeller', { exact: true })).toBeVisible();
 
   await page.getByLabel('Workspace directory path').fill('../../samples/ordering');
-  await page.getByRole('button', { name: 'Load workspace' }).click();
+  await page.getByLabel('Workspace directory path').press('Enter');
 
   await expect(page.getByText('order.modeller', { exact: true })).toBeVisible();
   await expect(page.getByText('booking.modeller', { exact: true })).not.toBeVisible();
@@ -57,9 +57,9 @@ test('reports an error and keeps the previous workspace when the directory has n
     await expect(page.getByText('booking.modeller', { exact: true })).toBeVisible();
 
     await page.getByLabel('Workspace directory path').fill(notAWorkspace);
-    await page.getByRole('button', { name: 'Load workspace' }).click();
+    await page.getByLabel('Workspace directory path').press('Enter');
 
-    await expect(page.locator('.workspace-switcher-error')).toContainText("isn't a recognised Modeller workspace");
+    await expect(page.locator('.status-bar-error')).toContainText("isn't a recognised Modeller workspace");
     await expect(page.getByText('booking.modeller', { exact: true })).toBeVisible();
   } finally {
     await rm(notAWorkspace, { recursive: true, force: true });
@@ -80,14 +80,14 @@ test('loads a workspace directory outside samples/, and edits reach disk only on
 
     await page.goto('/');
     await page.getByLabel('Workspace directory path').fill(workspaceRoot);
-    await page.getByRole('button', { name: 'Load workspace' }).click();
+    await page.getByLabel('Workspace directory path').press('Enter');
 
     const documentLoad = page.waitForResponse(
       (response) => response.url().includes('/api/document') && response.request().method() === 'GET' && response.status() === 200,
     );
     await page.getByText('context.modeller', { exact: true }).click();
     await documentLoad;
-    const editor = page.locator('.monaco-editor');
+    const editor = page.locator('.editor-container .monaco-editor');
     await expect(editor).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('.view-lines')).toContainText('Standalone Workspace');
 
