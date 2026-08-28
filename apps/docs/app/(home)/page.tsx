@@ -439,8 +439,8 @@ export default function HomePage() {
         </p>
         <div className="hero-actions">
           <a className="primary-action" href="https://modeller.website">Start a Discovery Session <ArrowRight size={17} /></a>
-          <Link className="secondary-action" href="/docs/getting-started">Install System Design tooling</Link>
-          <a className="secondary-action" href="https://github.com/Allann/Modeller.Next/issues/82">Join the discussion</a>
+          <Link className="secondary-action" href="/docs/getting-started/install-modeller">Install System Design tooling</Link>
+          <a className="secondary-action" href="https://github.com/Allann/Modeller.Next/discussions">Join the discussion</a>
         </div>
       </section>
 
