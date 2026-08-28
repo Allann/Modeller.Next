@@ -12,8 +12,9 @@ import {
   type ProjectionRoot,
   type ProjectionView,
 } from '@/lib/projection-client';
+import { getElectronBridge } from '@/lib/electronBridge';
 
-export function DiagramPane() {
+export function DiagramPane({ showDetach = true }: { showDetach?: boolean }) {
   const { view, setView, rootId, setRootId } = useViewRootSelection<ProjectionView>('Lifecycle');
   const [roots, setRoots] = useState<ProjectionRoot[]>([]);
   const [graph, setGraph] = useState<ProjectionGraph | undefined>();
@@ -69,6 +70,8 @@ export function DiagramPane() {
     };
   }, [view, rootId]);
 
+  const bridge = showDetach ? getElectronBridge() : undefined;
+
   return (
     <DiagramView
       view={view}
@@ -81,6 +84,19 @@ export function DiagramPane() {
       diagnostics={diagnostics}
       graph={graph}
       loading={!graph}
+      extraToolbarContent={
+        bridge ? (
+          <button type="button" className="panel-detach-btn" onClick={() => bridge.detachPanel('diagram')} title="Open in a separate window">
+            Detach
+          </button>
+        ) : !showDetach ? (
+          // This pane is itself the content of a detached panel window (see panels/diagram/page.tsx)
+          // — closing it re-docks the panel in the main window (see panel-windows.ts's 'closed' handler).
+          <button type="button" className="panel-detach-btn" onClick={() => window.close()} title="Return to the main window">
+            Reattach
+          </button>
+        ) : null
+      }
     />
   );
 }

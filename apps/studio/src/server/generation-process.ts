@@ -3,21 +3,30 @@ import { dotnetArgsFor, resolveDotnetTool } from './dotnet-tool';
 import { CLI } from './projection-process';
 import type { ApiDiagnostic, GeneratedArtifactDto } from '@/lib/generation-types';
 
+export interface GenerationChange {
+  path: string;
+  status: 'create' | 'change' | 'unchanged' | 'conflict' | 'stale' | 'remove';
+  artifactId: string;
+}
+
 export interface GenerationResult {
   outputVersion: string;
+  changes: GenerationChange[];
   artifacts: GeneratedArtifactDto[];
   diagnostics: ApiDiagnostic[];
 }
 
 /**
- * Shells out to `modeller generate --dry-run`, the same subprocess pattern already used for
- * `modeller project` (see runCliProjection). `--dry-run` never writes to disk — this is a preview,
- * matching the playground's own generation-preview guarantee (see PlaygroundWorkbench's read-only
- * note) even though local Studio, unlike the playground, could otherwise write for real.
+ * Shells out to `modeller generate`, the same subprocess pattern already used for `modeller
+ * project` (see runCliProjection). `dryRun: true` never writes to disk — used first to learn which
+ * artifacts a generate would touch (see the /api/generate route's before/after snapshot), before
+ * `dryRun: false` actually applies it.
  */
-export function runCliGeneration(workspaceRoot: string): Promise<GenerationResult> {
+function runCli(workspaceRoot: string, dryRun: boolean): Promise<GenerationResult> {
   const location = resolveDotnetTool(CLI);
-  const args = dotnetArgsFor(location, ['generate', '--workspace', '.', '--dry-run', '--format', 'json']);
+  const extraArgs = ['generate', '--workspace', '.', '--format', 'json'];
+  if (dryRun) extraArgs.push('--dry-run');
+  const args = dotnetArgsFor(location, extraArgs);
 
   return new Promise((resolve, reject) => {
     const child = spawn('dotnet', args, { cwd: workspaceRoot, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -38,4 +47,12 @@ export function runCliGeneration(workspaceRoot: string): Promise<GenerationResul
       }
     });
   });
+}
+
+export function runCliGenerationPreview(workspaceRoot: string): Promise<GenerationResult> {
+  return runCli(workspaceRoot, true);
+}
+
+export function runCliGenerationApply(workspaceRoot: string): Promise<GenerationResult> {
+  return runCli(workspaceRoot, false);
 }

@@ -8,7 +8,12 @@ export async function GET() {
 
   try {
     const workspace = await loadWorkspace();
-    return NextResponse.json({ root: workspace.root, sources: workspace.sources, openedFromPackage: workspace.openedFromPackage ?? false });
+    return NextResponse.json({
+      root: workspace.root,
+      sources: workspace.sources,
+      logicalOutputRoot: workspace.logicalOutputRoot,
+      openedFromPackage: workspace.openedFromPackage ?? false,
+    });
   } catch (error) {
     if (error instanceof WorkspacePackageOpenError) {
       return NextResponse.json({ error: error.message }, { status: 400 });

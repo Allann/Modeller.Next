@@ -1,7 +1,9 @@
 .shell {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  /* No ribbon row here (WorkbenchShell dropped it in favor of the native File menu and
+     StatusBar below) — .playground-shell overrides this independently, so it's unaffected. */
+  grid-template-rows: 1fr auto;
 }
 
 .ribbon {
@@ -310,6 +312,48 @@
   font-size: 0.85rem;
 }
 
+/* VS Code-style status bar (see StatusBar.tsx), replacing WorkbenchShell's old ribbon. */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.3rem 0.9rem;
+  border-top: 1px solid var(--modeller-line);
+  font-size: 0.78rem;
+  background: var(--surface-accent, transparent);
+}
+.status-bar-item {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.status-bar-folder {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.status-bar-folder:hover {
+  text-decoration: underline;
+}
+.status-bar-folder-input {
+  width: 20rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--modeller-line);
+  border-radius: 0.3rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.status-bar-error {
+  color: #d97706;
+}
+.status-bar-spacer {
+  flex: 1;
+}
+
 /* Generation preview panel (issue #135), shared between the playground and local Studio. */
 .generation-preview-pane {
   height: 100%;
@@ -368,6 +412,20 @@
   flex: 1;
   min-height: 0;
   flex-direction: column;
+}
+
+/* A detached Diagram/Generation tool window's own top-level page (see electron/panel-windows.ts
+   and src/app/panels/*) — just the panel, filling the whole window. */
+.panel-window {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Detach button shared by DiagramPane's extraToolbarContent and LocalGenerationPreview's own
+   toolbar — pushed to the toolbar's far end regardless of which toolbar it's in. */
+.panel-detach-btn {
+  margin-left: auto;
 }
 
 /* Local Studio's "Generate" trigger (no playground equivalent — the playground generates on a

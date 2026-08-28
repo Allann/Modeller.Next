@@ -27,6 +27,7 @@ export function DiagramView({
   diagnostics,
   graph,
   loading,
+  extraToolbarContent,
 }: {
   view: string;
   onViewChange: (view: string) => void;
@@ -38,6 +39,9 @@ export function DiagramView({
   diagnostics: readonly DiagramDiagnostic[];
   graph: GraphCanvasData | undefined;
   loading: boolean;
+  // Local Studio's Detach button (see DiagramPane.tsx) — the playground and detached panel windows
+  // pass nothing, so this stays a plain diagram toolbar there.
+  extraToolbarContent?: React.ReactNode;
 }) {
   return (
     <div className="diagram-pane">
@@ -57,6 +61,7 @@ export function DiagramView({
             </option>
           ))}
         </select>
+        {extraToolbarContent}
       </div>
       {error && <div className="diagram-error">{error}</div>}
       {diagnostics.map((diagnostic) => (

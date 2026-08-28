@@ -10,14 +10,20 @@ import {
 export interface ModellerConfig {
   version: string;
   sources: string[];
+  logicalOutputRoot?: string;
   [key: string]: unknown;
 }
 
 export interface Workspace {
   root: string;
   sources: string[];
+  logicalOutputRoot: string;
   openedFromPackage?: boolean;
 }
+
+// Matches `modeller init`'s own default (src/Modeller.Cli/CliApplication.cs's Init) for a
+// config.json that doesn't declare one explicitly.
+const DEFAULT_LOGICAL_OUTPUT_ROOT = 'generated';
 
 // Thrown for a directory that doesn't have a `.modeller/config.json` — distinguished from other
 // I/O failures so callers can tell "not a recognised workspace" (expected user input, worth a
@@ -52,7 +58,10 @@ async function readWorkspace(root: string): Promise<Workspace> {
   }
   const config = JSON.parse(raw) as ModellerConfig;
   const sources = (config.sources ?? []).filter((source) => isWorkspaceRelative(source));
-  return { root, sources };
+  const logicalOutputRoot = config.logicalOutputRoot && isWorkspaceRelative(config.logicalOutputRoot)
+    ? config.logicalOutputRoot
+    : DEFAULT_LOGICAL_OUTPUT_ROOT;
+  return { root, sources, logicalOutputRoot };
 }
 
 export async function loadWorkspace(): Promise<Workspace> {

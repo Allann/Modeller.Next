@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { buildTree } from '@/lib/tree';
 import { Explorer } from './Explorer';
@@ -10,8 +10,13 @@ import { ProblemsPanel } from './ProblemsPanel';
 import { DiagramPane } from './DiagramPane';
 import { LocalGenerationPreview } from './LocalGenerationPreview';
 import { DiagramGenerationTabs, type DiagramGenerationTab } from './DiagramGenerationTabs';
+import { StatusBar } from './StatusBar';
 import { useElementWidthBreakpoint } from '@/lib/useElementWidthBreakpoint';
+import { getElectronBridge, type PanelDetachState } from '@/lib/electronBridge';
+import { computeDockedRightPanelKeys } from '@/lib/dockedPanels';
 import './workbench.css';
+
+const NO_PANELS_DETACHED: PanelDetachState = { diagram: false, generation: false };
 
 // The panel-group width (not the browser window's) at or above which the generation preview gets
 // its own docked panel instead of sharing a tab with Diagram view — mirrors
@@ -35,6 +40,8 @@ export function WorkbenchShell() {
   const [diagramGenerationTab, setDiagramGenerationTab] = useState<DiagramGenerationTab>('diagram');
   const groupElementRef = useRef<HTMLDivElement | null>(null);
   const isWideForGeneration = useElementWidthBreakpoint(groupElementRef, GENERATION_SPLIT_BREAKPOINT_PX);
+  const [detachedPanels, setDetachedPanels] = useState<PanelDetachState>(NO_PANELS_DETACHED);
+  const [changedCount, setChangedCount] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     void fetch('/api/workspace')
@@ -50,25 +57,42 @@ export function WorkbenchShell() {
       });
   }, []);
 
-  const onLoadWorkspace = async () => {
-    if (!rootInput.trim()) return;
+  const onLoadWorkspace = async (requestedRoot: string) => {
+    if (!requestedRoot.trim()) return;
     setRootError(undefined);
     const response = await fetch('/api/workspace', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: rootInput.trim() }),
+      body: JSON.stringify({ path: requestedRoot.trim() }),
     });
     const data = (await response.json()) as { root?: string; sources?: string[]; error?: string };
     if (!response.ok || !data.sources) {
       setRootError(data.error ?? 'Could not load that workspace.');
       return;
     }
-    setRoot(data.root ?? rootInput.trim());
+    setRoot(data.root ?? requestedRoot.trim());
     setSources(data.sources);
     setOpenedFromPackage(false);
     setOpenDocuments([]);
     setActivePath(undefined);
+    setChangedCount(undefined);
   };
+
+  // File > Open Folder (electron/menu.ts) resolves the native dialog itself and pushes the chosen
+  // path down — this listener just feeds it into the same loading path the text-input fallback
+  // below uses. No-op outside Electron (getElectronBridge() returns undefined in a plain browser
+  // tab, e.g. `npm run dev`).
+  useEffect(() => getElectronBridge()?.onOpenFolder((path) => void onLoadWorkspace(path)), []);
+  // Subscribe first, then pull the current state — including on Window > Reload/Force Reload,
+  // which remounts this component while any genuinely detached panel windows stay open (see
+  // main.ts's panel:detach-state-request handler for why this is a pull, not just a push).
+  useEffect(() => {
+    const bridge = getElectronBridge();
+    if (!bridge) return undefined;
+    const unsubscribe = bridge.onPanelDetachState(setDetachedPanels);
+    bridge.requestPanelDetachState();
+    return unsubscribe;
+  }, []);
 
   const openDocument = (path: string) => {
     setActivePath(path);
@@ -107,38 +131,33 @@ export function WorkbenchShell() {
   const tree = buildTree(sources);
   const activeDocument = openDocuments.find((document) => document.path === activePath);
 
+  // A detached panel's slot is dropped entirely (not shown as a placeholder) so the remaining
+  // panels reclaim its space — see electron/panel-windows.ts for what "detached" means, and
+  // dockedPanels.ts (unit-tested) for which keys are docked and in what arrangement.
+  const rightPanelSize = isWideForGeneration ? '12.5' : '25';
+  const rightPanelMinSize = isWideForGeneration ? '10' : '15';
+  const dockedRightPanels = computeDockedRightPanelKeys(isWideForGeneration, detachedPanels).map((key) => ({
+    key,
+    node: (
+      <Panel defaultSize={rightPanelSize} minSize={rightPanelMinSize}>
+        {key === 'diagram' ? (
+          <DiagramPane />
+        ) : key === 'generation' ? (
+          <LocalGenerationPreview onResult={setChangedCount} />
+        ) : (
+          <DiagramGenerationTabs
+            active={diagramGenerationTab}
+            onChange={setDiagramGenerationTab}
+            diagram={<DiagramPane />}
+            generation={<LocalGenerationPreview onResult={setChangedCount} />}
+          />
+        )}
+      </Panel>
+    ),
+  }));
+
   return (
     <div className="shell">
-      <div className="ribbon">
-        <div className="brand">
-          <span className="mark">M</span> Modeller Studio
-        </div>
-        {!openedFromPackage && (
-          <div className="workspace-switcher" aria-label="Workspace">
-            <input
-              type="text"
-              placeholder={root || 'Workspace directory path'}
-              value={rootInput}
-              onChange={(event) => setRootInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') void onLoadWorkspace();
-              }}
-              aria-label="Workspace directory path"
-            />
-            <button onClick={() => void onLoadWorkspace()}>Load workspace</button>
-          </div>
-        )}
-        {openedFromPackage && (
-          <div className="workspace-switcher" aria-label="Workspace">
-            <span>Opened workspace package</span>
-          </div>
-        )}
-        {!openedFromPackage && rootError && (
-          <span className="workspace-switcher-error" role="alert">
-            {rootError}
-          </span>
-        )}
-      </div>
       <Group orientation="horizontal" className="panel-group" elementRef={groupElementRef}>
         <Panel defaultSize="20" minSize="12">
           <div className="explorer">
@@ -167,28 +186,22 @@ export function WorkbenchShell() {
             <ProblemsPanel onNavigate={navigateToProblem} />
           </div>
         </Panel>
-        <Separator className="resize-handle" />
-        {isWideForGeneration ? (
-          <>
-            <Panel defaultSize="12.5" minSize="10">
-              <DiagramPane />
-            </Panel>
+        {dockedRightPanels.map((panel) => (
+          <Fragment key={panel.key}>
             <Separator className="resize-handle" />
-            <Panel defaultSize="12.5" minSize="10">
-              <LocalGenerationPreview />
-            </Panel>
-          </>
-        ) : (
-          <Panel defaultSize="25" minSize="15">
-            <DiagramGenerationTabs
-              active={diagramGenerationTab}
-              onChange={setDiagramGenerationTab}
-              diagram={<DiagramPane />}
-              generation={<LocalGenerationPreview />}
-            />
-          </Panel>
-        )}
+            {panel.node}
+          </Fragment>
+        ))}
       </Group>
+      <StatusBar
+        root={root}
+        rootError={rootError}
+        openedFromPackage={openedFromPackage}
+        changedCount={changedCount}
+        rootInput={rootInput}
+        onRootInputChange={setRootInput}
+        onLoadWorkspace={onLoadWorkspace}
+      />
     </div>
   );
 }
