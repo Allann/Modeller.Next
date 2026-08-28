@@ -30,7 +30,7 @@ COPY src/Modeller.Model/Modeller.Model.csproj src/Modeller.Model/
 COPY src/Modeller.Generation/Modeller.Generation.csproj src/Modeller.Generation/
 COPY src/Modeller.Templates/Modeller.Templates.csproj src/Modeller.Templates/
 COPY src/Modeller.Rendering/Modeller.Rendering.csproj src/Modeller.Rendering/
-RUN dotnet restore src/Modeller.Api/Modeller.Api.csproj
+RUN dotnet restore src/Modeller.Api/Modeller.Api.csproj -r linux-x64 -p:PublishReadyToRun=true
 
 # The embedded csharp/domain-project template pack (Modeller.Api.csproj's EmbeddedResource items)
 # is sourced straight from the sample, not a duplicated copy — see that csproj's comment.
@@ -49,7 +49,11 @@ COPY src/Modeller.Model/ src/Modeller.Model/
 COPY src/Modeller.Generation/ src/Modeller.Generation/
 COPY src/Modeller.Templates/ src/Modeller.Templates/
 COPY src/Modeller.Rendering/ src/Modeller.Rendering/
-RUN dotnet publish src/Modeller.Api/Modeller.Api.csproj -c Release --no-restore -o /app
+# ReadyToRun precompiles the assembly so the container isn't JIT-compiling from scratch on every
+# cold start (this host scales to zero between requests — docs/architecture/decisions/hosted-workspace-api.mdx).
+# RID/R2R are passed here rather than in the csproj so local Windows dev builds/tests are unaffected.
+RUN dotnet publish src/Modeller.Api/Modeller.Api.csproj -c Release --no-restore -o /app \
+    -r linux-x64 --self-contained false -p:PublishReadyToRun=true
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0.11 AS runtime
 WORKDIR /app

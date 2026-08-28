@@ -162,9 +162,12 @@ builder.Services.AddOpenTelemetry()
         .AddHttpClientInstrumentation()
         .AddOtlpExporter())
     .WithMetrics(metrics => metrics
+        .AddMeter(ApiMetrics.MeterName)
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
         .AddOtlpExporter());
+
+ApiMetrics.RecordProcessStart();
 
 // Request-shape limits (RequestLimits) enforce Modeller-specific document/path/projection
 // ceilings; this caps the raw HTTP payload before it's even deserialized.
