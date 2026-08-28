@@ -10,7 +10,7 @@ import * as monaco from 'monaco-editor';
 import '@/lib/monaco-worker';
 import { registerModellerLanguages, languageIdForPath } from '@/lib/monaco-languages';
 import { watchMonacoTheme } from '@/lib/monaco-theme';
-import type { ApiDiagnostic, GeneratedArtifactDto } from '@/lib/playground/api-client';
+import type { ApiDiagnostic, GeneratedArtifactDto } from '@/lib/generation-types';
 
 export interface GenerationPreviewProps {
   artifacts: readonly GeneratedArtifactDto[];

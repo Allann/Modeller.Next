@@ -1,9 +1,10 @@
 'use client';
 
-// Narrow-viewport layout for the generation preview panel (issue #135): Diagram view and the
-// generation preview share one Panel, switched by a small tab bar. Both children stay mounted at
-// all times (toggled with `display: none`, not conditional rendering) so switching tabs doesn't
-// tear down and rebuild the Monaco diff editor or the graph canvas — only their visibility changes.
+// Narrow-viewport layout for the generation preview panel (issue #135, extended to local Studio):
+// Diagram view and the generation preview share one Panel, switched by a small tab bar. Both
+// children stay mounted at all times (toggled with `display: none`, not conditional rendering) so
+// switching tabs doesn't tear down and rebuild the Monaco diff editor or the graph canvas — only
+// their visibility changes.
 export type DiagramGenerationTab = 'diagram' | 'generation';
 
 export function DiagramGenerationTabs({

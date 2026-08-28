@@ -50,7 +50,7 @@ internal static class WorkspaceGeneration
         if (execution.Output is null)
             return await WorkspaceLoader.Failure(host, machine, execution.Diagnostics.FirstOrDefault() ?? "workspace.generation.failed", "Workspace generation failed.");
 
-        return await EmitResultAsync(root, dryRun, machine, host, execution.Output, manifestText, WorkspaceLoader.Join(root, configuration.OwnershipManifest), cancellationToken);
+        return await EmitResultAsync(root, dryRun, machine, host, execution.Plan!, execution.Rendering!, execution.Output, manifestText, WorkspaceLoader.Join(root, configuration.OwnershipManifest), cancellationToken);
     }
 
     private static async ValueTask<WorkspaceLoader.Outcome<(ValidatedTemplatePack Validated, ImmutableDictionary<string, ScribanTemplateSource> Templates, IRendererCapability Capability)>> LoadTemplatePackAsync(
@@ -202,7 +202,8 @@ internal static class WorkspaceGeneration
     }
 
     private static async ValueTask<CliExitCode> EmitResultAsync(
-        string root, bool dryRun, bool machine, ICliHost host, OutputReport output, string? manifestText, string manifestPath, CancellationToken cancellationToken)
+        string root, bool dryRun, bool machine, ICliHost host, GenerationPlan plan, RenderingResult rendering, OutputReport output,
+        string? manifestText, string manifestPath, CancellationToken cancellationToken)
     {
         if (!dryRun && output.IsSuccess)
         {
@@ -211,9 +212,23 @@ internal static class WorkspaceGeneration
                 await host.WriteTextAsync(manifestPath, nextManifest, true, cancellationToken);
         }
         if (machine)
+        {
+            // Mirrors Modeller.Api's WorkspaceGenerationPreviewPipeline mapping (path/owner/packId/
+            // templateId/content) so apps/studio's local Studio can shell out to this command and feed
+            // the result straight into the same GenerationPreview UI the playground already uses.
+            var ownerByOrdinal = plan.Artifacts.ToImmutableDictionary(artifact => artifact.Ordinal, artifact => artifact.Ownership.Owner);
+            var artifacts = rendering.Artifacts.OrderBy(artifact => artifact.Ordinal).Select(artifact => new
+            {
+                path = artifact.LogicalPath,
+                owner = ownerByOrdinal[artifact.Ordinal],
+                packId = artifact.Provenance.PackId,
+                templateId = artifact.Provenance.TemplateId,
+                content = artifact.Content,
+            });
             await host.Output.WriteLineAsync(JsonSerializer.Serialize(new { outputVersion = "1.0", workspace = root, dryRun,
                 changes = output.Changes.Select(change => new { change.Path, status = change.Status.ToString().ToLowerInvariant(), change.ArtifactId }),
-                diagnostics = output.Diagnostics, manifest = output.Manifest }, Json));
+                artifacts, diagnostics = output.Diagnostics, manifest = output.Manifest }, Json));
+        }
         else
             foreach (var change in output.Changes) await host.Output.WriteLineAsync($"{change.Status}: {change.Path}");
         return output.IsSuccess ? CliExitCode.Success : CliExitCode.Configuration;

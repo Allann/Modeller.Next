@@ -12,8 +12,8 @@ import { useViewRootSelection } from '@/lib/useViewRootSelection';
 import './playground.css';
 import { PlaygroundEditor, applyDiagnosticMarkers } from './PlaygroundEditor';
 import { StatusBanner, type Notice } from './StatusBanner';
-import { GenerationPreview } from './GenerationPreview';
-import { DiagramGenerationTabs, type DiagramGenerationTab } from './DiagramGenerationTabs';
+import { GenerationPreview } from '@/components/workbench/GenerationPreview';
+import { DiagramGenerationTabs, type DiagramGenerationTab } from '@/components/workbench/DiagramGenerationTabs';
 import { loadDraft, resetToExample, saveDraft, type PlaygroundDraft } from '@/lib/playground/session-store';
 import {
   analyzeWorkspace,

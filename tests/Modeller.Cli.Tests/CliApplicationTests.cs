@@ -168,8 +168,23 @@ public sealed class CliApplicationTests
         Assert.Equal(CliExitCode.Success, preview);
         Assert.Equal(0, host.WriteCount);
         using (var json = JsonDocument.Parse(host.StandardOutput))
+        {
             Assert.All(json.RootElement.GetProperty("changes").EnumerateArray(), change =>
                 Assert.Equal("create", change.GetProperty("status").GetString()));
+
+            var artifacts = json.RootElement.GetProperty("artifacts").EnumerateArray().ToArray();
+            Assert.NotEmpty(artifacts);
+            Assert.All(artifacts, artifact =>
+            {
+                Assert.False(string.IsNullOrEmpty(artifact.GetProperty("path").GetString()));
+                Assert.False(string.IsNullOrEmpty(artifact.GetProperty("owner").GetString()));
+                Assert.False(string.IsNullOrEmpty(artifact.GetProperty("packId").GetString()));
+                Assert.False(string.IsNullOrEmpty(artifact.GetProperty("templateId").GetString()));
+                Assert.False(string.IsNullOrEmpty(artifact.GetProperty("content").GetString()));
+            });
+            var eligibilityArtifact = artifacts.Single(artifact => artifact.GetProperty("path").GetString() == "Eligibility.cs");
+            Assert.Contains("public sealed record ACCSEligibilityFacts", eligibilityArtifact.GetProperty("content").GetString(), StringComparison.Ordinal);
+        }
 
         Assert.Equal(CliExitCode.Success, await CliApplication.RunAsync(
             ["generate", "--workspace", "samples/child-care"], host, TestContext.Current.CancellationToken));

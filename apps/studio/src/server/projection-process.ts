@@ -1,7 +1,9 @@
 import { spawn } from 'node:child_process';
 import { dotnetArgsFor, resolveDotnetTool } from './dotnet-tool';
 
-const CLI = {
+// Exported so other server modules that shell out to the same CLI (generation-process.ts) reuse
+// this one config instead of redeclaring it.
+export const CLI = {
   envVar: 'MODELLER_CLI_PATH',
   bundledDllRelativePath: 'server-bin/Modeller.Cli.dll',
   projectRelativePath: 'src/Modeller.Cli/Modeller.Cli.csproj',

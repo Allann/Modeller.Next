@@ -7,6 +7,12 @@
 // tests/Modeller.Api.Tests/MalformedRequestTests.cs's request fixtures.
 const API_BASE = process.env.NEXT_PUBLIC_MODELLER_API_URL ?? '';
 
+// GeneratedArtifactDto now lives in generation-types.ts, shared with local Studio's CLI-subprocess
+// generation client — imported and re-exported here so nothing importing it from this module has
+// to change.
+import type { GeneratedArtifactDto } from '@/lib/generation-types';
+export type { GeneratedArtifactDto };
+
 export interface WorkspaceDocumentDto {
   path: string;
   content: string;
@@ -131,16 +137,6 @@ interface SupportedViewsResponse {
 // parameter rather than hard-coding it into the request body, so adding a picker later is additive
 // rather than a breaking change to this function's signature.
 export const DEFAULT_TEMPLATE_PACK_ID = 'csharp/domain-project';
-
-// One proposed generated artifact — mirrors Modeller.Api.Contracts.GeneratedArtifactDto.
-export interface GeneratedArtifactDto {
-  path: string;
-  owner: string;
-  packId: string;
-  templateId: string;
-  content: string;
-  digest: string;
-}
 
 // Response of POST /v1/workspace/generate (issue #135): a read-only generation preview. Like
 // analyze/export, a parse/validation/plan/render failure comes back as 200 with `diagnostics`

@@ -8,7 +8,15 @@ import { EditorTabs } from './EditorTabs';
 import { MonacoEditor } from './MonacoEditor';
 import { ProblemsPanel } from './ProblemsPanel';
 import { DiagramPane } from './DiagramPane';
+import { LocalGenerationPreview } from './LocalGenerationPreview';
+import { DiagramGenerationTabs, type DiagramGenerationTab } from './DiagramGenerationTabs';
+import { useElementWidthBreakpoint } from '@/lib/useElementWidthBreakpoint';
 import './workbench.css';
+
+// The panel-group width (not the browser window's) at or above which the generation preview gets
+// its own docked panel instead of sharing a tab with Diagram view — mirrors
+// PlaygroundWorkbench.tsx's GENERATION_SPLIT_BREAKPOINT_PX.
+const GENERATION_SPLIT_BREAKPOINT_PX = 1800;
 
 interface OpenDocument {
   path: string;
@@ -24,6 +32,9 @@ export function WorkbenchShell() {
   const [openDocuments, setOpenDocuments] = useState<OpenDocument[]>([]);
   const [activePath, setActivePath] = useState<string | undefined>();
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [diagramGenerationTab, setDiagramGenerationTab] = useState<DiagramGenerationTab>('diagram');
+  const groupElementRef = useRef<HTMLDivElement | null>(null);
+  const isWideForGeneration = useElementWidthBreakpoint(groupElementRef, GENERATION_SPLIT_BREAKPOINT_PX);
 
   useEffect(() => {
     void fetch('/api/workspace')
@@ -128,7 +139,7 @@ export function WorkbenchShell() {
           </span>
         )}
       </div>
-      <Group orientation="horizontal" className="panel-group">
+      <Group orientation="horizontal" className="panel-group" elementRef={groupElementRef}>
         <Panel defaultSize="20" minSize="12">
           <div className="explorer">
             <Explorer nodes={tree} activePath={activePath} onOpenDocument={openDocument} />
@@ -157,9 +168,26 @@ export function WorkbenchShell() {
           </div>
         </Panel>
         <Separator className="resize-handle" />
-        <Panel defaultSize="25" minSize="15">
-          <DiagramPane />
-        </Panel>
+        {isWideForGeneration ? (
+          <>
+            <Panel defaultSize="12.5" minSize="10">
+              <DiagramPane />
+            </Panel>
+            <Separator className="resize-handle" />
+            <Panel defaultSize="12.5" minSize="10">
+              <LocalGenerationPreview />
+            </Panel>
+          </>
+        ) : (
+          <Panel defaultSize="25" minSize="15">
+            <DiagramGenerationTabs
+              active={diagramGenerationTab}
+              onChange={setDiagramGenerationTab}
+              diagram={<DiagramPane />}
+              generation={<LocalGenerationPreview />}
+            />
+          </Panel>
+        )}
       </Group>
     </div>
   );
