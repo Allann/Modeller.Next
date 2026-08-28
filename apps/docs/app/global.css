@@ -66,6 +66,8 @@ html > body[data-scroll-locked] { margin-right: 0 !important; --removed-body-scr
 }
 
 .marketing-hero,.block-strip,.marketing-section,.workflow-section,.block-banner,.marketing-footer { width: var(--content-width); margin: 0 auto; }
+/* Offset anchor-linked sections so the sticky h-14 (3.5rem) nav does not cover their heading when jumped to. */
+.marketing-section[id] { scroll-margin-top: calc(3.5rem + 1.5rem); }
 .trace-window,.block-banner,.accent-panel { border: var(--border-hairline); border-radius: var(--radius-lg); background: var(--surface-card); }
 .hero-correction,.trace-node-kicker,.trace-pill,.trace-arrow,.trace-status svg,.eyebrow,.accent-panel-kicker,.coming-soon-badge { color: var(--modeller-teal); }
 .dark .hero-correction,.dark .trace-node-kicker,.dark .trace-pill,.dark .trace-arrow,.dark .trace-status svg,.dark .eyebrow,.dark .accent-panel-kicker,.dark .coming-soon-badge { color: var(--modeller-dark-accent); }
