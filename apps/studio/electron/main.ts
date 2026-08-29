@@ -7,12 +7,12 @@
 // with a hidden window (shell.Run(..., 0, False)) — there was no visible window, taskbar entry, or
 // way to quit other than Task Manager. A BrowserWindow here has a real close button, and
 // before-quit tears down the spawned server (and, transitively, the LSP dotnet subprocess it owns).
-import { app, BrowserWindow, Menu, ipcMain, type NativeImage } from 'electron';
+import { app, BrowserWindow, Menu, dialog, ipcMain, type NativeImage } from 'electron';
 import path from 'node:path';
 import type { ChildProcess } from 'node:child_process';
 import { killServerTree, resolveForwardedArgs, spawnServer, waitForServerReady } from './server-supervisor';
 import { buildApplicationMenu, openFolder, refreshApplicationMenu } from './menu';
-import { closeAllPanelWindows, detachState, openPanelWindow, type PanelKind } from './panel-windows';
+import { closeAllPanelWindows, detachState, isPanelKind, openPanelWindow } from './panel-windows';
 import { fetchAppIcon } from './app-icon';
 import { addRecentWorkspace } from './recent-workspaces';
 
@@ -44,8 +44,8 @@ if (!gotSingleInstanceLock) {
     mainWindow.focus();
   });
 
-  ipcMain.on('panel:detach', (_event, kind: PanelKind) => {
-    if (!mainWindow) return;
+  ipcMain.on('panel:detach', (_event, kind: unknown) => {
+    if (!mainWindow || !isPanelKind(kind)) return;
     openPanelWindow(kind, SERVER_PORT, mainWindow, appIcon, broadcastPanelDetachState);
     broadcastPanelDetachState();
   });
@@ -86,6 +86,15 @@ if (!gotSingleInstanceLock) {
       await waitForServerReady(SERVER_PORT);
     } catch (error) {
       console.error(error);
+      // Loading the window against a server that never came up would just show Chromium's own
+      // connection-error page — an unhelpful, unbranded dead end. Fail loudly and stop instead.
+      dialog.showErrorBox(
+        'Modeller Studio failed to start',
+        `The local server did not become ready in time.\n\n${error instanceof Error ? error.message : String(error)}`,
+      );
+      if (serverProcess.pid) killServerTree(serverProcess.pid);
+      app.quit();
+      return;
     }
     appIcon = await fetchAppIcon(SERVER_PORT);
 

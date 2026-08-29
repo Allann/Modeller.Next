@@ -12,6 +12,14 @@ import { isBoundsVisible, loadPanelWindowState, savePanelWindowBounds } from './
 
 export type PanelKind = 'diagram' | 'generation';
 
+// `kind` arriving over IPC (main.ts's panel:detach listener) is only renderer-supplied data, not
+// something TypeScript's compile-time PanelKind type actually guarantees at runtime — a stale or
+// malicious renderer message with an unexpected value would otherwise reach PANEL_ROUTES[kind]
+// as undefined, loading an unmanaged, effectively blank window.
+export function isPanelKind(value: unknown): value is PanelKind {
+  return value === 'diagram' || value === 'generation';
+}
+
 const PANEL_ROUTES: Record<PanelKind, string> = {
   diagram: 'panels/diagram',
   generation: 'panels/generation',

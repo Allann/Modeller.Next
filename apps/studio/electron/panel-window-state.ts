@@ -21,10 +21,33 @@ function statePath(): string {
   return path.join(app.getPath('userData'), 'panel-window-state.json');
 }
 
+// The file is user-editable (and could in principle be corrupted or hand-edited) — well-formed
+// JSON with the wrong shape (a string width, a negative dimension, a missing field) would
+// otherwise pass a bare `as PanelWindowBounds` and only break later, when BrowserWindow is
+// actually constructed with it.
+export function isValidBounds(value: unknown): value is PanelWindowBounds {
+  if (!value || typeof value !== 'object') return false;
+  const { x, y, width, height, maximized } = value as Record<string, unknown>;
+  return (
+    typeof x === 'number' && Number.isFinite(x) &&
+    typeof y === 'number' && Number.isFinite(y) &&
+    typeof width === 'number' && Number.isFinite(width) && width > 0 &&
+    typeof height === 'number' && Number.isFinite(height) && height > 0 &&
+    typeof maximized === 'boolean'
+  );
+}
+
 export function loadPanelWindowState(): PanelWindowState {
   try {
     if (!existsSync(statePath())) return {};
-    return JSON.parse(readFileSync(statePath(), 'utf-8')) as PanelWindowState;
+    const parsed = JSON.parse(readFileSync(statePath(), 'utf-8')) as unknown;
+    if (!parsed || typeof parsed !== 'object') return {};
+    const state: PanelWindowState = {};
+    for (const kind of ['diagram', 'generation'] as const) {
+      const candidate = (parsed as Record<string, unknown>)[kind];
+      if (isValidBounds(candidate)) state[kind] = candidate;
+    }
+    return state;
   } catch {
     return {};
   }

@@ -37,14 +37,28 @@ export function spawnServer(resourcesPath: string, forwardedArgs: readonly strin
 
 export async function waitForServerReady(port: number, timeoutMs = 20_000, intervalMs = 200): Promise<void> {
   const deadline = Date.now() + timeoutMs;
+  let lastError: unknown;
   for (;;) {
-    try {
-      await fetch(`http://localhost:${port}/api/workspace`);
-      return;
-    } catch (error) {
-      if (Date.now() >= deadline) throw new Error(`Modeller Studio server did not become ready on port ${port}: ${error instanceof Error ? error.message : error}`);
-      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      throw new Error(`Modeller Studio server did not become ready on port ${port}: ${lastError instanceof Error ? lastError.message : (lastError ?? 'timed out')}`);
     }
+    try {
+      // Bounded by whatever's left of the overall deadline, not a fresh per-attempt timeout — a
+      // request that connects but never responds must not push the total wait past timeoutMs.
+      const response = await fetch(`http://localhost:${port}/api/workspace`, { signal: AbortSignal.timeout(remaining) });
+      // Not response.ok — /api/workspace legitimately answers with a clean 404 before any
+      // workspace is open (see workspace-error-response.ts), and that still means the server is
+      // up. Readiness only needs proof this is *our* server responding with its own JSON shape,
+      // not that a workspace is loaded — guards against some unrelated process already bound to
+      // this port answering with an HTTP response that isn't ours.
+      const data: unknown = await response.json();
+      if (data && typeof data === 'object' && ('sources' in data || 'error' in data)) return;
+      lastError = new Error(`Unexpected response from port ${port}.`);
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 }
 
