@@ -13,11 +13,12 @@ const studioRoot = path.resolve(here, '..');
 for (const requiredPath of [
   '.next',
   'node_modules',
+  'server-dist/server.js',
   'server-bin/Modeller.Cli.dll',
   'server-bin/Modeller.LanguageServer.dll',
 ]) {
   if (!existsSync(path.join(studioRoot, requiredPath))) {
-    throw new Error(`Missing ${requiredPath}. Run npm run build and npm run server:build before packaging Studio.`);
+    throw new Error(`Missing ${requiredPath}. Run npm run build, npm run server:build, and npm run server:bundle before packaging Studio.`);
   }
 }
 

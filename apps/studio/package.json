@@ -15,7 +15,8 @@
     "server:build": "dotnet publish ../../src/Modeller.LanguageServer/Modeller.LanguageServer.csproj -c Release -o server-bin && dotnet publish ../../src/Modeller.Cli/Modeller.Cli.csproj -c Release -o server-bin",
     "electron:build": "tsc -p electron/tsconfig.json",
     "electron:dev": "npm run electron:build && electron .",
-    "dist:windows": "node scripts/create-windows-dist.mjs && npm run electron:build && electron-builder --win --config electron-builder.json",
+    "server:bundle": "node scripts/bundle-server.mjs",
+    "dist:windows": "npm run server:bundle && node scripts/create-windows-dist.mjs && npm run electron:build && electron-builder --win --config electron-builder.json",
     "test:e2e": "playwright test",
     "test:windows-open": "tsx --test tests/unit/windows-open.test.ts",
     "test:unit": "tsx --test tests/unit/*.test.ts"
@@ -33,7 +34,6 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-resizable-panels": "^4.12.2",
-    "tsx": "^4.23.5",
     "ws": "^8.21.1"
   },
   "devDependencies": {
@@ -45,8 +45,10 @@
     "cross-env": "^7.0.3",
     "electron": "^44.0.0",
     "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.1",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.2.12",
+    "tsx": "^4.23.5",
     "typescript": "^5.7.0"
   }
 }

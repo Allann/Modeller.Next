@@ -8,7 +8,7 @@
   "artifactName": "ModellerStudioSetup.exe",
   "files": [
     "electron-dist/**/*",
-    "server.ts",
+    "server-dist/**/*",
     "server-bin/**/*",
     ".next/**/*",
     "public/**/*",

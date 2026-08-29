@@ -14,16 +14,17 @@ export function resolveForwardedArgs(argv: readonly string[], defaultApp: boolea
 }
 
 /**
- * Spawns the exact same server entry point the Windows installer already runs
- * (node_modules/tsx/dist/cli.mjs server.ts), as a genuine child Node process via
- * ELECTRON_RUN_AS_NODE, so the child's process.argv shape matches a plain `node server.ts <args>`
- * invocation exactly — workspace-package.ts's resolveWorkspacePackageArgument()
+ * Spawns the packaged app's pre-bundled server (server-dist/server.js, built by
+ * scripts/bundle-server.mjs from server.ts) as a genuine child Node process via
+ * ELECTRON_RUN_AS_NODE — a plain compiled-JS entry point, not raw TypeScript run through a
+ * runtime transpiler, so the packaged app doesn't need to ship its own source or a dev tool (tsx)
+ * to interpret it. The child's process.argv shape matches a plain `node server-dist/server.js
+ * <args>` invocation exactly — workspace-package.ts's resolveWorkspacePackageArgument()
  * (process.argv.slice(2)) needs no changes for the file-association open-with path to keep working.
  */
 export function spawnServer(resourcesPath: string, forwardedArgs: readonly string[], port: number): ChildProcess {
-  const tsxCli = path.join(resourcesPath, 'node_modules', 'tsx', 'dist', 'cli.mjs');
-  const serverEntry = path.join(resourcesPath, 'server.ts');
-  return spawn(process.execPath, [tsxCli, serverEntry, ...forwardedArgs], {
+  const serverEntry = path.join(resourcesPath, 'server-dist', 'server.js');
+  return spawn(process.execPath, [serverEntry, ...forwardedArgs], {
     cwd: resourcesPath,
     // NODE_ENV=production matches the previous .cmd installer's own `set "NODE_ENV=production"` —
     // the Electron shell always runs against a built .next output (npm run build), never Next's

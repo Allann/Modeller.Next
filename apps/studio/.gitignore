@@ -8,4 +8,5 @@ public/grammars
 test-results
 playwright-report
 electron-dist
+server-dist
 packaging/dist
