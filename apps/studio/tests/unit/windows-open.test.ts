@@ -44,17 +44,14 @@ test('a downloaded workspace package contains the Windows opener metadata', () =
     { kind: 'durable', version: '1.0', documents: { 'model/context.modeller': ['context-id'] } },
     { generationContractVersion: '1.0', logicalOutputRoot: 'generated/', profile: 'child-care-csharp' },
   );
-  const files = Object.fromEntries(
-    Object.entries(zipSync({})).map(([name, content]) => [name, new TextDecoder().decode(content)]),
-  );
-  Object.assign(files, Object.fromEntries(
+  const files: Record<string, string> = Object.fromEntries(
     Object.entries(require('fflate').unzipSync(bytes)).map(([name, content]) => [name, new TextDecoder().decode(content as Uint8Array)]),
-  ));
+  );
 
   assert.equal(JSON.parse(files['.modeller/package.json']).windowsInstallerUrl, WINDOWS_STUDIO_INSTALLER_URL);
   assert.equal(JSON.parse(files['.modeller/package.json']).windowsFileExtension, '.modeller-workspace');
-  assert.match(files.README, /Double-click this package/);
-  assert.match(files.README, /ModellerStudioSetup\.exe/);
+  assert.match(files['README.md'], /Double-click this package/);
+  assert.match(files['README.md'], /ModellerStudioSetup\.exe/);
 });
 
 test('the default extracted workspace root is stable for the same package bytes', () => {
