@@ -17,6 +17,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Keeps ModellerStudioSetup.exe's version metadata meaningful across every rebuild instead of
+      # sitting frozen at whatever package.json last had — [skip ci] stops this commit re-triggering
+      # this workflow (and Deploy studio, which also watches apps/studio/**) for a version-only change.
+      - name: Bump Studio patch version
+        working-directory: apps/studio
+        run: |
+          npm version patch --no-git-tag-version
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          $version = node -p "require('./package.json').version"
+          git add package.json package-lock.json
+          git commit -m "chore: bump Studio to v$version [skip ci]"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
+
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -58,7 +74,9 @@ jobs:
         run: |
           $tag = "studio-windows-latest"
           $installer = "apps/studio/packaging/dist/ModellerStudioSetup.exe"
-          git tag -f $tag $env:GITHUB_SHA
+          # HEAD, not $env:GITHUB_SHA — the version-bump step above committed and pushed past
+          # whatever commit actually triggered this run.
+          git tag -f $tag HEAD
           git push origin "refs/tags/$tag" --force
           gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -ne 0) {
