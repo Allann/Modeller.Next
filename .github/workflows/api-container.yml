@@ -120,3 +120,29 @@ jobs:
           done
           curl -sf https://modeller-next.vercel.app/healthz/live
           curl -sf https://modeller-next.vercel.app/v1/workspace/supported-views
+
+      # Every deploy pushes a new, immutable image tagged by commit SHA (never overwritten — Vercel
+      # needs each one to keep rollback/promote working for past deployments). Left unpruned, the
+      # "dockerfile" repository fills up and every future push is denied with "repository has reached
+      # the maximum allowed number of images" (hit 2026-08-29, at ~43 images) — the deploy step above
+      # succeeds at building the image but fails to push it, well before this step even runs. Keep
+      # only the newest KEEP images so that failure mode can't recur. continue-on-error: a transient
+      # registry-API hiccup here shouldn't turn an already-successful, already-verified-healthy deploy
+      # into a failed workflow run.
+      - name: Prune old container registry images
+        continue-on-error: true
+        run: |
+          KEEP=7
+          OLD_IMAGE_IDS=$(npx vercel vcr image ls dockerfile --project "$VERCEL_PROJECT_ID" --token="$VERCEL_TOKEN" --json \
+            | jq -r --argjson keep "$KEEP" '.images | sort_by(.createdAt) | reverse | .[$keep:] | .[].id')
+          if [ -z "$OLD_IMAGE_IDS" ]; then
+            echo "Nothing to prune — $KEEP or fewer images in the repository."
+            exit 0
+          fi
+          echo "$OLD_IMAGE_IDS" | while IFS= read -r image_id; do
+            echo "Deleting old image $image_id"
+            npx vercel vcr image rm dockerfile "$image_id" --project "$VERCEL_PROJECT_ID" --token="$VERCEL_TOKEN" --yes
+          done
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID_API }}
