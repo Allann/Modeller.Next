@@ -6,11 +6,12 @@ import { clearPanelWindowState } from './panel-window-state';
 import { resetOpenPanelWindowBounds } from './panel-windows';
 import { clearRecentWorkspaces, loadRecentWorkspaces } from './recent-workspaces';
 
-// Sends a workspace root to the renderer to load — the shared last step behind both the folder
-// dialog and an "Open Recent" click, so WorkbenchShell's onOpenFolder listener (and everything that
-// follows from a successful load, including re-recording this same root as most-recent) doesn't
-// need to know which one triggered it.
-function pushWorkspaceRoot(mainWindow: BrowserWindow, root: string): void {
+// Sends a workspace root (or a `.modeller-workspace` package path — see workspace.ts's
+// setWorkspaceRoot) to the renderer to load — the shared last step behind the folder dialog, an
+// "Open Recent" click, and main.ts's second-instance handler, so WorkbenchShell's onOpenFolder
+// listener (and everything that follows from a successful load, including re-recording this same
+// root as most-recent) doesn't need to know which one triggered it.
+export function pushWorkspaceRoot(mainWindow: BrowserWindow, root: string): void {
   mainWindow.webContents.send('workspace:open-folder', root);
 }
 

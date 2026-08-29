@@ -173,3 +173,38 @@ test('the Electron main process forwards a file-association argument to the spaw
   );
   assert.deepEqual(resolveForwardedArgs(['electron.exe', 'main.js'], true), []);
 });
+
+test('a second-instance launch carrying a workspace package is recognised for routing into the running window', async () => {
+  const { resolveSecondInstanceWorkspacePath } = await import('../../electron/server-supervisor');
+
+  assert.equal(
+    resolveSecondInstanceWorkspacePath(['ModellerStudio.exe', 'C:\\Users\\Reader\\Downloads\\sample.modeller-workspace'], false),
+    'C:\\Users\\Reader\\Downloads\\sample.modeller-workspace',
+  );
+  assert.equal(
+    resolveSecondInstanceWorkspacePath(['electron.exe', 'main.js', '--open-workspace-package', 'C:\\sample.modeller-workspace'], true),
+    'C:\\sample.modeller-workspace',
+  );
+  // A plain re-launch with no file argument has nothing to route — the handler should just focus.
+  assert.equal(resolveSecondInstanceWorkspacePath(['ModellerStudio.exe'], false), undefined);
+});
+
+test('setWorkspaceRoot switches to a workspace package the same way the initial launch argument does', async () => {
+  const { setWorkspaceRoot } = await import('../../src/server/workspace');
+  const originalLocalAppData = process.env.LOCALAPPDATA;
+  const tempAppData = await mkdtemp(path.join(tmpdir(), 'modeller-appdata-'));
+  process.env.LOCALAPPDATA = tempAppData;
+  const packagePath = path.join(tempAppData, 'sample.modeller-workspace');
+  try {
+    await require('node:fs/promises').writeFile(packagePath, packageBytes());
+
+    const workspace = await setWorkspaceRoot(packagePath);
+
+    assert.equal(workspace.openedFromPackage, true);
+    assert.deepEqual(workspace.sources, ['model/context.modeller']);
+  } finally {
+    if (originalLocalAppData === undefined) delete process.env.LOCALAPPDATA;
+    else process.env.LOCALAPPDATA = originalLocalAppData;
+    await rm(tempAppData, { recursive: true, force: true });
+  }
+});

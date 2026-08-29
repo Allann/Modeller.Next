@@ -10,8 +10,14 @@
 import { app, BrowserWindow, Menu, dialog, ipcMain, type NativeImage } from 'electron';
 import path from 'node:path';
 import type { ChildProcess } from 'node:child_process';
-import { killServerTree, resolveForwardedArgs, spawnServer, waitForServerReady } from './server-supervisor';
-import { buildApplicationMenu, openFolder, refreshApplicationMenu } from './menu';
+import {
+  killServerTree,
+  resolveForwardedArgs,
+  resolveSecondInstanceWorkspacePath,
+  spawnServer,
+  waitForServerReady,
+} from './server-supervisor';
+import { buildApplicationMenu, openFolder, pushWorkspaceRoot, refreshApplicationMenu } from './menu';
 import { closeAllPanelWindows, detachState, isPanelKind, openPanelWindow } from './panel-windows';
 import { fetchAppIcon } from './app-icon';
 import { addRecentWorkspace } from './recent-workspaces';
@@ -38,10 +44,18 @@ if (!gotSingleInstanceLock) {
   // can't usefully run alongside the first. Focus the existing window instead.
   app.quit();
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, argv) => {
     if (!mainWindow) return;
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.focus();
+
+    // A second `.modeller-workspace` double-click carries its target as a command-line argument
+    // (see resolveSecondInstanceWorkspacePath) — route it into the already-running window the same
+    // way File > Open Folder does, rather than just focusing an unchanged workspace. `argv` is the
+    // second instance's own argv, shaped the same as this instance's (both launched the same way,
+    // dev or packaged), so `process.defaultApp` still tells us which shape to expect.
+    const workspacePath = resolveSecondInstanceWorkspacePath(argv, process.defaultApp);
+    if (workspacePath) pushWorkspaceRoot(mainWindow, workspacePath);
   });
 
   ipcMain.on('panel:detach', (_event, kind: unknown) => {

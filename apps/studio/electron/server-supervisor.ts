@@ -13,6 +13,21 @@ export function resolveForwardedArgs(argv: readonly string[], defaultApp: boolea
   return defaultApp ? argv.slice(2) : argv.slice(1);
 }
 
+const WORKSPACE_PACKAGE_EXTENSION = '.modeller-workspace';
+
+// Mirrors src/server/workspace-package.ts's resolveWorkspacePackageArgument, duplicated here
+// (rather than imported) because electron/tsconfig.json's rootDir is scoped to this folder and
+// excludes src/ — see menu.ts's folderName for the same pattern. Used by main.ts's
+// second-instance handler to find the workspace path a second double-clicked file association
+// carries, so it can be routed into the already-running window instead of being silently dropped.
+export function resolveSecondInstanceWorkspacePath(argv: readonly string[], defaultApp: boolean): string | undefined {
+  const forwarded = resolveForwardedArgs(argv, defaultApp);
+  const direct = forwarded.find((arg) => arg.toLowerCase().endsWith(WORKSPACE_PACKAGE_EXTENSION));
+  if (direct) return direct;
+  const openIndex = forwarded.findIndex((arg) => arg === '--open-workspace-package');
+  return openIndex >= 0 ? forwarded[openIndex + 1] : undefined;
+}
+
 /**
  * Spawns the packaged app's pre-bundled server (server-dist/server.js, built by
  * scripts/bundle-server.mjs from server.ts) as a genuine child Node process via

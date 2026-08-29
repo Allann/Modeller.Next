@@ -65,7 +65,7 @@ export function WorkbenchShell() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: requestedRoot.trim() }),
     });
-    const data = (await response.json()) as { root?: string; sources?: string[]; error?: string };
+    const data = (await response.json()) as { root?: string; sources?: string[]; error?: string; openedFromPackage?: boolean };
     if (!response.ok || !data.sources) {
       setRootError(data.error ?? 'Could not load that workspace.');
       return;
@@ -73,7 +73,7 @@ export function WorkbenchShell() {
     const loadedRoot = data.root ?? requestedRoot.trim();
     setRoot(loadedRoot);
     setSources(data.sources);
-    setOpenedFromPackage(false);
+    setOpenedFromPackage(data.openedFromPackage ?? false);
     setOpenDocuments([]);
     setActivePath(undefined);
     setChangedCount(undefined);

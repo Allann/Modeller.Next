@@ -76,12 +76,22 @@ export async function loadWorkspace(): Promise<Workspace> {
   return current;
 }
 
-// Points the active workspace at a different local directory. `requestedRoot` names the
-// workspace's own root, not a path within one, so it is resolved and read as given rather than
-// checked with isWorkspaceRelative (that check guards paths *inside* an already-selected
-// workspace — see isKnownSource/resolveSourcePath below). Throws WorkspaceNotFoundError if the
-// directory has no `.modeller/config.json`, leaving the previously active workspace untouched.
+// Points the active workspace at a different local directory, or at a `.modeller-workspace`
+// package to extract and switch to in one step — the same package path a second double-clicked
+// file association forwards (see electron/main.ts's second-instance handler). `requestedRoot`
+// names the workspace's own root, not a path within one, so it is resolved and read as given
+// rather than checked with isWorkspaceRelative (that check guards paths *inside* an
+// already-selected workspace — see isKnownSource/resolveSourcePath below). Throws
+// WorkspaceNotFoundError if the directory has no `.modeller/config.json`, or
+// WorkspacePackageOpenError if the package is malformed, leaving the previously active workspace
+// untouched.
 export async function setWorkspaceRoot(requestedRoot: string): Promise<Workspace> {
+  if (requestedRoot.toLowerCase().endsWith('.modeller-workspace')) {
+    const root = await openWorkspacePackage(requestedRoot);
+    const workspace = { ...(await readWorkspace(root)), openedFromPackage: true };
+    current = workspace;
+    return workspace;
+  }
   const root = path.resolve(requestedRoot);
   const workspace = await readWorkspace(root);
   current = workspace;

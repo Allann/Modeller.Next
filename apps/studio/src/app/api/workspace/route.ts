@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const workspace = await setWorkspaceRoot(requestedRoot);
-    return NextResponse.json({ root: workspace.root, sources: workspace.sources });
+    return NextResponse.json({ root: workspace.root, sources: workspace.sources, openedFromPackage: workspace.openedFromPackage ?? false });
   } catch (error) {
     const response = workspaceErrorResponse(error);
     if (response) return response;
