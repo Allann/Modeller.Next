@@ -191,11 +191,10 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 var app = builder.Build();
 
-// Force HmacInitiativeCredentialService to construct now, at startup, rather than lazily on the
-// first request that needs it — outside Development it throws when Initiative:CredentialSigningKey
-// is unset, and that failure needs to surface as a startup crash, not a 500 on whatever request
-// happens to hit it first.
-app.Services.GetRequiredService<IInitiativeCredentialService>();
+// HmacInitiativeCredentialService is intentionally NOT force-constructed here at startup: its
+// missing-signing-key check (outside Development) is deferred to first Mint/Validate call so a
+// misconfigured Initiative:CredentialSigningKey only breaks Initiative endpoints, not the whole API
+// (workspace/document endpoints have no dependency on it) — see the class doc comment.
 
 app.UseSerilogRequestLogging();
 app.UseCors("Playground");

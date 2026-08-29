@@ -53,9 +53,13 @@ public interface IInitiativeCredentialService
 /// fast. The signing key comes from
 /// <c>Initiative:CredentialSigningKey</c> so credentials survive process restarts (a session can run
 /// over days, and Vercel's serverless functions cold-start independently). That config value is
-/// <b>required</b> outside the Development environment — this service throws at construction time
-/// (DI resolution) rather than silently minting credentials under a key nobody else has. In
-/// Development only, an unset key falls back to a random key generated for this process's lifetime:
+/// <b>required</b> outside the Development environment — but resolving it (and throwing if it's
+/// missing) is deferred to first <see cref="Mint"/>/<see cref="Validate"/> call, not done at
+/// construction/DI-resolution time: failing at startup would take the whole API down (workspace and
+/// document endpoints included) over a misconfiguration that only actually affects Initiative, the
+/// same way this codebase lets other optional capabilities (e.g. the Agent Advisor) degrade without
+/// blocking unrelated endpoints. In Development only, an unset key falls back to a random key
+/// generated for this process's lifetime:
 /// local dev restarts constantly (file watchers, rebuilds) and nobody expects a shared link to
 /// survive that, so failing fast there would just be noise; the fallback is also what lets
 /// <c>WebApplicationFactory&lt;Program&gt;</c>-based tests (which default to the Development
@@ -76,8 +80,8 @@ public sealed class HmacInitiativeCredentialService : IInitiativeCredentialServi
 
     private static readonly JsonWebTokenHandler TokenHandler = new();
 
-    private readonly SigningCredentials _signingCredentials;
-    private readonly SymmetricSecurityKey _securityKey;
+    private readonly Lazy<SymmetricSecurityKey> _securityKey;
+    private readonly Lazy<SigningCredentials> _signingCredentials;
     private readonly TimeSpan _defaultTtl;
     private readonly TimeProvider _timeProvider;
     private readonly string _issuer;
@@ -92,27 +96,35 @@ public sealed class HmacInitiativeCredentialService : IInitiativeCredentialServi
         _audience = configuration["Initiative:CredentialAudience"] is { Length: > 0 } configuredAudience
             ? configuredAudience
             : DefaultAudience;
-        var configuredKey = configuration["Initiative:CredentialSigningKey"];
-        byte[] key;
-        if (!string.IsNullOrWhiteSpace(configuredKey))
-        {
-            key = Encoding.UTF8.GetBytes(configuredKey);
-        }
-        else if (environment.IsDevelopment())
-        {
-            key = RandomNumberGenerator.GetBytes(32);
-        }
-        else
-        {
-            throw new InvalidOperationException(
-                "Initiative:CredentialSigningKey is required outside the Development environment. " +
-                "Without a fixed signing key, every process restart (including Vercel cold starts) " +
-                "invalidates every credential minted by the prior process, silently breaking every " +
-                "outstanding Facilitator/Domain Expert link.");
-        }
 
-        _securityKey = new SymmetricSecurityKey(key);
-        _signingCredentials = new SigningCredentials(_securityKey, SecurityAlgorithms.HmacSha256);
+        // Resolving the signing key — and throwing if it's missing outside Development — is deferred
+        // to first use via Lazy<T> rather than done here in the constructor; see the class doc comment.
+        var configuredKey = configuration["Initiative:CredentialSigningKey"];
+        _securityKey = new Lazy<SymmetricSecurityKey>(() =>
+        {
+            byte[] key;
+            if (!string.IsNullOrWhiteSpace(configuredKey))
+            {
+                key = Encoding.UTF8.GetBytes(configuredKey);
+            }
+            else if (environment.IsDevelopment())
+            {
+                key = RandomNumberGenerator.GetBytes(32);
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    "Initiative:CredentialSigningKey is required outside the Development environment. " +
+                    "Without a fixed signing key, every process restart (including Vercel cold starts) " +
+                    "invalidates every credential minted by the prior process, silently breaking every " +
+                    "outstanding Facilitator/Domain Expert link.");
+            }
+
+            return new SymmetricSecurityKey(key);
+        });
+        _signingCredentials = new Lazy<SigningCredentials>(() =>
+            new SigningCredentials(_securityKey.Value, SecurityAlgorithms.HmacSha256));
+
         var ttlDays = configuration.GetValue("Initiative:CredentialTtlDays", 30);
         _defaultTtl = TimeSpan.FromDays(ttlDays);
     }
@@ -128,7 +140,7 @@ public sealed class HmacInitiativeCredentialService : IInitiativeCredentialServi
                 [RoleClaim] = role.ToString(),
             },
             Expires = expiresAt.UtcDateTime,
-            SigningCredentials = _signingCredentials,
+            SigningCredentials = _signingCredentials.Value,
             Issuer = _issuer,
             Audience = _audience,
         };
@@ -149,7 +161,7 @@ public sealed class HmacInitiativeCredentialService : IInitiativeCredentialServi
             ValidAudience = _audience,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = _securityKey,
+            IssuerSigningKey = _securityKey.Value,
             ClockSkew = TimeSpan.Zero,
             // The default lifetime validator compares against the real system clock and treats an
             // expiry exactly equal to "now" as still valid (expires < now, not <=). This service is

@@ -54,8 +54,16 @@ public sealed class InitiativePipeline(
 
         // Issue #146: the only two times these credentials are ever handed out — the Facilitator's
         // and Domain Expert's sharable links each carry exactly one of them.
-        var facilitatorCredential = credentials.Mint(session.Id.Value, InitiativeCredentialRole.Facilitator);
-        var domainExpertCredential = credentials.Mint(session.Id.Value, InitiativeCredentialRole.DomainExpert);
+        string facilitatorCredential, domainExpertCredential;
+        try
+        {
+            facilitatorCredential = credentials.Mint(session.Id.Value, InitiativeCredentialRole.Facilitator);
+            domainExpertCredential = credentials.Mint(session.Id.Value, InitiativeCredentialRole.DomainExpert);
+        }
+        catch (InvalidOperationException)
+        {
+            return CredentialServiceMisconfigured();
+        }
         return new ApiResult(
             new CreateInitiativeResponseDto(InitiativeSessionMapper.ToDto(session), new InitiativeCredentialsDto(facilitatorCredential, domainExpertCredential)),
             StatusCodes.Status200OK);
@@ -228,7 +236,15 @@ public sealed class InitiativePipeline(
     private async Task<(AuthorizedSession? Authorized, ApiResult? Error)> AuthorizeAndLoadAsync(
         Guid id, string? credential, InitiativeCredentialRole? requiredRole, CancellationToken cancellationToken)
     {
-        var auth = credentials.Validate(credential, id);
+        InitiativeCredentialResult auth;
+        try
+        {
+            auth = credentials.Validate(credential, id);
+        }
+        catch (InvalidOperationException)
+        {
+            return (null, CredentialServiceMisconfigured());
+        }
         if (!auth.Succeeded) return (null, CredentialError(auth.Failure!.Value));
         if (requiredRole is not null && auth.Role != requiredRole) return (null, WrongRole(requiredRole.Value));
 
@@ -319,6 +335,17 @@ public sealed class InitiativePipeline(
 
     private static ApiResult WrongRole(InitiativeCredentialRole requiredRole) =>
         new(new InitiativeErrorResponse("initiative.credential.wrong_role", $"This action requires a {requiredRole} credential."), StatusCodes.Status400BadRequest);
+
+    /// <summary>
+    /// <see cref="IInitiativeCredentialService"/> throws <see cref="InvalidOperationException"/> when
+    /// <c>Initiative:CredentialSigningKey</c> is unconfigured outside Development (deliberately not
+    /// checked at startup — see that service's own doc comment) — turned into this API's structured
+    /// error envelope here so an operator misconfiguration surfaces as a clear 500, not an unhandled
+    /// exception, and stays confined to Initiative endpoints rather than crashing the whole process.
+    /// </summary>
+    private static ApiResult CredentialServiceMisconfigured() =>
+        new(new InitiativeErrorResponse("initiative.credential_service.misconfigured",
+            "The Initiative credential service is not configured for this environment."), StatusCodes.Status500InternalServerError);
 
     private static EngagementPhase CurrentEngagementPhase(InitiativeSession session)
     {
