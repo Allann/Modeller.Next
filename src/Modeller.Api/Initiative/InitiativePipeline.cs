@@ -33,6 +33,7 @@ public sealed class InitiativePipeline(
     IAgentAdvisor advisor,
     IHubContext<InitiativeHub> hub,
     IProductAnalytics analytics,
+    IInitiativeCredentialService credentials,
     ILogger<InitiativePipeline> logger)
 {
     public async Task<ApiResult> CreateAsync(CreateInitiativeRequest request, CancellationToken cancellationToken)
@@ -50,35 +51,39 @@ public sealed class InitiativePipeline(
         await repository.SaveAsync(session, cancellationToken);
         await analytics.CaptureAsync(ProductEvents.InitiativeCreated, session.Id.Value, cancellationToken: cancellationToken);
         logger.LogInformation("Created Initiative {InitiativeId}", session.Id);
-        return Ok(session);
+
+        // Issue #146: the only two times these credentials are ever handed out — the Facilitator's
+        // and Domain Expert's sharable links each carry exactly one of them.
+        var facilitatorCredential = credentials.Mint(session.Id.Value, InitiativeCredentialRole.Facilitator);
+        var domainExpertCredential = credentials.Mint(session.Id.Value, InitiativeCredentialRole.DomainExpert);
+        return new ApiResult(
+            new CreateInitiativeResponseDto(InitiativeSessionMapper.ToDto(session), new InitiativeCredentialsDto(facilitatorCredential, domainExpertCredential)),
+            StatusCodes.Status200OK);
     }
 
     /// <summary>
-    /// <paramref name="viewerRole"/> selects the projection: omitted or <c>Facilitator</c> returns
-    /// the full session; <c>DomainExpert</c> returns the role-scoped view (see
-    /// <see cref="InitiativeSessionMapper.ToDomainExpertDto"/>) the Domain Expert's page renders.
+    /// The projection is derived from the presented credential's own role — never from a
+    /// client-supplied role claim (issue #146) — so a Domain Expert credential always gets
+    /// <see cref="InitiativeSessionMapper.ToDomainExpertDto"/>'s role-scoped view regardless of what
+    /// the request otherwise claims.
     /// </summary>
-    public async Task<ApiResult> GetAsync(Guid id, string? viewerRole, CancellationToken cancellationToken)
+    public async Task<ApiResult> GetAsync(Guid id, string? credential, CancellationToken cancellationToken)
     {
-        var session = await repository.LoadAsync(InitiativeId.FromExisting(id), cancellationToken);
-        if (session is null) return NotFound(id);
+        var (authorized, error) = await AuthorizeAndLoadAsync(id, credential, requiredRole: null, cancellationToken);
+        if (error is not null) return error;
+        var (session, role) = authorized!.Value;
 
         await analytics.CaptureAsync(ProductEvents.InitiativeViewed, id,
-            new Dictionary<string, object?> { ["viewer_role"] = viewerRole ?? "Facilitator" }, cancellationToken);
+            new Dictionary<string, object?> { ["viewer_role"] = role.ToString() }, cancellationToken);
 
-        if (string.Equals(viewerRole, "DomainExpert", StringComparison.OrdinalIgnoreCase))
-        {
-            return new ApiResult(InitiativeSessionMapper.ToDomainExpertDto(session), StatusCodes.Status200OK);
-        }
-
-        return Ok(session);
+        return role == InitiativeCredentialRole.DomainExpert
+            ? new ApiResult(InitiativeSessionMapper.ToDomainExpertDto(session), StatusCodes.Status200OK)
+            : Ok(session);
     }
 
-    public Task<ApiResult> ProposeQuestionAsync(Guid id, ProposeQuestionRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, ProductEvents.QuestionProposed, cancellationToken, async session =>
+    public Task<ApiResult> ProposeQuestionAsync(Guid id, string? credential, ProposeQuestionRequestDto request, CancellationToken cancellationToken) =>
+        ExecuteAsync(id, credential, InitiativeCredentialRole.Facilitator, ProductEvents.QuestionProposed, cancellationToken, async session =>
         {
-            if (!Enum.TryParse<ParticipantRole>(request.AuthorRole, out var authorRole))
-                return InitiativeMutationOutcome.Early(Invalid($"'{request.AuthorRole}' is not a recognised participant role."));
             if (!Enum.TryParse<InitiativeField>(request.Field, out var field))
                 return InitiativeMutationOutcome.Early(Invalid($"'{request.Field}' is not a recognised Initiative field."));
 
@@ -92,20 +97,23 @@ public sealed class InitiativePipeline(
                 text = suggestion.Value!.Text;
             }
 
-            var (updated, _) = session.ProposeQuestion(text, ParticipantId.FromExisting(request.ProposedBy), authorRole, field);
+            // The credential already proved the caller is the Facilitator — provenance comes from
+            // this session's own Facilitator participant, never from a client-supplied ID/role pair.
+            var facilitator = session.Participants.Single(p => p.Role == ParticipantRole.Facilitator);
+            var (updated, _) = session.ProposeQuestion(text, facilitator.Id, ParticipantRole.Facilitator, field);
             return InitiativeMutationOutcome.Success(updated);
         });
 
-    public Task<ApiResult> SendQuestionAsync(Guid id, Guid questionId, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, ProductEvents.QuestionSent, cancellationToken, session =>
+    public Task<ApiResult> SendQuestionAsync(Guid id, string? credential, Guid questionId, CancellationToken cancellationToken) =>
+        ExecuteAsync(id, credential, InitiativeCredentialRole.Facilitator, ProductEvents.QuestionSent, cancellationToken, session =>
             Task.FromResult(InitiativeMutationOutcome.Success(session.SendQuestion(QuestionId.FromExisting(questionId)))));
 
-    public Task<ApiResult> RejectQuestionAsync(Guid id, Guid questionId, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, null, cancellationToken, session =>
+    public Task<ApiResult> RejectQuestionAsync(Guid id, string? credential, Guid questionId, CancellationToken cancellationToken) =>
+        ExecuteAsync(id, credential, InitiativeCredentialRole.Facilitator, null, cancellationToken, session =>
             Task.FromResult(InitiativeMutationOutcome.Success(session.RejectProposedQuestion(QuestionId.FromExisting(questionId)))));
 
-    public Task<ApiResult> SubmitResponseAsync(Guid id, Guid questionId, SubmitResponseRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, ProductEvents.ResponseSubmitted, cancellationToken, session =>
+    public Task<ApiResult> SubmitResponseAsync(Guid id, string? credential, Guid questionId, SubmitResponseRequestDto request, CancellationToken cancellationToken) =>
+        ExecuteAsync(id, credential, InitiativeCredentialRole.DomainExpert, ProductEvents.ResponseSubmitted, cancellationToken, session =>
         {
             if (string.IsNullOrWhiteSpace(request.Text))
                 return Task.FromResult(InitiativeMutationOutcome.Early(Invalid("A response requires non-empty text.")));
@@ -114,14 +122,15 @@ public sealed class InitiativePipeline(
             return Task.FromResult(InitiativeMutationOutcome.Success(updated));
         });
 
-    public Task<ApiResult> AcceptResponseAsync(Guid id, Guid responseId, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, ProductEvents.ResponseAccepted, cancellationToken, session =>
+    public Task<ApiResult> AcceptResponseAsync(Guid id, string? credential, Guid responseId, CancellationToken cancellationToken) =>
+        ExecuteAsync(id, credential, InitiativeCredentialRole.Facilitator, ProductEvents.ResponseAccepted, cancellationToken, session =>
             Task.FromResult(InitiativeMutationOutcome.Success(session.AcceptResponse(ResponseId.FromExisting(responseId)))));
 
-    public async Task<ApiResult> GetInterventionSuggestionsAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ApiResult> GetInterventionSuggestionsAsync(Guid id, string? credential, CancellationToken cancellationToken)
     {
-        var session = await repository.LoadAsync(InitiativeId.FromExisting(id), cancellationToken);
-        if (session is null) return NotFound(id);
+        var (authorized, error) = await AuthorizeAndLoadAsync(id, credential, InitiativeCredentialRole.Facilitator, cancellationToken);
+        if (error is not null) return error;
+        var session = authorized!.Value.Session;
 
         var suggestions = await advisor.ProposeInterventionsAsync(new ProposeInterventionsRequest(session.BuildStructuredFields()), cancellationToken);
         if (!suggestions.Succeeded) return AgentUnavailable(suggestions.Status, suggestions.FailureReason);
@@ -130,8 +139,8 @@ public sealed class InitiativePipeline(
             [.. suggestions.Value!.Suggestions.Select(s => new AgentInterventionSuggestionDto(s.Type.ToString(), s.Description, s.Rationale))]));
     }
 
-    public Task<ApiResult> SelectInterventionAsync(Guid id, SelectInterventionRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, ProductEvents.InterventionSelected, cancellationToken, session =>
+    public Task<ApiResult> SelectInterventionAsync(Guid id, string? credential, SelectInterventionRequestDto request, CancellationToken cancellationToken) =>
+        ExecuteAsync(id, credential, InitiativeCredentialRole.Facilitator, ProductEvents.InterventionSelected, cancellationToken, session =>
         {
             if (!Enum.TryParse<InterventionType>(request.Type, out var type))
                 return Task.FromResult(InitiativeMutationOutcome.Early(Invalid($"'{request.Type}' is not a recognised intervention type.")));
@@ -140,16 +149,16 @@ public sealed class InitiativePipeline(
             return Task.FromResult(InitiativeMutationOutcome.Success(updated));
         });
 
-    public Task<ApiResult> WithdrawInterventionAsync(Guid id, Guid interventionId, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, null, cancellationToken, session =>
+    public Task<ApiResult> WithdrawInterventionAsync(Guid id, string? credential, Guid interventionId, CancellationToken cancellationToken) =>
+        ExecuteAsync(id, credential, InitiativeCredentialRole.Facilitator, null, cancellationToken, session =>
             Task.FromResult(InitiativeMutationOutcome.Success(session.WithdrawIntervention(InterventionId.FromExisting(interventionId)))));
 
-    public Task<ApiResult> LinkDesignWorkspaceAsync(Guid id, Guid interventionId, LinkDesignWorkspaceRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, null, cancellationToken, session =>
+    public Task<ApiResult> LinkDesignWorkspaceAsync(Guid id, string? credential, Guid interventionId, LinkDesignWorkspaceRequestDto request, CancellationToken cancellationToken) =>
+        ExecuteAsync(id, credential, InitiativeCredentialRole.Facilitator, null, cancellationToken, session =>
             Task.FromResult(InitiativeMutationOutcome.Success(session.LinkDesignWorkspace(InterventionId.FromExisting(interventionId), request.Reference))));
 
-    public Task<ApiResult> RecordGateEvaluationAsync(Guid id, RecordGateEvaluationRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, ProductEvents.GateEvaluated, cancellationToken, async session =>
+    public Task<ApiResult> RecordGateEvaluationAsync(Guid id, string? credential, RecordGateEvaluationRequestDto request, CancellationToken cancellationToken) =>
+        ExecuteAsync(id, credential, InitiativeCredentialRole.Facilitator, ProductEvents.GateEvaluated, cancellationToken, async session =>
         {
             if (!Enum.TryParse<GateKind>(request.Kind, out var kind))
                 return InitiativeMutationOutcome.Early(Invalid($"'{request.Kind}' is not a recognised gate."));
@@ -184,8 +193,8 @@ public sealed class InitiativePipeline(
             return InitiativeMutationOutcome.Success(updated);
         });
 
-    public Task<ApiResult> DismissGateFindingAsync(Guid id, string kind, DismissGateFindingRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, null, cancellationToken, session =>
+    public Task<ApiResult> DismissGateFindingAsync(Guid id, string? credential, string kind, DismissGateFindingRequestDto request, CancellationToken cancellationToken) =>
+        ExecuteAsync(id, credential, InitiativeCredentialRole.Facilitator, null, cancellationToken, session =>
         {
             if (!Enum.TryParse<GateKind>(kind, out var gateKind))
                 return Task.FromResult(InitiativeMutationOutcome.Early(Invalid($"'{kind}' is not a recognised gate.")));
@@ -196,24 +205,55 @@ public sealed class InitiativePipeline(
             return Task.FromResult(InitiativeMutationOutcome.Success(updated));
         });
 
-    public Task<ApiResult> FinalizeAsync(Guid id, FinalizeRequestDto request, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, ProductEvents.InitiativeFinalized, cancellationToken, session =>
+    public Task<ApiResult> FinalizeAsync(Guid id, string? credential, FinalizeRequestDto request, CancellationToken cancellationToken) =>
+        ExecuteAsync(id, credential, InitiativeCredentialRole.Facilitator, ProductEvents.InitiativeFinalized, cancellationToken, session =>
             Task.FromResult(InitiativeMutationOutcome.Success(session.FinalizeInitiative(DateTimeOffset.UtcNow, request.Reason))));
 
-    public Task<ApiResult> ReopenAsync(Guid id, CancellationToken cancellationToken) =>
-        ExecuteAsync(id, ProductEvents.InitiativeReopened, cancellationToken, session => Task.FromResult(InitiativeMutationOutcome.Success(session.Reopen())));
+    public Task<ApiResult> ReopenAsync(Guid id, string? credential, CancellationToken cancellationToken) =>
+        ExecuteAsync(id, credential, InitiativeCredentialRole.Facilitator, ProductEvents.InitiativeReopened, cancellationToken,
+            session => Task.FromResult(InitiativeMutationOutcome.Success(session.Reopen())));
+
+    /// <summary>An Initiative session loaded after its credential proved <see cref="Role"/> for it.</summary>
+    private readonly record struct AuthorizedSession(InitiativeSession Session, InitiativeCredentialRole Role);
 
     /// <summary>
-    /// Loads, applies <paramref name="mutate"/>, and — only for a <see cref="InitiativeMutationOutcome.Success"/>
-    /// outcome — persists the *returned* session (never the one that was loaded) and broadcasts. A
-    /// domain invariant violation (<see cref="InvalidOperationException"/> or <see cref="ArgumentException"/>)
-    /// becomes a 400 rather than an unhandled 500, since these are exactly the exceptions #88's
-    /// aggregate raises for a disallowed transition.
+    /// The one credential-then-load preamble every mutating and read endpoint shares (issue #146):
+    /// validate the presented credential against <paramref name="id"/>, optionally require it to
+    /// carry <paramref name="requiredRole"/>, and only then load the session. The check is a pure
+    /// function of the credential string and the route's session ID (see
+    /// <see cref="IInitiativeCredentialService"/>), so a bad, expired, wrong-session, or wrong-role
+    /// credential never even reaches the repository. <paramref name="requiredRole"/> is <see langword="null"/>
+    /// for <see cref="GetAsync"/>, which accepts either role and instead branches on which one it got.
     /// </summary>
-    private async Task<ApiResult> ExecuteAsync(Guid id, string? eventName, CancellationToken cancellationToken, Func<InitiativeSession, Task<InitiativeMutationOutcome>> mutate)
+    private async Task<(AuthorizedSession? Authorized, ApiResult? Error)> AuthorizeAndLoadAsync(
+        Guid id, string? credential, InitiativeCredentialRole? requiredRole, CancellationToken cancellationToken)
     {
+        var auth = credentials.Validate(credential, id);
+        if (!auth.Succeeded) return (null, CredentialError(auth.Failure!.Value));
+        if (requiredRole is not null && auth.Role != requiredRole) return (null, WrongRole(requiredRole.Value));
+
         var session = await repository.LoadAsync(InitiativeId.FromExisting(id), cancellationToken);
-        if (session is null) return NotFound(id);
+        if (session is null) return (null, NotFound(id));
+
+        return (new AuthorizedSession(session, auth.Role!.Value), null);
+    }
+
+    /// <summary>
+    /// Applies <paramref name="mutate"/> to the session an already-authorized <paramref name="id"/>/
+    /// <paramref name="requiredRole"/> pair loaded (see <see cref="AuthorizeAndLoadAsync"/>) and —
+    /// only for a <see cref="InitiativeMutationOutcome.Success"/> outcome — persists the *returned*
+    /// session (never the one that was loaded) and broadcasts. A domain invariant violation
+    /// (<see cref="InvalidOperationException"/> or <see cref="ArgumentException"/>) becomes a 400
+    /// rather than an unhandled 500, since these are exactly the exceptions #88's aggregate raises
+    /// for a disallowed transition.
+    /// </summary>
+    private async Task<ApiResult> ExecuteAsync(
+        Guid id, string? credential, InitiativeCredentialRole requiredRole, string? eventName, CancellationToken cancellationToken,
+        Func<InitiativeSession, Task<InitiativeMutationOutcome>> mutate)
+    {
+        var (authorized, error) = await AuthorizeAndLoadAsync(id, credential, requiredRole, cancellationToken);
+        if (error is not null) return error;
+        var session = authorized!.Value.Session;
 
         InitiativeMutationOutcome outcome;
         try
@@ -257,6 +297,28 @@ public sealed class InitiativePipeline(
     private static ApiResult AgentUnavailable(AgentEvaluationStatus status, string? reason) =>
         new(new InitiativeErrorResponse($"initiative.agent.{status}", reason ?? "The Agent Advisor did not produce a suggestion."),
             StatusCodes.Status422UnprocessableEntity);
+
+    /// <summary>
+    /// Every credential failure and every wrong-role rejection (see <see cref="WrongRole"/>) uses
+    /// this API's own <see cref="InitiativeErrorResponse"/> envelope at 400 — never a bare 401/403 —
+    /// per issue #146's "the same structured error shape the session already uses for its other
+    /// failures, not a generic error."
+    /// </summary>
+    private static ApiResult CredentialError(InitiativeCredentialFailure failure) => failure switch
+    {
+        InitiativeCredentialFailure.Missing =>
+            new(new InitiativeErrorResponse("initiative.credential.missing", "A session credential is required for this request."), StatusCodes.Status400BadRequest),
+        InitiativeCredentialFailure.Malformed =>
+            new(new InitiativeErrorResponse("initiative.credential.malformed", "The session credential could not be parsed."), StatusCodes.Status400BadRequest),
+        InitiativeCredentialFailure.Expired =>
+            new(new InitiativeErrorResponse("initiative.credential.expired", "The session credential has expired."), StatusCodes.Status400BadRequest),
+        InitiativeCredentialFailure.WrongSession =>
+            new(new InitiativeErrorResponse("initiative.credential.wrong_session", "This credential was not issued for this Initiative session."), StatusCodes.Status400BadRequest),
+        _ => throw new ArgumentOutOfRangeException(nameof(failure)),
+    };
+
+    private static ApiResult WrongRole(InitiativeCredentialRole requiredRole) =>
+        new(new InitiativeErrorResponse("initiative.credential.wrong_role", $"This action requires a {requiredRole} credential."), StatusCodes.Status400BadRequest);
 
     private static EngagementPhase CurrentEngagementPhase(InitiativeSession session)
     {

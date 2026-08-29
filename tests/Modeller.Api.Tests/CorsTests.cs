@@ -1,6 +1,7 @@
 using System.Net;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 using Xunit;
 
 namespace Modeller.Api.Tests;
@@ -79,7 +80,15 @@ public sealed class CorsTests
     public async Task Production_configuration_allows_every_host_the_site_is_served_from(string origin)
     {
         using var factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder => builder.UseEnvironment("Production"));
+            .WithWebHostBuilder(builder => builder
+                .UseEnvironment("Production")
+                // HmacInitiativeCredentialService now requires a configured signing key outside
+                // Development (issue #146 hardening) — these tests boot under Production to
+                // exercise CORS, not credentials, so a key is supplied purely to let the host start.
+                .ConfigureAppConfiguration(config => config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Initiative:CredentialSigningKey"] = "cors-test-signing-key-do-not-use-in-prod",
+                })));
         using var client = factory.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Options, "/v1/workspace/analyze");
         request.Headers.Add("Origin", origin);
@@ -102,7 +111,15 @@ public sealed class CorsTests
     public async Task Preflight_for_the_Initiative_hub_allows_the_SignalR_client_handshake()
     {
         using var factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder => builder.UseEnvironment("Production"));
+            .WithWebHostBuilder(builder => builder
+                .UseEnvironment("Production")
+                // HmacInitiativeCredentialService now requires a configured signing key outside
+                // Development (issue #146 hardening) — these tests boot under Production to
+                // exercise CORS, not credentials, so a key is supplied purely to let the host start.
+                .ConfigureAppConfiguration(config => config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Initiative:CredentialSigningKey"] = "cors-test-signing-key-do-not-use-in-prod",
+                })));
         using var client = factory.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Options, "/hubs/initiative/negotiate");
         request.Headers.Add("Origin", "https://www.modeller.website");

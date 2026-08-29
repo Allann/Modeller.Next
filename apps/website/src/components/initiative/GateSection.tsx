@@ -5,7 +5,7 @@ import { CHECKS_BY_GATE, GATE_CHECK_LABELS, type GateCheckResultDto, type GateKi
 import { initiativeApi } from '@/lib/initiativeApi';
 import type { RunAction } from './types';
 
-export function GateSection({ kind, session, run, aiAvailable, agentApiKey }: { kind: GateKind; session: InitiativeSessionDto; run: RunAction; aiAvailable: boolean; agentApiKey: string }) {
+export function GateSection({ kind, session, credential, run, aiAvailable, agentApiKey }: { kind: GateKind; session: InitiativeSessionDto; credential: string; run: RunAction; aiAvailable: boolean; agentApiKey: string }) {
   const evaluation = kind === 'Discovery' ? session.latestDiscoveryGateEvaluation : session.latestShapeGateEvaluation;
   const [manualResults, setManualResults] = useState<Record<string, { passed: boolean; reason: string }>>({});
 
@@ -17,7 +17,7 @@ export function GateSection({ kind, session, run, aiAvailable, agentApiKey }: { 
       passed: manualResults[check]?.passed ?? false,
       reason: manualResults[check]?.reason || 'Not stated.',
     }));
-    void run(() => initiativeApi.recordGateEvaluation(session.id, kind, results));
+    void run(() => initiativeApi.recordGateEvaluation(session.id, credential, kind, results));
   }
 
   return (
@@ -28,7 +28,7 @@ export function GateSection({ kind, session, run, aiAvailable, agentApiKey }: { 
         <div className="inline-form">
           <button
             className="secondary-action"
-            onClick={() => void run(() => initiativeApi.recordGateEvaluation(session.id, kind, null, agentApiKey))}
+            onClick={() => void run(() => initiativeApi.recordGateEvaluation(session.id, credential, kind, null, agentApiKey))}
           >
             Ask AI to evaluate
           </button>
@@ -44,7 +44,7 @@ export function GateSection({ kind, session, run, aiAvailable, agentApiKey }: { 
               {!result.passed && (
                 <button
                   className="link-action"
-                  onClick={() => void run(() => initiativeApi.dismissGateFinding(session.id, kind, result.check, 'Accepted for now.'))}
+                  onClick={() => void run(() => initiativeApi.dismissGateFinding(session.id, credential, kind, result.check, 'Accepted for now.'))}
                 >
                   Dismiss
                 </button>

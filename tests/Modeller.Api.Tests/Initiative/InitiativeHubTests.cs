@@ -28,7 +28,8 @@ public sealed class InitiativeHubTests : IDisposable
         using var httpClient = _factory.CreateClient();
         var created = await httpClient.PostAsJsonAsync(
             "/v1/initiative", new CreateInitiativeRequest("Build us a new approval system", "Alex", "Jordan"), ApiJson.Options, ct);
-        var session = await created.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
+        var createdBody = await created.Content.ReadFromJsonAsync<CreateInitiativeResponseDto>(ApiJson.Options, ct);
+        var session = createdBody!.Session;
 
         await using var connection = new HubConnectionBuilder()
             .WithUrl($"{httpClient.BaseAddress}hubs/initiative", options => options.HttpMessageHandlerFactory = _ => _factory.Server.CreateHandler())
@@ -38,13 +39,14 @@ public sealed class InitiativeHubTests : IDisposable
         connection.On<Guid>(InitiativeHub.SessionUpdated, id => notificationReceived.TrySetResult(id));
 
         await connection.StartAsync(ct);
-        await connection.InvokeAsync("JoinSession", session!.Id, ct);
+        await connection.InvokeAsync("JoinSession", session.Id, ct);
 
-        var facilitatorId = session.Participants.Single(p => p.Role == "Facilitator").Id;
-        var propose = await httpClient.PostAsJsonAsync(
-            $"/v1/initiative/{session.Id}/questions",
-            new ProposeQuestionRequestDto(facilitatorId, "Facilitator", "PainPoints", "What's painful today?"),
-            ApiJson.Options, ct);
+        using var proposeRequest = new HttpRequestMessage(HttpMethod.Post, $"/v1/initiative/{session.Id}/questions")
+        {
+            Content = JsonContent.Create(new ProposeQuestionRequestDto("PainPoints", "What's painful today?"), options: ApiJson.Options),
+        };
+        proposeRequest.Headers.Add("X-Initiative-Credential", createdBody.Credentials.Facilitator);
+        var propose = await httpClient.SendAsync(proposeRequest, ct);
         propose.EnsureSuccessStatusCode();
 
         var receivedId = await notificationReceived.Task.WaitAsync(TimeSpan.FromSeconds(10), ct);

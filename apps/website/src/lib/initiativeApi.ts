@@ -1,12 +1,12 @@
 import type {
   AgentInterventionSuggestionsResponse,
   AgentAdvisorStatusResponse,
+  CreateInitiativeResponseDto,
   GateCheckResultDto,
   GateKind,
   InitiativeErrorResponse,
   InitiativeSessionDto,
   InterventionType,
-  ParticipantRole,
 } from './initiativeTypes';
 import { analyticsId, isInternalVisitor } from './productAnalytics';
 
@@ -14,6 +14,11 @@ import { analyticsId, isInternalVisitor } from './productAnalytics';
 // it), so the fallback only applies outside a Next build — it matches Modeller.Api's own PORT
 // default (src/Modeller.Api/Program.cs) for a locally running API.
 const API_BASE_URL = process.env.NEXT_PUBLIC_MODELLER_API_URL ?? 'http://localhost:8080';
+
+// Issue #146: every request against a specific session now carries this header — the server judges
+// the caller's role from it, never from a client-supplied role string. Mirrors how the unrelated
+// Agent API key already travels as a header (X-Agent-Api-Key), but this one is per-participant.
+const CREDENTIAL_HEADER = 'X-Initiative-Credential';
 
 export class InitiativeApiError extends Error {
   constructor(
@@ -39,67 +44,69 @@ async function send<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
-function withAgentKey(apiKey: string): RequestInit {
-  return { headers: { 'X-Agent-Api-Key': apiKey } };
+function headersFor(credential: string, apiKey?: string): HeadersInit {
+  return {
+    [CREDENTIAL_HEADER]: credential,
+    ...(apiKey ? { 'X-Agent-Api-Key': apiKey } : {}),
+  };
 }
 
-const post = <T>(path: string, body?: unknown) =>
-  send<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) });
+const post = <T>(path: string, credential: string, body?: unknown, apiKey?: string) =>
+  send<T>(path, {
+    method: 'POST',
+    body: body === undefined ? undefined : JSON.stringify(body),
+    headers: headersFor(credential, apiKey),
+  });
 
 export const initiativeApi = {
   getAgentStatus: () => send<AgentAdvisorStatusResponse>('/v1/initiative/agent-status'),
 
   create: (originalChangeRequest: string, facilitatorName: string, domainExpertName: string) =>
-    post<InitiativeSessionDto>('/v1/initiative', { originalChangeRequest, facilitatorName, domainExpertName }),
-
-  get: (id: string, viewerRole?: 'DomainExpert') =>
-    send<InitiativeSessionDto>(`/v1/initiative/${id}${viewerRole ? `?viewerRole=${viewerRole}` : ''}`),
-
-  proposeQuestion: (id: string, proposedBy: string, authorRole: ParticipantRole, field: string, text: string | null, apiKey?: string) =>
-    send<InitiativeSessionDto>(`/v1/initiative/${id}/questions`, {
+    send<CreateInitiativeResponseDto>('/v1/initiative', {
       method: 'POST',
-      body: JSON.stringify({ proposedBy, authorRole, field, text }),
-      ...(apiKey ? withAgentKey(apiKey) : {}),
+      body: JSON.stringify({ originalChangeRequest, facilitatorName, domainExpertName }),
     }),
 
-  sendQuestion: (id: string, questionId: string) =>
-    post<InitiativeSessionDto>(`/v1/initiative/${id}/questions/${questionId}/send`),
+  get: (id: string, credential: string) =>
+    send<InitiativeSessionDto>(`/v1/initiative/${id}`, { headers: headersFor(credential) }),
 
-  rejectQuestion: (id: string, questionId: string) =>
-    post<InitiativeSessionDto>(`/v1/initiative/${id}/questions/${questionId}/reject`),
+  proposeQuestion: (id: string, credential: string, field: string, text: string | null, apiKey?: string) =>
+    post<InitiativeSessionDto>(`/v1/initiative/${id}/questions`, credential, { field, text }, apiKey),
 
-  submitResponse: (id: string, questionId: string, text: string) =>
-    post<InitiativeSessionDto>(`/v1/initiative/${id}/questions/${questionId}/responses`, { text }),
+  sendQuestion: (id: string, credential: string, questionId: string) =>
+    post<InitiativeSessionDto>(`/v1/initiative/${id}/questions/${questionId}/send`, credential),
 
-  acceptResponse: (id: string, responseId: string) =>
-    post<InitiativeSessionDto>(`/v1/initiative/${id}/responses/${responseId}/accept`),
+  rejectQuestion: (id: string, credential: string, questionId: string) =>
+    post<InitiativeSessionDto>(`/v1/initiative/${id}/questions/${questionId}/reject`, credential),
 
-  getInterventionSuggestions: (id: string, apiKey: string) =>
-    send<AgentInterventionSuggestionsResponse>(`/v1/initiative/${id}/interventions/suggestions`, withAgentKey(apiKey)),
+  submitResponse: (id: string, credential: string, questionId: string, text: string) =>
+    post<InitiativeSessionDto>(`/v1/initiative/${id}/questions/${questionId}/responses`, credential, { text }),
 
-  selectIntervention: (id: string, type: InterventionType, description: string, rationale: string, continuesToDesignWorkspace: boolean) =>
-    post<InitiativeSessionDto>(`/v1/initiative/${id}/interventions`, { type, description, rationale, continuesToDesignWorkspace }),
+  acceptResponse: (id: string, credential: string, responseId: string) =>
+    post<InitiativeSessionDto>(`/v1/initiative/${id}/responses/${responseId}/accept`, credential),
 
-  withdrawIntervention: (id: string, interventionId: string) =>
-    post<InitiativeSessionDto>(`/v1/initiative/${id}/interventions/${interventionId}/withdraw`),
+  getInterventionSuggestions: (id: string, credential: string, apiKey: string) =>
+    send<AgentInterventionSuggestionsResponse>(`/v1/initiative/${id}/interventions/suggestions`, { headers: headersFor(credential, apiKey) }),
 
-  linkDesignWorkspace: (id: string, interventionId: string, reference: string) =>
-    post<InitiativeSessionDto>(`/v1/initiative/${id}/interventions/${interventionId}/design-workspace`, { reference }),
+  selectIntervention: (id: string, credential: string, type: InterventionType, description: string, rationale: string, continuesToDesignWorkspace: boolean) =>
+    post<InitiativeSessionDto>(`/v1/initiative/${id}/interventions`, credential, { type, description, rationale, continuesToDesignWorkspace }),
 
-  recordGateEvaluation: (id: string, kind: GateKind, manualResults: GateCheckResultDto[] | null, apiKey?: string) =>
-    send<InitiativeSessionDto>(`/v1/initiative/${id}/gate-evaluations`, {
-      method: 'POST',
-      body: JSON.stringify({ kind, manualResults }),
-      ...(apiKey ? withAgentKey(apiKey) : {}),
-    }),
+  withdrawIntervention: (id: string, credential: string, interventionId: string) =>
+    post<InitiativeSessionDto>(`/v1/initiative/${id}/interventions/${interventionId}/withdraw`, credential),
 
-  dismissGateFinding: (id: string, kind: GateKind, check: string, reason: string | null) =>
-    post<InitiativeSessionDto>(`/v1/initiative/${id}/gate-evaluations/${kind}/dismiss`, { check, reason }),
+  linkDesignWorkspace: (id: string, credential: string, interventionId: string, reference: string) =>
+    post<InitiativeSessionDto>(`/v1/initiative/${id}/interventions/${interventionId}/design-workspace`, credential, { reference }),
 
-  finalize: (id: string, reason: string | null) =>
-    post<InitiativeSessionDto>(`/v1/initiative/${id}/finalize`, { reason }),
+  recordGateEvaluation: (id: string, credential: string, kind: GateKind, manualResults: GateCheckResultDto[] | null, apiKey?: string) =>
+    post<InitiativeSessionDto>(`/v1/initiative/${id}/gate-evaluations`, credential, { kind, manualResults }, apiKey),
 
-  reopen: (id: string) => post<InitiativeSessionDto>(`/v1/initiative/${id}/reopen`),
+  dismissGateFinding: (id: string, credential: string, kind: GateKind, check: string, reason: string | null) =>
+    post<InitiativeSessionDto>(`/v1/initiative/${id}/gate-evaluations/${kind}/dismiss`, credential, { check, reason }),
+
+  finalize: (id: string, credential: string, reason: string | null) =>
+    post<InitiativeSessionDto>(`/v1/initiative/${id}/finalize`, credential, { reason }),
+
+  reopen: (id: string, credential: string) => post<InitiativeSessionDto>(`/v1/initiative/${id}/reopen`, credential),
 };
 
 export { API_BASE_URL };

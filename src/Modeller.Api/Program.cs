@@ -20,11 +20,24 @@ var builder = WebApplication.CreateBuilder(args);
 // logging here is metadata only (method/path/status/duration), never a submitted document's text.
 builder.Host.UseSerilog((context, loggerConfig) => loggerConfig.ReadFrom.Configuration(context.Configuration));
 
-builder.Services.AddOpenApi(options => options.AddSchemaTransformer<ExampleSchemaTransformer>());
+builder.Services.AddOpenApi(options =>
+{
+    options.AddSchemaTransformer<ExampleSchemaTransformer>();
+    options.AddDocumentTransformer<InitiativeCredentialSecuritySchemeTransformer>();
+});
 builder.Services.AddHealthChecks();
 builder.Services.AddSingleton<WorkspaceAnalysisPipeline>();
 builder.Services.AddSingleton<WorkspaceGenerationPreviewPipeline>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton(TimeProvider.System);
+// Issue #146: mints/validates the two role-scoped session credentials as JWTs. Signing key comes
+// from Initiative:CredentialSigningKey so credentials survive process restarts in production; that
+// key is required outside Development — HmacInitiativeCredentialService throws at construction
+// (i.e. at first resolution here) if it's missing, rather than silently falling back to a
+// per-process random key that would invalidate every outstanding link on the next restart/cold
+// start. In Development only, an unset key falls back to a random per-process key (fine for local
+// dev restarts and for tests, which mint and validate within the same process).
+builder.Services.AddSingleton<IInitiativeCredentialService, HmacInitiativeCredentialService>();
 var postHogKey = builder.Configuration["ProductAnalytics:ProjectKey"];
 if (!string.IsNullOrWhiteSpace(postHogKey))
 {
@@ -134,7 +147,7 @@ builder.Services.AddCors(options => options.AddPolicy("Playground", policy =>
     if (allowedOrigins.Length > 0)
         policy.WithOrigins(allowedOrigins)
             .WithMethods("GET", "POST")
-            .WithHeaders("Content-Type", "x-requested-with", "x-signalr-user-agent", "x-analytics-id", "x-modeller-internal", "x-agent-api-key")
+            .WithHeaders("Content-Type", "x-requested-with", "x-signalr-user-agent", "x-analytics-id", "x-modeller-internal", "x-agent-api-key", "x-initiative-credential")
             .AllowCredentials();
 }));
 
@@ -177,6 +190,12 @@ var port = builder.Configuration["PORT"] ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 var app = builder.Build();
+
+// Force HmacInitiativeCredentialService to construct now, at startup, rather than lazily on the
+// first request that needs it — outside Development it throws when Initiative:CredentialSigningKey
+// is unset, and that failure needs to surface as a startup crash, not a 500 on whatever request
+// happens to hit it first.
+app.Services.GetRequiredService<IInitiativeCredentialService>();
 
 app.UseSerilogRequestLogging();
 app.UseCors("Playground");

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using Modeller.Api.Initiative;
 using Xunit;
 
@@ -8,6 +9,8 @@ namespace Modeller.Api.Tests.Initiative;
 
 public sealed class InitiativeEndpointsTests : IDisposable
 {
+    private const string CredentialHeader = "X-Initiative-Credential";
+
     private readonly string _storageRoot = Path.Combine(Path.GetTempPath(), "modeller-initiative-endpoint-tests", Guid.NewGuid().ToString("N"));
     private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
@@ -24,56 +27,69 @@ public sealed class InitiativeEndpointsTests : IDisposable
     {
         var ct = TestContext.Current.CancellationToken;
 
-        var created = await PostAsync("/v1/initiative", new CreateInitiativeRequest("Build us a new approval system", "Alex", "Jordan"), ct);
-        Assert.Equal(HttpStatusCode.OK, created.StatusCode);
-        var session = await created.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
-        var facilitatorId = session!.Participants.Single(p => p.Role == "Facilitator").Id;
+        var (facilitatorCredential, domainExpertCredential, session) = await CreateSessionAsync(ct);
 
-        var proposed = await PostAsync($"/v1/initiative/{session.Id}/questions",
-            new ProposeQuestionRequestDto(facilitatorId, "Facilitator", "PainPoints", "What's painful today?"), ct);
+        var proposed = await PostAsync($"/v1/initiative/{session.Id}/questions", facilitatorCredential,
+            new ProposeQuestionRequestDto("PainPoints", "What's painful today?"), ct);
         Assert.Equal(HttpStatusCode.OK, proposed.StatusCode);
         var afterPropose = await proposed.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
         var questionId = afterPropose!.Questions.Single().Id;
 
-        var sent = await PostAsync($"/v1/initiative/{session.Id}/questions/{questionId}/send", body: null, ct);
+        var sent = await PostAsync($"/v1/initiative/{session.Id}/questions/{questionId}/send", facilitatorCredential, body: null, ct);
         Assert.Equal(HttpStatusCode.OK, sent.StatusCode);
 
-        var responded = await PostAsync($"/v1/initiative/{session.Id}/questions/{questionId}/responses",
+        var responded = await PostAsync($"/v1/initiative/{session.Id}/questions/{questionId}/responses", domainExpertCredential,
             new SubmitResponseRequestDto("Decisions take twelve days."), ct);
         Assert.Equal(HttpStatusCode.OK, responded.StatusCode);
         var afterRespond = await responded.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
         var responseId = afterRespond!.Responses.Single().Id;
 
-        var accepted = await PostAsync($"/v1/initiative/{session.Id}/responses/{responseId}/accept", body: null, ct);
+        var accepted = await PostAsync($"/v1/initiative/{session.Id}/responses/{responseId}/accept", facilitatorCredential, body: null, ct);
         Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
 
-        var selected = await PostAsync($"/v1/initiative/{session.Id}/interventions",
+        var selected = await PostAsync($"/v1/initiative/{session.Id}/interventions", facilitatorCredential,
             new SelectInterventionRequestDto("Process", "Remove a duplicate approval", "Cuts two days."), ct);
         Assert.Equal(HttpStatusCode.OK, selected.StatusCode);
 
-        var gateEvaluated = await PostAsync($"/v1/initiative/{session.Id}/gate-evaluations",
+        var gateEvaluated = await PostAsync($"/v1/initiative/{session.Id}/gate-evaluations", facilitatorCredential,
             new RecordGateEvaluationRequestDto("Shape", [new GateCheckResultDto("NoActionWasConsidered", false, "Not discussed.")]), ct);
         Assert.Equal(HttpStatusCode.OK, gateEvaluated.StatusCode);
 
-        var finalized = await PostAsync($"/v1/initiative/{session.Id}/finalize", new FinalizeRequestDto("Proceeding despite the open finding."), ct);
+        var finalized = await PostAsync($"/v1/initiative/{session.Id}/finalize", facilitatorCredential, new FinalizeRequestDto("Proceeding despite the open finding."), ct);
         Assert.Equal(HttpStatusCode.OK, finalized.StatusCode);
         var final = await finalized.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
         Assert.NotNull(final!.Finalization);
         Assert.Equal("WithOpenGateFindings", final.Finalization!.Status);
         Assert.Single(final.GateOverrides);
 
-        var fetched = await _client.GetAsync($"/v1/initiative/{session.Id}", ct);
+        var fetched = await GetAsync($"/v1/initiative/{session.Id}", facilitatorCredential, ct);
         Assert.Equal(HttpStatusCode.OK, fetched.StatusCode);
     }
 
     [Fact]
-    public async Task Get_UnknownInitiative_Returns404WithStructuredEnvelope()
+    public async Task Get_UnknownInitiative_WithNoCredential_Returns400WithStructuredEnvelope()
     {
         var response = await _client.GetAsync($"/v1/initiative/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        // A missing/invalid credential is refused before the repository is even consulted, so an
+        // unknown session ID never reaches the not-found branch — see InitiativePipeline.ExecuteAsync's
+        // own remarks on validating the credential before ever loading the session.
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var error = await response.Content.ReadFromJsonAsync<InitiativeErrorResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
-        Assert.Equal("initiative.not_found", error!.Code);
+        Assert.Equal("initiative.credential.missing", error!.Code);
+    }
+
+    [Fact]
+    public async Task Get_UnknownInitiative_WithCrossSessionCredential_Returns400WithStructuredEnvelope()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (facilitatorCredential, _, _) = await CreateSessionAsync(ct);
+
+        var response = await GetAsync($"/v1/initiative/{Guid.NewGuid()}", facilitatorCredential, ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.Content.ReadFromJsonAsync<InitiativeErrorResponse>(ApiJson.Options, ct);
+        Assert.Equal("initiative.credential.wrong_session", error!.Code);
     }
 
     [Fact]
@@ -92,11 +108,21 @@ public sealed class InitiativeEndpointsTests : IDisposable
     [Fact]
     public async Task Create_MissingRequiredField_Returns400WithStructuredEnvelope()
     {
-        var response = await PostAsync("/v1/initiative", new CreateInitiativeRequest("", "Alex", "Jordan"), TestContext.Current.CancellationToken);
+        var response = await PostAsync("/v1/initiative", credential: null, new CreateInitiativeRequest("", "Alex", "Jordan"), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var error = await response.Content.ReadFromJsonAsync<InitiativeErrorResponse>(ApiJson.Options, TestContext.Current.CancellationToken);
         Assert.Equal("initiative.request.invalid", error!.Code);
+    }
+
+    [Fact]
+    public async Task Create_Succeeds_IssuesTwoDistinctCredentials()
+    {
+        var (facilitatorCredential, domainExpertCredential, _) = await CreateSessionAsync(TestContext.Current.CancellationToken);
+
+        Assert.False(string.IsNullOrWhiteSpace(facilitatorCredential));
+        Assert.False(string.IsNullOrWhiteSpace(domainExpertCredential));
+        Assert.NotEqual(facilitatorCredential, domainExpertCredential);
     }
 
     [Fact]
@@ -107,12 +133,10 @@ public sealed class InitiativeEndpointsTests : IDisposable
         // requirement fails loudly and identifiably at the HTTP boundary rather than silently, when
         // the caller omits text and expects AI to fill it in.
         var ct = TestContext.Current.CancellationToken;
-        var created = await PostAsync("/v1/initiative", new CreateInitiativeRequest("Build us a new approval system", "Alex", "Jordan"), ct);
-        var session = await created.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
-        var facilitatorId = session!.Participants.Single(p => p.Role == "Facilitator").Id;
+        var (facilitatorCredential, _, session) = await CreateSessionAsync(ct);
 
-        var response = await PostAsync($"/v1/initiative/{session.Id}/questions",
-            new ProposeQuestionRequestDto(facilitatorId, "Facilitator", "PainPoints", Text: null), ct);
+        var response = await PostAsync($"/v1/initiative/{session.Id}/questions", facilitatorCredential,
+            new ProposeQuestionRequestDto("PainPoints", Text: null), ct);
 
         Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
         var error = await response.Content.ReadFromJsonAsync<InitiativeErrorResponse>(ApiJson.Options, ct);
@@ -123,14 +147,26 @@ public sealed class InitiativeEndpointsTests : IDisposable
     public async Task ProposeQuestion_UnrecognisedField_Returns400_NotAnUnhandled500()
     {
         var ct = TestContext.Current.CancellationToken;
-        var created = await PostAsync("/v1/initiative", new CreateInitiativeRequest("Build us a new approval system", "Alex", "Jordan"), ct);
-        var session = await created.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
-        var facilitatorId = session!.Participants.Single(p => p.Role == "Facilitator").Id;
+        var (facilitatorCredential, _, session) = await CreateSessionAsync(ct);
 
-        var response = await PostAsync($"/v1/initiative/{session.Id}/questions",
-            new ProposeQuestionRequestDto(facilitatorId, "Facilitator", "NotARealField", "Some text"), ct);
+        var response = await PostAsync($"/v1/initiative/{session.Id}/questions", facilitatorCredential,
+            new ProposeQuestionRequestDto("NotARealField", "Some text"), ct);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ProposeQuestion_WithDomainExpertCredential_IsRefused()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (_, domainExpertCredential, session) = await CreateSessionAsync(ct);
+
+        var response = await PostAsync($"/v1/initiative/{session.Id}/questions", domainExpertCredential,
+            new ProposeQuestionRequestDto("PainPoints", "What's painful today?"), ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.Content.ReadFromJsonAsync<InitiativeErrorResponse>(ApiJson.Options, ct);
+        Assert.Equal("initiative.credential.wrong_role", error!.Code);
     }
 
     [Fact]
@@ -160,32 +196,136 @@ public sealed class InitiativeEndpointsTests : IDisposable
     }
 
     [Fact]
-    public async Task Get_WithDomainExpertViewerRole_HidesFacilitatorOnlyContent()
+    public async Task Get_WithDomainExpertCredential_HidesFacilitatorOnlyContent()
     {
         var ct = TestContext.Current.CancellationToken;
-        var created = await PostAsync("/v1/initiative", new CreateInitiativeRequest("Build us a new approval system", "Alex", "Jordan"), ct);
-        var session = await created.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
-        var facilitatorId = session!.Participants.Single(p => p.Role == "Facilitator").Id;
+        var (facilitatorCredential, domainExpertCredential, session) = await CreateSessionAsync(ct);
 
         // A proposed-but-never-sent question must not be visible to the Domain Expert.
-        await PostAsync($"/v1/initiative/{session.Id}/questions",
-            new ProposeQuestionRequestDto(facilitatorId, "Facilitator", "PainPoints", "Not sent yet"), ct);
+        await PostAsync($"/v1/initiative/{session.Id}/questions", facilitatorCredential,
+            new ProposeQuestionRequestDto("PainPoints", "Not sent yet"), ct);
 
-        var response = await _client.GetAsync($"/v1/initiative/{session.Id}?viewerRole=DomainExpert", ct);
+        var response = await GetAsync($"/v1/initiative/{session.Id}", domainExpertCredential, ct);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var domainExpertView = await response.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
 
         Assert.Empty(domainExpertView!.Questions);
 
-        var facilitatorView = await _client.GetAsync($"/v1/initiative/{session.Id}", ct);
+        var facilitatorView = await GetAsync($"/v1/initiative/{session.Id}", facilitatorCredential, ct);
         var facilitatorDto = await facilitatorView.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
         Assert.Single(facilitatorDto!.Questions);
     }
 
-    private async Task<HttpResponseMessage> PostAsync(string url, object? body, CancellationToken cancellationToken) =>
-        body is null
-            ? await _client.PostAsync(url, content: null, cancellationToken)
-            : await _client.PostAsJsonAsync(url, body, ApiJson.Options, cancellationToken);
+    [Fact]
+    public async Task Get_WithDomainExpertCredential_IgnoresAClaimedFacilitatorRole()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (_, domainExpertCredential, session) = await CreateSessionAsync(ct);
+
+        // viewerRole is no longer bound by the endpoint at all — a caller cannot override the
+        // credential's real role by supplying one. See InitiativeEndpoints.MapGet("/{id:guid}").
+        var response = await GetAsync($"/v1/initiative/{session.Id}?viewerRole=Facilitator", domainExpertCredential, ct);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var domainExpertView = await response.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
+
+        Assert.Empty(domainExpertView!.GateOverrides);
+        Assert.Empty(domainExpertView.SelectedInterventions);
+    }
+
+    [Fact]
+    public async Task Finalize_WithGarbledCredential_Returns400WithStructuredEnvelope()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (facilitatorCredential, _, session) = await CreateSessionAsync(ct);
+        var garbled = facilitatorCredential[..^3] + "xyz";
+
+        var response = await PostAsync($"/v1/initiative/{session.Id}/finalize", garbled, new FinalizeRequestDto(), ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.Content.ReadFromJsonAsync<InitiativeErrorResponse>(ApiJson.Options, ct);
+        Assert.Equal("initiative.credential.malformed", error!.Code);
+    }
+
+    [Fact]
+    public async Task Finalize_WithExpiredCredential_Returns400WithStructuredEnvelope()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (_, _, session) = await CreateSessionAsync(ct);
+        var credentialService = _factory.Services.GetRequiredService<IInitiativeCredentialService>();
+        var expired = credentialService.Mint(session.Id, InitiativeCredentialRole.Facilitator, TimeSpan.FromSeconds(-1));
+
+        var response = await PostAsync($"/v1/initiative/{session.Id}/finalize", expired, new FinalizeRequestDto(), ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.Content.ReadFromJsonAsync<InitiativeErrorResponse>(ApiJson.Options, ct);
+        Assert.Equal("initiative.credential.expired", error!.Code);
+    }
+
+    [Fact]
+    public async Task GetInterventionSuggestions_WithDomainExpertCredential_Returns400WrongRole()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (_, domainExpertCredential, session) = await CreateSessionAsync(ct);
+
+        var response = await GetAsync($"/v1/initiative/{session.Id}/interventions/suggestions", domainExpertCredential, ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.Content.ReadFromJsonAsync<InitiativeErrorResponse>(ApiJson.Options, ct);
+        Assert.Equal("initiative.credential.wrong_role", error!.Code);
+    }
+
+    [Fact]
+    public async Task GetInterventionSuggestions_WithFacilitatorCredentialAndNoAgentConfigured_Returns422IdentifyingTheDegradedStatus()
+    {
+        // Mirrors ProposeQuestion_WithNoTextAndNoAgentConfigured_Returns422IdentifyingTheDegradedStatus:
+        // no Agent:BaseUrl configured in this test host, so IAgentAdvisor resolves to
+        // HumanOnlyAgentAdvisor, which this exercises past the credential check into the advisor call.
+        var ct = TestContext.Current.CancellationToken;
+        var (facilitatorCredential, _, session) = await CreateSessionAsync(ct);
+
+        var response = await GetAsync($"/v1/initiative/{session.Id}/interventions/suggestions", facilitatorCredential, ct);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        var error = await response.Content.ReadFromJsonAsync<InitiativeErrorResponse>(ApiJson.Options, ct);
+        Assert.Equal("initiative.agent.NotConfigured", error!.Code);
+    }
+
+    [Fact]
+    public async Task Finalize_WithAnotherSessionsCredential_Returns400WithStructuredEnvelope()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (_, _, firstSession) = await CreateSessionAsync(ct);
+        var (secondFacilitatorCredential, _, _) = await CreateSessionAsync(ct);
+
+        var response = await PostAsync($"/v1/initiative/{firstSession.Id}/finalize", secondFacilitatorCredential, new FinalizeRequestDto(), ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.Content.ReadFromJsonAsync<InitiativeErrorResponse>(ApiJson.Options, ct);
+        Assert.Equal("initiative.credential.wrong_session", error!.Code);
+    }
+
+    private async Task<(string FacilitatorCredential, string DomainExpertCredential, InitiativeSessionDto Session)> CreateSessionAsync(CancellationToken ct)
+    {
+        var created = await PostAsync("/v1/initiative", credential: null,
+            new CreateInitiativeRequest("Build us a new approval system", "Alex", "Jordan"), ct);
+        var body = await created.Content.ReadFromJsonAsync<CreateInitiativeResponseDto>(ApiJson.Options, ct);
+        return (body!.Credentials.Facilitator, body.Credentials.DomainExpert, body.Session);
+    }
+
+    private Task<HttpResponseMessage> GetAsync(string url, string? credential, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        if (credential is not null) request.Headers.Add(CredentialHeader, credential);
+        return _client.SendAsync(request, cancellationToken);
+    }
+
+    private async Task<HttpResponseMessage> PostAsync(string url, string? credential, object? body, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, url);
+        if (credential is not null) request.Headers.Add(CredentialHeader, credential);
+        if (body is not null) request.Content = JsonContent.Create(body, options: ApiJson.Options);
+        return await _client.SendAsync(request, cancellationToken);
+    }
 
     public void Dispose()
     {

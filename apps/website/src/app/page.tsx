@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { InitiativeApiError, initiativeApi } from '@/lib/initiativeApi';
 import { capture } from '@/lib/productAnalytics';
 import { saveAgentApiKey } from '@/lib/agentApiKey';
+import { saveInitiativeCredentials } from '@/lib/initiativeCredentials';
 import type { AgentAdvisorStatusResponse } from '@/lib/initiativeTypes';
 
 export default function HomePage() {
@@ -27,11 +28,12 @@ export default function HomePage() {
     setSubmitting(true);
     setError(null);
     try {
-      const session = await initiativeApi.create(originalChangeRequest, facilitatorName, domainExpertName);
+      const { session, credentials } = await initiativeApi.create(originalChangeRequest, facilitatorName, domainExpertName);
       saveAgentApiKey(session.id, agentApiKey.trim());
+      saveInitiativeCredentials(session.id, credentials.facilitator, credentials.domainExpert);
       capture('initiative_created');
       capture('meaningful_use_started');
-      router.push(`/initiative/${session.id}`);
+      router.push(`/initiative/${session.id}?credential=${encodeURIComponent(credentials.facilitator)}`);
     } catch (err) {
       setError(err instanceof InitiativeApiError ? err.message : 'Could not start this Initiative. Is the Modeller API running?');
       setSubmitting(false);

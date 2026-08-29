@@ -6,23 +6,24 @@ import { initiativeApi } from '@/lib/initiativeApi';
 import type { RunAction } from './types';
 import { InitiativeDocument } from './InitiativeDocument';
 
-export function FinalizeSection({ session, run }: { session: InitiativeSessionDto; run: RunAction }) {
+export function FinalizeSection({ session, credential, run }: { session: InitiativeSessionDto; credential: string; run: RunAction }) {
   const [reason, setReason] = useState('');
 
   if (session.finalization) {
     const archiveExpiresAt = new Date(
       new Date(session.finalization.finalizedAt).getTime() + 7 * 24 * 60 * 60 * 1000,
     );
+    const facilitatorLink = `/initiative/${session.id}?credential=${encodeURIComponent(credential)}`;
 
     return (
       <section aria-label="Finalization">
         <h2>Archived</h2>
         <p>
           This Initiative is available until {archiveExpiresAt.toLocaleString()}. Use the{' '}
-          <a href={`/initiative/${session.id}`}>Facilitator link</a> to return here and reopen it during this period.
+          <a href={facilitatorLink}>Facilitator link</a> to return here and reopen it during this period.
         </p>
         <InitiativeDocument initiativeId={session.id} markdown={session.finalization.markdownSnapshot} />
-        <button className="secondary-action" onClick={() => void run(() => initiativeApi.reopen(session.id))}>
+        <button className="secondary-action" onClick={() => void run(() => initiativeApi.reopen(session.id, credential))}>
           Reopen archived Initiative
         </button>
       </section>
@@ -36,7 +37,7 @@ export function FinalizeSection({ session, run }: { session: InitiativeSessionDt
         className="inline-form"
         onSubmit={(event) => {
           event.preventDefault();
-          void run(() => initiativeApi.finalize(session.id, reason || null));
+          void run(() => initiativeApi.finalize(session.id, credential, reason || null));
         }}
       >
         <input placeholder="Reason (optional, e.g. if a gate finding is still open)" value={reason} onChange={(event) => setReason(event.target.value)} />

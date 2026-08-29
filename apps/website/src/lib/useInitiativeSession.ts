@@ -15,16 +15,23 @@ export type InitiativeConnectionStatus = 'connecting' | 'live' | 'reconnecting' 
 
 /** Loads an Initiative session and keeps it live via #90's SignalR hub — a bare "something
  * changed" notification, so this just refetches rather than trying to apply a partial delta
- * (matches InitiativeHub's own deliberately-thin design, src/Modeller.Api/Initiative/InitiativeHub.cs). */
-export function useInitiativeSession(id: string, viewerRole?: 'DomainExpert') {
+ * (matches InitiativeHub's own deliberately-thin design, src/Modeller.Api/Initiative/InitiativeHub.cs).
+ * `credential` is the role-scoped session credential (issue #146) — the server derives the
+ * projection (full vs. Domain Expert) from it, never from a role name this hook could claim. */
+export function useInitiativeSession(id: string, credential: string) {
   const [session, setSession] = useState<InitiativeSessionDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<InitiativeConnectionStatus>('connecting');
 
   const refetch = useCallback(async () => {
+    if (!credential) {
+      setError('Missing session credential — use the link this Initiative gave you.');
+      setLoading(false);
+      return;
+    }
     try {
-      const latest = await initiativeApi.get(id, viewerRole);
+      const latest = await initiativeApi.get(id, credential);
       setSession(latest);
       setError(null);
     } catch (err) {
@@ -32,7 +39,7 @@ export function useInitiativeSession(id: string, viewerRole?: 'DomainExpert') {
     } finally {
       setLoading(false);
     }
-  }, [id, viewerRole]);
+  }, [id, credential]);
 
   useEffect(() => {
     // react-hooks/set-state-in-effect flags this, but refetch only calls setState after its

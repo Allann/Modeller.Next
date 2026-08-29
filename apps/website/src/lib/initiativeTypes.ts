@@ -219,6 +219,18 @@ export interface InitiativeErrorResponse {
   message: string;
 }
 
+/** Issue #146: the two role-scoped credentials minted the moment a session starts. Each of the
+ * session's two sharable links carries exactly one of these — never both. */
+export interface InitiativeCredentialsDto {
+  facilitator: string;
+  domainExpert: string;
+}
+
+export interface CreateInitiativeResponseDto {
+  session: InitiativeSessionDto;
+  credentials: InitiativeCredentialsDto;
+}
+
 export interface AgentInterventionSuggestionDto {
   type: InterventionType;
   description: string;

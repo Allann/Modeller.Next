@@ -5,7 +5,7 @@ import { ALL_INTERVENTION_TYPES, type InitiativeSessionDto, type InterventionTyp
 import { InitiativeApiError, initiativeApi } from '@/lib/initiativeApi';
 import type { RunAction } from './types';
 
-export function InterventionsSection({ id, session, run, aiAvailable, agentApiKey }: { id: string; session: InitiativeSessionDto; run: RunAction; aiAvailable: boolean; agentApiKey: string }) {
+export function InterventionsSection({ id, credential, session, run, aiAvailable, agentApiKey }: { id: string; credential: string; session: InitiativeSessionDto; run: RunAction; aiAvailable: boolean; agentApiKey: string }) {
   const [type, setType] = useState<InterventionType>('Process');
   const [description, setDescription] = useState('');
   const [rationale, setRationale] = useState('');
@@ -16,7 +16,7 @@ export function InterventionsSection({ id, session, run, aiAvailable, agentApiKe
   async function askForSuggestions() {
     setSuggestionsError(null);
     try {
-      const response = await initiativeApi.getInterventionSuggestions(id, agentApiKey);
+      const response = await initiativeApi.getInterventionSuggestions(id, credential, agentApiKey);
       setSuggestions(response.suggestions);
     } catch (err) {
       setSuggestionsError(err instanceof InitiativeApiError ? err.message : 'No suggestions available.');
@@ -60,7 +60,7 @@ export function InterventionsSection({ id, session, run, aiAvailable, agentApiKe
         onSubmit={(event) => {
           event.preventDefault();
           void run(() =>
-            initiativeApi.selectIntervention(id, type, description, rationale, type === 'Technology' && continuesToDesignWorkspace),
+            initiativeApi.selectIntervention(id, credential, type, description, rationale, type === 'Technology' && continuesToDesignWorkspace),
           ).then(() => {
             setDescription('');
             setRationale('');
@@ -108,10 +108,10 @@ export function InterventionsSection({ id, session, run, aiAvailable, agentApiKe
               ) : intervention.continuesToDesignWorkspace ? (
                 <>
                   <span className="badge"> queued for System Design</span>
-                  <LinkDesignWorkspaceForm id={id} interventionId={intervention.id} run={run} />
+                  <LinkDesignWorkspaceForm id={id} credential={credential} interventionId={intervention.id} run={run} />
                 </>
               ) : null}
-              <button className="link-action" onClick={() => void run(() => initiativeApi.withdrawIntervention(id, intervention.id))}>
+              <button className="link-action" onClick={() => void run(() => initiativeApi.withdrawIntervention(id, credential, intervention.id))}>
                 Withdraw
               </button>
             </li>
@@ -122,14 +122,14 @@ export function InterventionsSection({ id, session, run, aiAvailable, agentApiKe
   );
 }
 
-function LinkDesignWorkspaceForm({ id, interventionId, run }: { id: string; interventionId: string; run: RunAction }) {
+function LinkDesignWorkspaceForm({ id, credential, interventionId, run }: { id: string; credential: string; interventionId: string; run: RunAction }) {
   const [reference, setReference] = useState('');
   return (
     <form
       className="inline-form"
       onSubmit={(event) => {
         event.preventDefault();
-        void run(() => initiativeApi.linkDesignWorkspace(id, interventionId, reference));
+        void run(() => initiativeApi.linkDesignWorkspace(id, credential, interventionId, reference));
       }}
     >
       <input required placeholder="System Design reference" value={reference} onChange={(event) => setReference(event.target.value)} />

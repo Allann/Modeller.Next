@@ -78,7 +78,11 @@ public sealed class ExampleSchemaTransformer : IOpenApiSchemaTransformer
         "Add a subsidised absence reason for pupil-free days.", "Priya Facilitator", "Alex Domain Expert");
 
     private static readonly ProposeQuestionRequestDto SampleProposeQuestionRequest = new(
-        SampleParticipantId, "DomainExpert", "BusinessStatement", "Does this apply to casual bookings too?");
+        "BusinessStatement", "Does this apply to casual bookings too?");
+
+    private static readonly InitiativeCredentialsDto SampleInitiativeCredentials = new(
+        "eyJTZXNzaW9uSWQiOiJiNmYxYzhiMC01YTFlLTRjMmEtOWQzZi0yYTdlNmMxZDRmOTAiLCJSb2xlIjowLCJFeHBpcmVzQXRVbml4U2Vjb25kcyI6MTc5MjM3NjAwMH0.c2lnbmF0dXJl",
+        "eyJTZXNzaW9uSWQiOiJiNmYxYzhiMC01YTFlLTRjMmEtOWQzZi0yYTdlNmMxZDRmOTAiLCJSb2xlIjoxLCJFeHBpcmVzQXRVbml4U2Vjb25kcyI6MTc5MjM3NjAwMH0.c2lnbmF0dXJl");
 
     private static readonly SubmitResponseRequestDto SampleSubmitResponseRequest = new(
         "Yes — casual bookings use the same non-chargeable reason.");
@@ -117,6 +121,8 @@ public sealed class ExampleSchemaTransformer : IOpenApiSchemaTransformer
         SampleGateEvaluation,
         null,
         null);
+
+    private static readonly CreateInitiativeResponseDto SampleCreateInitiativeResponse = new(SampleInitiativeSession, SampleInitiativeCredentials);
 
     private static readonly AgentInterventionSuggestionsResponse SampleInterventionSuggestions = new(
         [new AgentInterventionSuggestionDto("RuleChange", "Add PupilFreeDay to AbsenceNonChargeableReason.", "Matches the existing Absence pattern.")]);
@@ -167,5 +173,7 @@ public sealed class ExampleSchemaTransformer : IOpenApiSchemaTransformer
         [typeof(ResponseDto)] = SampleResponse,
         [typeof(GateEvaluationDto)] = SampleGateEvaluation,
         [typeof(InitiativeSessionDto)] = SampleInitiativeSession,
+        [typeof(InitiativeCredentialsDto)] = SampleInitiativeCredentials,
+        [typeof(CreateInitiativeResponseDto)] = SampleCreateInitiativeResponse,
     };
 }

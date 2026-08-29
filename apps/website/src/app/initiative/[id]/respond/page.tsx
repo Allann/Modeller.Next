@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { InitiativeApiError, initiativeApi } from '@/lib/initiativeApi';
 import { useInitiativeSession } from '@/lib/useInitiativeSession';
 import { ConnectionStatus } from '@/components/initiative/ConnectionStatus';
@@ -9,16 +10,20 @@ import { buildStructuredFields, INITIATIVE_FIELD_LABELS } from '@/lib/initiative
 
 /** The Domain Expert's focused view — deliberately not the whole cockpit surface (issue #91):
  * just the current sent question and a place to answer it. Enforced on the wire, not just in what
- * this page renders — the `DomainExpert` viewer role asks the API for the role-scoped projection
- * (Modeller.Api.Initiative.InitiativeSessionMapper.ToDomainExpertDto), which hides proposed-but-
- * unsent questions, gate evaluations/overrides, and Shape's intervention curation. */
+ * this page renders — this page's own URL carries the Domain Expert's role-scoped credential
+ * (issue #146) as a query parameter, and the server derives the role-scoped projection
+ * (Modeller.Api.Initiative.InitiativeSessionMapper.ToDomainExpertDto) from that credential, never
+ * from a role name this page could claim — hiding proposed-but-unsent questions, gate
+ * evaluations/overrides, and Shape's intervention curation regardless of what the page asks for. */
 export default function DomainExpertRespondPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { session, error, loading, connectionStatus, refetch } = useInitiativeSession(id, 'DomainExpert');
+  const credential = useSearchParams().get('credential') ?? '';
+  const { session, error, loading, connectionStatus, refetch } = useInitiativeSession(id, credential);
   const [text, setText] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  if (!credential) return <main><p className="form-error" role="alert">Missing session credential — use the link the Facilitator shared with you.</p></main>;
   if (loading) return <main><p>Loading…</p></main>;
   if (error || !session) return <main><p className="form-error" role="alert">{error ?? 'Initiative not found.'}</p></main>;
 
@@ -44,7 +49,7 @@ export default function DomainExpertRespondPage({ params }: { params: Promise<{ 
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await initiativeApi.submitResponse(id, currentQuestion.id, text);
+      await initiativeApi.submitResponse(id, credential, currentQuestion.id, text);
       setText('');
       await refetch();
     } catch (err) {

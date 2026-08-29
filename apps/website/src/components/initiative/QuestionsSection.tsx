@@ -8,12 +8,14 @@ import type { RunAction } from './types';
 export function QuestionsSection({
   session,
   facilitatorId,
+  credential,
   run,
   aiAvailable,
   agentApiKey,
 }: {
   session: InitiativeSessionDto;
   facilitatorId: string | undefined;
+  credential: string;
   run: RunAction;
   aiAvailable: boolean;
   agentApiKey: string;
@@ -34,7 +36,7 @@ export function QuestionsSection({
           className="inline-form"
           onSubmit={(event) => {
             event.preventDefault();
-            void run(() => initiativeApi.proposeQuestion(session.id, facilitatorId, 'Facilitator', field, text || null, text ? undefined : agentApiKey)).then(() => setText(''));
+            void run(() => initiativeApi.proposeQuestion(session.id, credential, field, text || null, text ? undefined : agentApiKey)).then(() => setText(''));
           }}
         >
           <select value={field} onChange={(event) => setField(event.target.value as InitiativeField)}>
@@ -61,10 +63,10 @@ export function QuestionsSection({
           {proposed.map((q) => (
             <li key={q.id}>
               <span className="badge">{INITIATIVE_FIELD_LABELS[q.field]}</span> {q.text}
-              <button className="link-action" onClick={() => void run(() => initiativeApi.sendQuestion(session.id, q.id))}>
+              <button className="link-action" onClick={() => void run(() => initiativeApi.sendQuestion(session.id, credential, q.id))}>
                 Send to Domain Expert
               </button>
-              <button className="link-action" onClick={() => void run(() => initiativeApi.rejectQuestion(session.id, q.id))}>
+              <button className="link-action" onClick={() => void run(() => initiativeApi.rejectQuestion(session.id, credential, q.id))}>
                 Reject
               </button>
             </li>
@@ -92,7 +94,7 @@ export function QuestionsSection({
             {pendingResponses.map((r) => (
               <li key={r.id}>
                 {r.text}
-                <button className="link-action" onClick={() => void run(() => initiativeApi.acceptResponse(session.id, r.id))}>
+                <button className="link-action" onClick={() => void run(() => initiativeApi.acceptResponse(session.id, credential, r.id))}>
                   Accept
                 </button>
               </li>
