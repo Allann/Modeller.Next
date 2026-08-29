@@ -36,7 +36,11 @@ test('a reader discovers the Child Care story and verifies its model change in t
   await page.keyboard.press('Control+A');
   await page.keyboard.type('rml 1.0\nentity ACCS determination application\n  lifecycle ACCS determination application lifecycle\n    stage Draft\n    stage Submitted\n    stage Awaiting information\n  end\nend');
 
-  await expect(page.locator('.react-flow__node', { hasText: 'Awaiting information' })).toBeVisible();
+  // This test's analysis round trip hits the real deployed public API (forwardToPublicApi above),
+  // not a mock — the default 5s timeout is tight for live network latency/cold starts and this
+  // assertion has intermittently timed out in CI as a result (studio.spec.ts's own LSP round trip
+  // uses the same 15s allowance for the same reason).
+  await expect(page.locator('.react-flow__node', { hasText: 'Awaiting information' })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole('status')).toContainText('Ready');
 
   // Guards against the diagram-type selector silently truncating the view list to a stale
