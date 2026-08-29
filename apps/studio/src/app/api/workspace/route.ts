@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadWorkspace, setWorkspaceRoot, WorkspaceNotFoundError, WorkspacePackageOpenError } from '@/server/workspace';
+import { loadWorkspace, setWorkspaceRoot } from '@/server/workspace';
 import { localOnlyRouteGuard } from '@/server/playground-guard';
+import { workspaceErrorResponse } from '@/server/workspace-error-response';
 
 export async function GET() {
   const guarded = localOnlyRouteGuard();
@@ -15,9 +16,8 @@ export async function GET() {
       openedFromPackage: workspace.openedFromPackage ?? false,
     });
   } catch (error) {
-    if (error instanceof WorkspacePackageOpenError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
+    const response = workspaceErrorResponse(error);
+    if (response) return response;
     throw error;
   }
 }
@@ -37,9 +37,8 @@ export async function POST(request: NextRequest) {
     const workspace = await setWorkspaceRoot(requestedRoot);
     return NextResponse.json({ root: workspace.root, sources: workspace.sources });
   } catch (error) {
-    if (error instanceof WorkspaceNotFoundError) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
+    const response = workspaceErrorResponse(error);
+    if (response) return response;
     throw error;
   }
 }

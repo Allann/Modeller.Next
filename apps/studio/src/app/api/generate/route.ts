@@ -4,6 +4,7 @@ import { runCliGenerationApply, runCliGenerationPreview } from '@/server/generat
 import { readBeforeContent } from '@/server/generation-diff';
 import { buildGenerateResponseBody } from '@/server/generation-response';
 import { localOnlyRouteGuard } from '@/server/playground-guard';
+import { workspaceErrorResponse } from '@/server/workspace-error-response';
 
 // Generate now writes for real (local Studio already writes your edited documents to disk
 // unprompted — this matches that trust model, unlike the sandboxed playground). Runs a preview
@@ -16,7 +17,14 @@ export async function GET() {
   const guarded = localOnlyRouteGuard();
   if (guarded) return guarded;
 
-  const workspace = await loadWorkspace();
+  let workspace;
+  try {
+    workspace = await loadWorkspace();
+  } catch (error) {
+    const response = workspaceErrorResponse(error);
+    if (response) return response;
+    throw error;
+  }
   try {
     const preview = await runCliGenerationPreview(workspace.root);
     if (preview.diagnostics.length > 0) return NextResponse.json(preview);
