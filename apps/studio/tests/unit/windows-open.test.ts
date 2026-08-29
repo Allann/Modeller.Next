@@ -190,7 +190,7 @@ test('a second-instance launch carrying a workspace package is recognised for ro
 });
 
 test('setWorkspaceRoot switches to a workspace package the same way the initial launch argument does', async () => {
-  const { setWorkspaceRoot } = await import('../../src/server/workspace');
+  const { resolveWorkspaceRoot, setWorkspaceRoot } = await import('../../src/server/workspace');
   const originalLocalAppData = process.env.LOCALAPPDATA;
   const tempAppData = await mkdtemp(path.join(tmpdir(), 'modeller-appdata-'));
   process.env.LOCALAPPDATA = tempAppData;
@@ -202,6 +202,7 @@ test('setWorkspaceRoot switches to a workspace package the same way the initial 
 
     assert.equal(workspace.openedFromPackage, true);
     assert.deepEqual(workspace.sources, ['model/context.modeller']);
+    assert.equal(resolveWorkspaceRoot(), workspace.root);
   } finally {
     if (originalLocalAppData === undefined) delete process.env.LOCALAPPDATA;
     else process.env.LOCALAPPDATA = originalLocalAppData;

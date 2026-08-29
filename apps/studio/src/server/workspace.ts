@@ -43,6 +43,7 @@ export { WorkspacePackageOpenError };
 let current: Workspace | undefined;
 
 export function resolveWorkspaceRoot(): string {
+  if (current) return current.root;
   const configured = process.env.MODELLER_STUDIO_WORKSPACE;
   if (configured) return path.resolve(configured);
   return path.resolve(process.cwd(), '..', '..', 'samples', 'child-care');

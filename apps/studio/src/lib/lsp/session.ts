@@ -28,11 +28,27 @@ interface SessionState {
   connection: LspConnection;
   initializeResult: InitializeResult;
   semanticTokensChanged: Monaco.Emitter<void>;
+  providerDisposables: Monaco.IDisposable[];
 }
 
 let sessionPromise: Promise<SessionState> | undefined;
 const registeredLanguages = new Set<string>();
 const openDocuments = new Map<string, OpenDocument>();
+
+// The language-server process receives its workspace root when its WebSocket is
+// opened. A different workspace therefore requires a fresh connection, not
+// only closing the documents from the previous one.
+export function resetLanguageSession(): void {
+  const previous = sessionPromise;
+  sessionPromise = undefined;
+  registeredLanguages.clear();
+  openDocuments.clear();
+  void previous?.then((session) => {
+    for (const provider of session.providerDisposables) provider.dispose();
+    session.semanticTokensChanged.dispose();
+    session.connection.close();
+  }).catch(() => {});
+}
 
 function getSession(monaco: typeof Monaco): Promise<SessionState> {
   sessionPromise ??= (async () => {
@@ -76,7 +92,7 @@ function getSession(monaco: typeof Monaco): Promise<SessionState> {
       );
     });
 
-    return { monaco, connection, initializeResult, semanticTokensChanged: new monaco.Emitter<void>() };
+    return { monaco, connection, initializeResult, semanticTokensChanged: new monaco.Emitter<void>(), providerDisposables: [] };
   })();
   return sessionPromise;
 }
@@ -104,13 +120,13 @@ export async function openDocument(
 
   if (!registeredLanguages.has(languageId)) {
     registeredLanguages.add(languageId);
-    registerLanguageProviders(
+    session.providerDisposables.push(...registerLanguageProviders(
       monaco,
       session.connection,
       languageId,
       session.initializeResult.capabilities?.semanticTokensProvider?.legend,
       session.semanticTokensChanged,
-    );
+    ));
   }
 
   const changeSubscription = model.onDidChangeContent(() => {

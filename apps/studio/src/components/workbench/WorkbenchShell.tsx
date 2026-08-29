@@ -14,6 +14,7 @@ import { StatusBar } from './StatusBar';
 import { useElementWidthBreakpoint } from '@/lib/useElementWidthBreakpoint';
 import { getElectronBridge, type PanelDetachState } from '@/lib/electronBridge';
 import { computeDockedRightPanelKeys } from '@/lib/dockedPanels';
+import { resetLanguageSession } from '@/lib/lsp/session';
 import './workbench.css';
 
 const NO_PANELS_DETACHED: PanelDetachState = { diagram: false, generation: false };
@@ -71,6 +72,7 @@ export function WorkbenchShell() {
       return;
     }
     const loadedRoot = data.root ?? requestedRoot.trim();
+    resetLanguageSession();
     setRoot(loadedRoot);
     setSources(data.sources);
     setOpenedFromPackage(data.openedFromPackage ?? false);
