@@ -3,6 +3,17 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 30_000,
+  // The HTML report is what deploy-studio.yml's "Upload Playwright report" step actually uploads
+  // on failure — 'list' locally keeps a normal run's terminal output readable.
+  reporter: process.env.CI ? 'html' : 'list',
+  // case-study.spec.ts's journey hits the real deployed public API (not a mock) for its analysis
+  // round trip — retry only in CI, where a genuine live-network hiccup shouldn't fail the whole
+  // run, and only there: a real bug should still fail outright on a local run with 0 retries.
+  retries: process.env.CI ? 2 : 0,
+  use: {
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+  },
   projects: [
     {
       name: 'local',

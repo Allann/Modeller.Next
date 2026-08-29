@@ -61,6 +61,19 @@ jobs:
         working-directory: apps/studio
         run: npm run test:e2e
 
+      # Otherwise a failure is a bare assertion message with no way to see what the page actually
+      # looked like or what network calls it made — this is what let case-study.spec.ts's real
+      # (non-mocked) public-API dependency go undiagnosed across several failed runs.
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/studio/playwright-report/
+            apps/studio/test-results/
+          retention-days: 7
+
       # Deploy from the repo root (project Root Directory is already apps/studio).
       # Do not use `vercel pull` + `vercel build` + `--prebuilt`: Sensitive project
       # env vars are not readable in CI and land as the literal "[SENSITIVE]"
