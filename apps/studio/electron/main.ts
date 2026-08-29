@@ -22,7 +22,12 @@ let mainWindow: BrowserWindow | undefined;
 let appIcon: NativeImage | undefined;
 
 function broadcastPanelDetachState(): void {
-  mainWindow?.webContents.send('panel:detach-state', detachState());
+  // A detached panel is parented to mainWindow, so closing mainWindow closes it too (see
+  // panel-windows.ts) — its own 'closed' handler calls back into here as part of that same
+  // teardown, by which point mainWindow's webContents may already be destroyed even though the
+  // mainWindow reference itself isn't nulled out until mainWindow's own 'closed' handler runs.
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents.isDestroyed()) return;
+  mainWindow.webContents.send('panel:detach-state', detachState());
 }
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
