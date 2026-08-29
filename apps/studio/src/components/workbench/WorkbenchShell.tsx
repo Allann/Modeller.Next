@@ -70,12 +70,16 @@ export function WorkbenchShell() {
       setRootError(data.error ?? 'Could not load that workspace.');
       return;
     }
-    setRoot(data.root ?? requestedRoot.trim());
+    const loadedRoot = data.root ?? requestedRoot.trim();
+    setRoot(loadedRoot);
     setSources(data.sources);
     setOpenedFromPackage(false);
     setOpenDocuments([]);
     setActivePath(undefined);
     setChangedCount(undefined);
+    // Only a workspace that actually finished loading (not merely picked in a dialog) earns a spot
+    // in File > Open Recent — see recent-workspaces.ts.
+    getElectronBridge()?.recordRecentWorkspace(loadedRoot);
   };
 
   // File > Open Folder (electron/menu.ts) resolves the native dialog itself and pushes the chosen

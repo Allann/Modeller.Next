@@ -11,9 +11,10 @@ import { app, BrowserWindow, Menu, ipcMain, type NativeImage } from 'electron';
 import path from 'node:path';
 import type { ChildProcess } from 'node:child_process';
 import { killServerTree, resolveForwardedArgs, spawnServer, waitForServerReady } from './server-supervisor';
-import { buildApplicationMenu, openFolder } from './menu';
+import { buildApplicationMenu, openFolder, refreshApplicationMenu } from './menu';
 import { closeAllPanelWindows, detachState, openPanelWindow, type PanelKind } from './panel-windows';
 import { fetchAppIcon } from './app-icon';
+import { addRecentWorkspace } from './recent-workspaces';
 
 const SERVER_PORT = 3100;
 
@@ -53,6 +54,14 @@ if (!gotSingleInstanceLock) {
   // the exact same dialog + push behavior as the File menu's own "Open Folder..." item.
   ipcMain.on('dialog:open-folder-request', () => {
     if (mainWindow) void openFolder(mainWindow);
+  });
+
+  // Sent by WorkbenchShell's onLoadWorkspace only after a workspace actually finishes loading
+  // (not merely picked in the dialog) — see recent-workspaces.ts. Rebuilds the menu so File > Open
+  // Recent reflects it immediately, since Electron menus don't live-update their submenus.
+  ipcMain.on('workspace:record-recent', (_event, root: string) => {
+    addRecentWorkspace(root);
+    if (mainWindow) refreshApplicationMenu(mainWindow, SERVER_PORT);
   });
 
   // WorkbenchShell's detachedPanels React state resets to "nothing detached" on every page load,

@@ -21,6 +21,9 @@ contextBridge.exposeInMainWorld('modeller', {
   requestOpenFolder(): void {
     ipcRenderer.send('dialog:open-folder-request');
   },
+  recordRecentWorkspace(root: string): void {
+    ipcRenderer.send('workspace:record-recent', root);
+  },
   onPanelDetachState(callback: (state: PanelDetachState) => void): () => void {
     const listener = (_event: Electron.IpcRendererEvent, state: PanelDetachState) => callback(state);
     ipcRenderer.on('panel:detach-state', listener);

@@ -11,6 +11,7 @@ export interface PanelDetachState {
 interface ModellerBridge {
   onOpenFolder(callback: (path: string) => void): () => void;
   requestOpenFolder(): void;
+  recordRecentWorkspace(root: string): void;
   detachPanel(kind: PanelKind): void;
   onPanelDetachState(callback: (state: PanelDetachState) => void): () => void;
   requestPanelDetachState(): void;
