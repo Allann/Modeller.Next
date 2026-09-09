@@ -1,0 +1,451 @@
+rml 1.0
+
+behaviour Manage connection
+  for "Connection"
+  requires "Determine recommendation submission"
+  outcome Connection proposed
+  end
+  outcome Connection accepted privately
+  end
+  outcome Connection published to scope
+  end
+  outcome Connection rejection recorded
+  end
+  outcome Connection revoked
+  end
+  event Connection revocation notified
+  end
+  effect Invalidate dependent recommendations
+  end
+  transition Propose connection
+    lifecycle "Connection lifecycle"
+    from "Connection draft"
+    to "Proposed"
+    outcome "Connection proposed"
+  end
+  transition Accept connection
+    lifecycle "Connection lifecycle"
+    from "Proposed"
+    to "Accepted private"
+    outcome "Connection accepted privately"
+  end
+  transition Publish connection scope
+    lifecycle "Connection lifecycle"
+    from "Accepted private"
+    to "Connection published scoped"
+    outcome "Connection published to scope"
+  end
+  transition Reject connection
+    lifecycle "Connection lifecycle"
+    from "Proposed"
+    to "Connection rejected"
+    outcome "Connection rejection recorded"
+  end
+  transition Revoke connection
+    lifecycle "Connection lifecycle"
+    from "Connection published scoped"
+    to "Revoked"
+    outcome "Connection revoked"
+  end
+end
+
+behaviour Manage recommendation
+  for "Recommendation"
+  requires "Determine recommendation submission"
+  outcome Recommendation submitted for approval
+  end
+  outcome Recommendation approved privately
+  end
+  outcome Recommendation published to scope
+  end
+  outcome Recommendation rejection recorded
+  end
+  outcome Recommendation withdrawal recorded
+  end
+  outcome Recommendation invalidated
+  end
+  event Recommendation invalidation notified
+  end
+  effect Remove recommendation from trust scope
+  end
+  transition Submit recommendation
+    lifecycle "Recommendation lifecycle"
+    from "Recommendation draft"
+    to "Pending approval"
+    outcome "Recommendation submitted for approval"
+  end
+  transition Approve recommendation
+    lifecycle "Recommendation lifecycle"
+    from "Pending approval"
+    to "Approved private"
+    outcome "Recommendation approved privately"
+  end
+  transition Publish recommendation
+    lifecycle "Recommendation lifecycle"
+    from "Approved private"
+    to "Recommendation published scoped"
+    outcome "Recommendation published to scope"
+  end
+  transition Reject recommendation
+    lifecycle "Recommendation lifecycle"
+    from "Pending approval"
+    to "Recommendation rejected"
+    outcome "Recommendation rejection recorded"
+  end
+  transition Withdraw recommendation
+    lifecycle "Recommendation lifecycle"
+    from "Recommendation published scoped"
+    to "Recommendation withdrawn"
+    outcome "Recommendation withdrawal recorded"
+  end
+  transition Invalidate recommendation
+    lifecycle "Recommendation lifecycle"
+    from "Recommendation published scoped"
+    to "Invalidated"
+    outcome "Recommendation invalidated"
+  end
+end
+
+behaviour Manage quote and job
+  for "Quote"
+  requires "Determine quote acceptance"
+  outcome Quote submitted
+  end
+  outcome Quote accepted and job scheduled
+  end
+  outcome Quote declined
+  end
+  outcome Quote expired
+  end
+  outcome Quote withdrawal recorded
+  end
+  event Quote accepted
+  end
+  effect Create job and fulfil job request
+  end
+  transition Submit quote
+    lifecycle "Quote lifecycle"
+    from "Quote draft"
+    to "Submitted"
+    outcome "Quote submitted"
+  end
+  transition Accept quote
+    lifecycle "Quote lifecycle"
+    from "Submitted"
+    to "Accepted"
+    outcome "Quote accepted and job scheduled"
+  end
+  transition Decline quote
+    lifecycle "Quote lifecycle"
+    from "Submitted"
+    to "Declined"
+    outcome "Quote declined"
+  end
+  transition Expire quote
+    lifecycle "Quote lifecycle"
+    from "Submitted"
+    to "Expired"
+    outcome "Quote expired"
+  end
+  transition Withdraw quote
+    lifecycle "Quote lifecycle"
+    from "Submitted"
+    to "Quote withdrawn"
+    outcome "Quote withdrawal recorded"
+  end
+end
+
+behaviour Complete job
+  for "Job"
+  outcome Job started
+  end
+  outcome Job completed by provider
+  end
+  outcome Job confirmed by consumer
+  end
+  event Job completion confirmed
+  end
+  effect Make completed work recommendation provenance
+  end
+  transition Start job
+    lifecycle "Job lifecycle"
+    from "Scheduled"
+    to "In progress"
+    outcome "Job started"
+  end
+  transition Complete job as provider
+    lifecycle "Job lifecycle"
+    from "In progress"
+    to "Completed by provider"
+    outcome "Job completed by provider"
+  end
+  transition Confirm job as consumer
+    lifecycle "Job lifecycle"
+    from "Completed by provider"
+    to "Confirmed"
+    outcome "Job confirmed by consumer"
+  end
+end
+
+behaviour Manage member privacy and feed preferences
+  for "Member"
+  outcome Member connections hidden
+  end
+  outcome Member connections unhidden
+  end
+  outcome Service offering feed preference changed
+  end
+  event Member privacy changed
+  end
+  event Member feed preference changed
+  end
+  effect Restrict connection visibility
+  end
+  effect Filter service offering feed events
+  end
+end
+
+behaviour Manage member lifetime
+  for "Member"
+  requires "Determine member activation"
+  outcome Member activated
+  end
+  outcome Member suspension recorded
+  end
+  outcome Member deactivation recorded
+  end
+  outcome Member reactivated
+  end
+  outcome Member ban recorded
+  end
+  event Member created
+  end
+  event Member suspended notification
+  end
+  event Member deactivated notification
+  end
+  event Member reactivated notification
+  end
+  effect Restrict suspended or deactivated participation
+  end
+  transition Activate member
+    lifecycle "Member lifecycle"
+    from "Member pending activation"
+    to "Member active"
+    outcome "Member activated"
+  end
+  transition Suspend member
+    lifecycle "Member lifecycle"
+    from "Member active"
+    to "Member suspended"
+    outcome "Member suspension recorded"
+  end
+  transition Deactivate member
+    lifecycle "Member lifecycle"
+    from "Member active"
+    to "Member deactivated"
+    outcome "Member deactivation recorded"
+  end
+  transition Reactivate suspended member
+    lifecycle "Member lifecycle"
+    from "Member suspended"
+    to "Member active"
+    outcome "Member reactivated"
+  end
+  transition Reactivate deactivated member
+    lifecycle "Member lifecycle"
+    from "Member deactivated"
+    to "Member active"
+    outcome "Member reactivated"
+  end
+  transition Ban member
+    lifecycle "Member lifecycle"
+    from "Member active"
+    to "Member banned"
+    outcome "Member ban recorded"
+  end
+end
+
+behaviour Manage member contact and profile
+  for "Member"
+  requires "Determine member activation"
+  outcome Primary contact verified
+  end
+  outcome Profile visibility changed
+  end
+  event Member contact verified
+  end
+  event Member profile visibility changed
+  end
+  effect Use verified contact for member notices
+  end
+end
+
+behaviour Manage member notification preferences
+  for "Member"
+  outcome Notification preference changed
+  end
+  event Member notification preference changed
+  end
+  effect Filter member notices by topic
+  end
+end
+
+behaviour Manage provider onboarding
+  for "Provider onboarding"
+  requires "Determine professional verification"
+  outcome Provider onboarding submitted for review
+  end
+  outcome Provider onboarding activated
+  end
+  event Provider onboarding activated notification
+  end
+  effect Create provider business
+  end
+  transition Submit provider onboarding
+    lifecycle "Provider onboarding lifecycle"
+    from "Onboarding in progress"
+    to "Onboarding pending review"
+    outcome "Provider onboarding submitted for review"
+  end
+  transition Activate provider onboarding
+    lifecycle "Provider onboarding lifecycle"
+    from "Onboarding pending review"
+    to "Onboarding activated"
+    outcome "Provider onboarding activated"
+  end
+end
+
+behaviour Publish provider capability
+  for "Service offering"
+  requires "Determine provider capability publication"
+  outcome Provider capability published
+  end
+  event Provider capability published notification
+  end
+  effect Make service coverage available to suitable job requests
+  end
+end
+
+behaviour Manage community membership
+  for "Community membership"
+  requires "Determine community membership"
+  outcome Community member joined
+  end
+  event Community membership created
+  end
+  effect Permit typed community feed posts
+  end
+end
+
+behaviour Manage community invitation
+  for "Community invitation"
+  requires "Determine community membership acceptance"
+  outcome Community invitation accepted
+  end
+  outcome Community invitation declined
+  end
+  outcome Community invitation expired
+  end
+  event Community invitation accepted notification
+  end
+  effect Create active community membership
+  end
+  transition Accept community invitation
+    lifecycle "Community invitation lifecycle"
+    from "Invitation pending"
+    to "Invitation accepted"
+    outcome "Community invitation accepted"
+  end
+  transition Decline community invitation
+    lifecycle "Community invitation lifecycle"
+    from "Invitation pending"
+    to "Invitation declined"
+    outcome "Community invitation declined"
+  end
+  transition Expire community invitation
+    lifecycle "Community invitation lifecycle"
+    from "Invitation pending"
+    to "Invitation expired"
+    outcome "Community invitation expired"
+  end
+end
+
+behaviour Manage community membership lifetime
+  for "Community membership"
+  requires "Determine community membership acceptance"
+  outcome Community membership invited
+  end
+  outcome Community membership activated
+  end
+  outcome Community membership left
+  end
+  outcome Community membership removal recorded
+  end
+  event Community membership activated notification
+  end
+  event Community membership removed notification
+  end
+  effect Permit or remove member feed access
+  end
+  transition Invite community member
+    lifecycle "Community membership lifecycle"
+    from "Membership invited"
+    to "Membership requested"
+    outcome "Community membership invited"
+  end
+  transition Approve community membership
+    lifecycle "Community membership lifecycle"
+    from "Membership requested"
+    to "Membership active"
+    outcome "Community membership activated"
+  end
+  transition Leave community
+    lifecycle "Community membership lifecycle"
+    from "Membership active"
+    to "Membership left"
+    outcome "Community membership left"
+  end
+  transition Remove community member
+    lifecycle "Community membership lifecycle"
+    from "Membership active"
+    to "Membership removed"
+    outcome "Community membership removal recorded"
+  end
+end
+
+behaviour Grant professional verification
+  for "Member"
+  requires "Determine professional verification"
+  outcome Verified professional badge granted
+  end
+  event Member verified professional granted
+  end
+  effect Make provider trust status available
+  end
+end
+
+behaviour Manage community feed and privacy
+  for "Community"
+  requires "Determine community feed publication"
+  outcome Community made unlisted
+  end
+  outcome Community made discoverable
+  end
+  event Community privacy changed
+  end
+  effect Expose community metadata to search
+  end
+  transition Make community unlisted
+    lifecycle "Community privacy lifecycle"
+    from "Private group"
+    to "Unlisted group"
+    outcome "Community made unlisted"
+  end
+  transition Make community discoverable
+    lifecycle "Community privacy lifecycle"
+    from "Unlisted group"
+    to "Discoverable group"
+    outcome "Community made discoverable"
+  end
+end

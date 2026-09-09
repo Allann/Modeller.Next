@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "generationContractVersion": "1.0",
+  "logicalOutputRoot": "generated",
+  "profile": "everyservice-csharp",
+  "sources": [
+    "model/context.modeller",
+    "model/enumerations/member.modeller",
+    "model/enumerations/trust.modeller",
+    "model/entities/member.modeller",
+    "model/entities/provider.modeller",
+    "model/entities/community.modeller",
+    "model/entities/trust.modeller",
+    "model/entities/work.modeller",
+    "model/facts.modeller",
+    "model/rules.modeller",
+    "model/behaviours.modeller"
+  ],
+  "templatePack": "templates/csharp/domain-project/pack.json",
+  "identityRegistry": ".modeller/identities.json",
+  "parameters": {
+    "projectName": "EveryService",
+    "csharp": {
+      "namespace": "EveryService",
+      "targetFramework": "net10.0"
+    }
+  },
+  "ownershipManifest": ".modeller/generated-manifest.json"
+}

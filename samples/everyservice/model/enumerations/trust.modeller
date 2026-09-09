@@ -1,0 +1,17 @@
+rml 1.0
+
+enumeration Visibility scope
+  member Private
+    value 1
+  end
+  member Trusted network
+    value 2
+  end
+  member Scoped publication
+    value 3
+  end
+  member Public in app
+    value 4
+  end
+end
+

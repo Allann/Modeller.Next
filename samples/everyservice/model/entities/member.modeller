@@ -1,0 +1,140 @@
+rml 1.0
+
+entity Member
+  lifecycle Member lifecycle
+    stage Member pending activation
+    stage Member active
+    stage Member suspended
+    stage Member deactivated
+    stage Member banned
+  end
+  field Display name
+    type text
+  end
+  field Email address
+    type text
+  end
+  field Status
+    type enumeration "Member status"
+  end
+  field Created at
+    type datetimeoffset
+  end
+  field Activated at
+    type datetimeoffset
+    optional
+    stage "Member active"
+  end
+  field Reactivated at
+    type datetimeoffset
+    optional
+    stage "Member active"
+  end
+  field Is verified professional
+    type boolean
+  end
+  field Is Testing
+    type boolean
+  end
+  field Connections hidden
+    type boolean
+  end
+  field Show service offering feed events
+    type boolean
+  end
+  field Avatar image reference
+    type text
+    optional
+  end
+  field Suspended at
+    type datetimeoffset
+    optional
+    stage "Member suspended"
+  end
+  field Deactivated at
+    type datetimeoffset
+    optional
+    stage "Member deactivated"
+  end
+  field Banned at
+    type datetimeoffset
+    optional
+    stage "Member banned"
+  end
+  field Joined on
+    type date
+  end
+end
+
+entity Contact method
+  owner "Member"
+  relationship Member
+    target "Member"
+    cardinality one
+  end
+  field Type
+    type enumeration "Contact method type"
+  end
+  field Value
+    type text
+  end
+  field Is primary
+    type boolean
+  end
+  field Verified at
+    type datetimeoffset
+    optional
+  end
+  field Created at
+    type datetimeoffset
+  end
+end
+
+entity Member profile attribute
+  owner "Member"
+  relationship Member
+    target "Member"
+    cardinality one
+  end
+  field Key
+    type text
+  end
+  field Value
+    type text
+  end
+  field Visibility
+    type enumeration "Profile visibility"
+  end
+end
+
+entity Member block
+  relationship Blocker
+    target "Member"
+    cardinality one
+  end
+  relationship Blocked member
+    target "Member"
+    cardinality one
+  end
+  field Created at
+    type datetimeoffset
+  end
+end
+
+entity Notification preference
+  owner "Member"
+  relationship Member
+    target "Member"
+    cardinality one
+  end
+  field Topic
+    type enumeration "Notification topic"
+  end
+  field Is enabled
+    type boolean
+  end
+  field Changed at
+    type datetimeoffset
+  end
+end
+

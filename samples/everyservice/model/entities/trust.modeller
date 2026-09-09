@@ -1,0 +1,73 @@
+rml 1.0
+
+entity Connection
+  relationship Requester
+    target "Member"
+    cardinality one
+  end
+  relationship Recipient
+    target "Member"
+    cardinality one
+  end
+  lifecycle Connection lifecycle
+    stage Connection draft
+    stage Proposed
+    stage Accepted private
+    stage Connection published scoped
+    stage Connection rejected
+    stage Revoked
+  end
+  field Proposal message
+    type text
+    optional
+    stage "Proposed"
+  end
+  field Visibility scope
+    type enumeration "Visibility scope"
+    optional
+    stage "Connection published scoped"
+  end
+  field Revocation reason
+    type text
+    optional
+    stage "Revoked"
+  end
+end
+
+entity Recommendation
+  relationship Author
+    target "Member"
+    cardinality one
+  end
+  relationship Recipient
+    target "Member"
+    cardinality one
+  end
+  relationship Connection
+    target "Connection"
+    cardinality one
+  end
+  lifecycle Recommendation lifecycle
+    stage Recommendation draft
+    stage Pending approval
+    stage Approved private
+    stage Recommendation published scoped
+    stage Recommendation rejected
+    stage Recommendation withdrawn
+    stage Invalidated
+  end
+  field Text
+    type text
+  end
+  field Visibility scope
+    type enumeration "Visibility scope"
+    optional
+    stage "Recommendation published scoped"
+  end
+  field Invalidated reason
+    type text
+    optional
+    stage "Invalidated"
+  end
+end
+

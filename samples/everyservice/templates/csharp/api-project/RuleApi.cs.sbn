@@ -1,0 +1,13 @@
+namespace {{ csharp_namespace }}.Apis;
+
+using {{ csharp_namespace }}.Rules;
+
+public sealed class {{ definition.name }}Api : IEndpointModule
+{
+    public void Map(IEndpointRouteBuilder endpoints)
+    {
+        endpoints.MapPost("/api/rules/{{ definition.subject_name | string.downcase }}", ({{ definition.subject_name }}Facts facts) =>
+            Results.Ok(new { eligible = {{ definition.subject_name }}.Determine(facts) }))
+            .WithTags("Rules");
+    }
+}

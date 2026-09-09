@@ -1,0 +1,213 @@
+{
+  "version": "1.0",
+  "artifacts": {
+    "EveryService.slnx": {
+      "artifactId": "solution:context",
+      "contentDigest": "sha256:92506339cd201e825a46a282bbf8e2cb0c2faba661d6167dd1918f10ffc6154c"
+    },
+    "EveryService/Behaviours/CompleteJob.cs": {
+      "artifactId": "behaviour:complete-job",
+      "contentDigest": "sha256:febfe4155d92abdecf718fc7bb37549e9b0c7c154008276c0164dccc7b23919e"
+    },
+    "EveryService/Behaviours/GrantProfessionalVerification.cs": {
+      "artifactId": "behaviour:grant-professional-verification",
+      "contentDigest": "sha256:bc002038e5d2b5ae1e94ed14e1c1aa023519c899361052bba8a8e613636a12ed"
+    },
+    "EveryService/Behaviours/ManageCommunityFeedAndPrivacy.cs": {
+      "artifactId": "behaviour:manage-community-feed-and-privacy",
+      "contentDigest": "sha256:52956cf62ac5fb2b28b282e0deb8c031206370fbb42f689279fc89fe3289329e"
+    },
+    "EveryService/Behaviours/ManageCommunityInvitation.cs": {
+      "artifactId": "behaviour:manage-community-invitation",
+      "contentDigest": "sha256:f8d39fec895fccc7863647877883b471f5e8db99bfdb7dd07e4a5c105a71cbf9"
+    },
+    "EveryService/Behaviours/ManageCommunityMembership.cs": {
+      "artifactId": "behaviour:manage-community-membership",
+      "contentDigest": "sha256:7c418e2dd59cabfe666e85bb41252613401b8d29ccc6da053571dfe957573a12"
+    },
+    "EveryService/Behaviours/ManageCommunityMembershipLifetime.cs": {
+      "artifactId": "behaviour:manage-community-membership-lifetime",
+      "contentDigest": "sha256:30d4e044276165390c38917245f4d0117a371c50dce613f53662987df5a653c6"
+    },
+    "EveryService/Behaviours/ManageConnection.cs": {
+      "artifactId": "behaviour:manage-connection",
+      "contentDigest": "sha256:8d6cf8f2bf3a58f24f7ca705a9d00a0ea38567af80f19507ac92680c99c03443"
+    },
+    "EveryService/Behaviours/ManageMemberContactAndProfile.cs": {
+      "artifactId": "behaviour:manage-member-contact-and-profile",
+      "contentDigest": "sha256:9fb5f70fa6cdcbaf3da0e2197d1098e1757781bc487252aaafb2dbc59b54f1bf"
+    },
+    "EveryService/Behaviours/ManageMemberLifetime.cs": {
+      "artifactId": "behaviour:manage-member-lifetime",
+      "contentDigest": "sha256:b7ee201fc7d144155ce15c3f495f3dda7c173532a510bbcd6f1db33ba6f4ea58"
+    },
+    "EveryService/Behaviours/ManageMemberNotificationPreferences.cs": {
+      "artifactId": "behaviour:manage-member-notification-preferences",
+      "contentDigest": "sha256:6608d01a257134488508625f55298094bb98d020ec8e3fa3820fb809fff2df29"
+    },
+    "EveryService/Behaviours/ManageMemberPrivacyAndFeedPreferences.cs": {
+      "artifactId": "behaviour:manage-member-privacy-and-feed-preferences",
+      "contentDigest": "sha256:3b99f22f9b43cd2ec55429a3d1fd9555cd58759ab76ce758e50d5df2957cdb85"
+    },
+    "EveryService/Behaviours/ManageProviderOnboarding.cs": {
+      "artifactId": "behaviour:manage-provider-onboarding",
+      "contentDigest": "sha256:942fc722bdb6605bdccd5e1801fdf8327be4828c14ae8b1db72f5fc4409ad93c"
+    },
+    "EveryService/Behaviours/ManageQuoteAndJob.cs": {
+      "artifactId": "behaviour:manage-quote-and-job",
+      "contentDigest": "sha256:8207e4c2137d45f198e8a545cc6e72ab24adaf502e80ef4693a7f6c5c10bdae0"
+    },
+    "EveryService/Behaviours/ManageRecommendation.cs": {
+      "artifactId": "behaviour:manage-recommendation",
+      "contentDigest": "sha256:de202deffdf1048ef7044186752e4730e8d30219bcfc1c949ad742b6479edc1a"
+    },
+    "EveryService/Behaviours/PublishProviderCapability.cs": {
+      "artifactId": "behaviour:publish-provider-capability",
+      "contentDigest": "sha256:f36d89a86bdb7e30bab4ee02c3a24ccdaf34796dcc078753d436e2c9dfd2917f"
+    },
+    "EveryService/Entities/Business.cs": {
+      "artifactId": "entity:business",
+      "contentDigest": "sha256:75460c970bab0b5685ba3d32117221984384380b1a8bb5c379a9e971aaaa67bb"
+    },
+    "EveryService/Entities/BusinessLocation.cs": {
+      "artifactId": "entity:business-location",
+      "contentDigest": "sha256:520c8523441f89ae18144f7c4013e20b76c047ceb781a67f8dcc79f1e1d1e610"
+    },
+    "EveryService/Entities/Community.cs": {
+      "artifactId": "entity:community",
+      "contentDigest": "sha256:077cb7ac08a32fb13b326ef3f1be3d752bbb6f5a670e95e0223dc82a098c3efb"
+    },
+    "EveryService/Entities/CommunityFeedPost.cs": {
+      "artifactId": "entity:community-feed-post",
+      "contentDigest": "sha256:0738e88880efabb958824a38a5b00b0799e72375b48a6847fad3ce30b61fef5c"
+    },
+    "EveryService/Entities/CommunityInvitation.cs": {
+      "artifactId": "entity:community-invitation",
+      "contentDigest": "sha256:296e2c12a764c708763843d639045ef5781473cb8ed5c30144a363c333d60819"
+    },
+    "EveryService/Entities/CommunityMembership.cs": {
+      "artifactId": "entity:community-membership",
+      "contentDigest": "sha256:beae2d19d690f8cad7f73716e3d106f8345144a6481768549ee87d600bd6ab06"
+    },
+    "EveryService/Entities/Connection.cs": {
+      "artifactId": "entity:connection",
+      "contentDigest": "sha256:a9a30bb4169aa2069cdbcf1ae21048c4f9e5958c23e3478100761f4befe1cd3d"
+    },
+    "EveryService/Entities/ContactMethod.cs": {
+      "artifactId": "entity:contact-method",
+      "contentDigest": "sha256:ef672292b44b2b91b9f47b5d2237bd553a1c18a557d9291a698fa92ebec9171e"
+    },
+    "EveryService/Entities/Job.cs": {
+      "artifactId": "entity:job",
+      "contentDigest": "sha256:a838a419e6a19581ce7c4082402367b8fb70107a0b2d197a74f31cb817639e6d"
+    },
+    "EveryService/Entities/JobRequest.cs": {
+      "artifactId": "entity:job-request",
+      "contentDigest": "sha256:5b89d5dcad5ec05f0caa457115aa67a41918664f0656af2e089d9c8563cf016c"
+    },
+    "EveryService/Entities/Member.cs": {
+      "artifactId": "entity:member",
+      "contentDigest": "sha256:d799b555107a8164b7fee7484903826def754e2715bd328c02eaf730ad733a42"
+    },
+    "EveryService/Entities/MemberBlock.cs": {
+      "artifactId": "entity:member-block",
+      "contentDigest": "sha256:c8abf62e1ad10898fa0902e952ab970c772de086f4ce89fa42ce55aa16ba295e"
+    },
+    "EveryService/Entities/MemberProfileAttribute.cs": {
+      "artifactId": "entity:member-profile-attribute",
+      "contentDigest": "sha256:be40f4e25901494dc5b7c4aa1c2e36b9adcafa046016dcbef3a977a99bc7fbcd"
+    },
+    "EveryService/Entities/NotificationPreference.cs": {
+      "artifactId": "entity:notification-preference",
+      "contentDigest": "sha256:8313af139058015cd352c2624705b05439d5098baa6a78d11b0ac6cddd893a67"
+    },
+    "EveryService/Entities/ProfessionalEvidence.cs": {
+      "artifactId": "entity:professional-evidence",
+      "contentDigest": "sha256:800cefc05db509bb64129d455583a0f93f9756e1106afddece2ecc366d3e3001"
+    },
+    "EveryService/Entities/ProviderOnboarding.cs": {
+      "artifactId": "entity:provider-onboarding",
+      "contentDigest": "sha256:0676e356a55a3166ffef8d318b968c36d7d603caabd3aa4d0b50a37694084743"
+    },
+    "EveryService/Entities/Quote.cs": {
+      "artifactId": "entity:quote",
+      "contentDigest": "sha256:c9da9b79d1c2f6bfbad6558ec3c6491ccfeb323864e5449503e9699e135c7549"
+    },
+    "EveryService/Entities/QuoteLineItem.cs": {
+      "artifactId": "entity:quote-line-item",
+      "contentDigest": "sha256:25e892a936f79b11dfdf83c351c94a1dd031f51bb600f9e52e3d1856b9e38d17"
+    },
+    "EveryService/Entities/Recommendation.cs": {
+      "artifactId": "entity:recommendation",
+      "contentDigest": "sha256:a35d503dd7b7588641460fd19523a41b2611add0fa212d457343ce044a39575d"
+    },
+    "EveryService/Entities/ServiceCoverage.cs": {
+      "artifactId": "entity:service-coverage",
+      "contentDigest": "sha256:5c5e82197b0117524fe36b265d10f765f16f4df8fd9efd35457421585e5aff2f"
+    },
+    "EveryService/Entities/ServiceOffering.cs": {
+      "artifactId": "entity:service-offering",
+      "contentDigest": "sha256:d147d211e1dff37a5bae9bce2b4ecbbe0ae9ae70650ae070be5932300495dae9"
+    },
+    "EveryService/Enumerations/ContactMethodType.cs": {
+      "artifactId": "enumeration:contact-method-type",
+      "contentDigest": "sha256:b02e2b24a921bfe76095c8b9f961e4f62eaf10d2fe2e1b2fc4581c1b7de5b9f6"
+    },
+    "EveryService/Enumerations/MemberStatus.cs": {
+      "artifactId": "enumeration:member-status",
+      "contentDigest": "sha256:75efdc6c43a64ba2db14a016cd394a5562d606dc2fd0e28c6bada574a6a84978"
+    },
+    "EveryService/Enumerations/NotificationTopic.cs": {
+      "artifactId": "enumeration:notification-topic",
+      "contentDigest": "sha256:46f25f3edabd20e36e770bc010d20a650cff0ac78ad185cebe04161699c7db7c"
+    },
+    "EveryService/Enumerations/ProfileVisibility.cs": {
+      "artifactId": "enumeration:profile-visibility",
+      "contentDigest": "sha256:c728a8f51ead7452279c499d0badc9dc8184f710393d602ad9d20ea234561959"
+    },
+    "EveryService/Enumerations/RecommendationVisibility.cs": {
+      "artifactId": "enumeration:recommendation-visibility",
+      "contentDigest": "sha256:1e63ec9ea648d4f18a3e75f954b2bc23551ed3f57530574f1679f5920457898f"
+    },
+    "EveryService/Enumerations/VisibilityScope.cs": {
+      "artifactId": "enumeration:visibility-scope",
+      "contentDigest": "sha256:30120cf22a299d0211269d25c4f808775d64a345e0ef6aa62d27aaf7bda67e75"
+    },
+    "EveryService/EveryService.csproj": {
+      "artifactId": "project:context",
+      "contentDigest": "sha256:b6c79680ece39a9d60423c14160efe745ffda0eb5251b6c866e07e013691f6ac"
+    },
+    "EveryService/Rules/DetermineCommunityFeedPublication.cs": {
+      "artifactId": "rule:determine-community-feed-publication",
+      "contentDigest": "sha256:6e9c55378b2c2755e47fb16f4db2e6d17b38294f491036ddd904f8a62bc1ef91"
+    },
+    "EveryService/Rules/DetermineCommunityMembership.cs": {
+      "artifactId": "rule:determine-community-membership",
+      "contentDigest": "sha256:0e602f5ab9d5fe3699b5b1c7eae69ae212d920f5bb7aa3d92a93559b0c0eb2c2"
+    },
+    "EveryService/Rules/DetermineCommunityMembershipAcceptance.cs": {
+      "artifactId": "rule:determine-community-membership-acceptance",
+      "contentDigest": "sha256:8f2013e0dc22492ab80f263adc2ec38fcf2a48d7cd3fc0e80e99c79896c1cf1b"
+    },
+    "EveryService/Rules/DetermineMemberActivation.cs": {
+      "artifactId": "rule:determine-member-activation",
+      "contentDigest": "sha256:b9af941ce486c6e02e6b9025a8591f3fd876b7ec4f4d298cf1c6ff416e1c09d6"
+    },
+    "EveryService/Rules/DetermineProfessionalVerification.cs": {
+      "artifactId": "rule:determine-professional-verification",
+      "contentDigest": "sha256:4d5a6da664cf89d0199bd7d3140a04a0f2a47ab5629b55f461047af086599f6b"
+    },
+    "EveryService/Rules/DetermineProviderCapabilityPublication.cs": {
+      "artifactId": "rule:determine-provider-capability-publication",
+      "contentDigest": "sha256:cebc1bf5ef321ab5e1d030dc1de2bdb30b6761718a66fb7f7b63171b0366afb6"
+    },
+    "EveryService/Rules/DetermineQuoteAcceptance.cs": {
+      "artifactId": "rule:determine-quote-acceptance",
+      "contentDigest": "sha256:0ea29d5fde61e8f18390cbc53ff6497f756a5d016952a75b082bd72845be7385"
+    },
+    "EveryService/Rules/DetermineRecommendationSubmission.cs": {
+      "artifactId": "rule:determine-recommendation-submission",
+      "contentDigest": "sha256:aa759f1858f339da1a408f23b0e0eb67b9df34aae4a6075cf909887daa64e487"
+    }
+  }
+}

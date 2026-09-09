@@ -1,0 +1,6 @@
+namespace {{ csharp_namespace }}.Apis;
+
+public interface IEndpointModule
+{
+    void Map(IEndpointRouteBuilder endpoints);
+}

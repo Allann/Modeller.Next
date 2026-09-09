@@ -1,0 +1,110 @@
+rml 1.0
+
+rule Determine professional verification
+  input "Registered business identity is valid"
+  input "Provider onboarding is activated"
+  when all
+    fact "Registered business identity is valid"
+    fact "Provider onboarding is activated"
+  end
+  conclusion Professional verification may be granted
+  end
+  finding "Registered business identity is valid" true provider.business-identity-valid
+  finding "Registered business identity is valid" false provider.business-identity-required
+  finding "Provider onboarding is activated" missing provider.activation-unknown
+end
+
+rule Determine community feed publication
+  input "Community member may publish"
+  when all
+    fact "Community member may publish"
+  end
+  conclusion Community feed post may be published
+  end
+  finding "Community member may publish" true feed.member-authorized
+  finding "Community member may publish" false feed.membership-required
+  finding "Community member may publish" missing feed.membership-unknown
+end
+
+rule Determine member activation
+  input "Member contact is valid"
+  when all
+    fact "Member contact is valid"
+  end
+  conclusion Member may be activated
+  end
+  finding "Member contact is valid" true member.contact-valid
+  finding "Member contact is valid" false member.contact-required
+  finding "Member contact is valid" missing member.contact-unknown
+end
+
+rule Determine community membership
+  input "Member is not blocked"
+  when all
+    fact "Member is not blocked"
+  end
+  conclusion Community membership may be created
+  end
+  finding "Member is not blocked" true community.block-check-passed
+  finding "Member is not blocked" false community.member-blocked
+  finding "Member is not blocked" missing community.block-status-unknown
+end
+
+rule Determine provider capability publication
+  input "Provider onboarding is complete"
+  input "Professional evidence is current"
+  when all
+    fact "Provider onboarding is complete"
+    fact "Professional evidence is current"
+  end
+  conclusion Provider capability may be published
+  end
+  finding "Provider onboarding is complete" true provider.onboarding-complete
+  finding "Provider onboarding is complete" false provider.onboarding-required
+  finding "Professional evidence is current" false provider.evidence-expired
+  finding "Professional evidence is current" missing provider.evidence-unknown
+end
+
+rule Determine community membership acceptance
+  input "Community invitation is current"
+  input "Community owner approved membership"
+  when all
+    fact "Community invitation is current"
+    fact "Community owner approved membership"
+  end
+  conclusion Community membership may be activated
+  end
+  finding "Community invitation is current" false community.invitation-expired
+  finding "Community invitation is current" missing community.invitation-unknown
+  finding "Community owner approved membership" true community.owner-approved
+  finding "Community owner approved membership" false community.owner-declined
+end
+
+rule Determine recommendation submission
+  input "Active connection exists"
+  when all
+    fact "Active connection exists"
+  end
+  conclusion Recommendation may be submitted
+  end
+  finding "Active connection exists" true trust.connection-active
+  finding "Active connection exists" false trust.connection-required
+  finding "Active connection exists" missing trust.connection-unknown
+end
+
+rule Determine quote acceptance
+  input "Job request is open"
+  input "Quote is current"
+  input "Quote currency matches line items"
+  when all
+    fact "Job request is open"
+    fact "Quote is current"
+    fact "Quote currency matches line items"
+  end
+  conclusion Quote may be accepted
+  end
+  finding "Job request is open" false jobs.request-not-open
+  finding "Quote is current" false jobs.quote-expired
+  finding "Quote is current" missing jobs.quote-validity-unknown
+  finding "Quote currency matches line items" false jobs.currency-mismatch
+end

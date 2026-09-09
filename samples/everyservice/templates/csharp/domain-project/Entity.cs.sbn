@@ -1,0 +1,24 @@
+namespace {{ csharp_namespace }};
+
+{{ if definition.stage_type }}public enum {{ definition.stage_type }}
+{
+{{ for stage in definition.stages }}    {{ stage.name }}{{ if !for.last }},{{ end }}
+{{ end }}}
+
+{{ end }}
+{{ if definition.has_stage_scoped_properties }}
+public abstract record {{ definition.name }}(
+{{ for property in definition.shared_properties }}    {{ property.type }}{{ if property.nullable }}?{{ end }} {{ property.name }}{{ if !for.last }},{{ end }}
+{{ end }});
+{{ for group in definition.stage_groups }}
+public sealed record {{ definition.name }}{{ group.name }}(
+{{ for property in group.properties }}    {{ property.type }}{{ if property.nullable }}?{{ end }} {{ property.name }}{{ if !for.last }},{{ end }}
+{{ end }}) : {{ definition.name }}(
+{{ for property in definition.shared_properties }}    {{ property.name }}{{ if !for.last }},{{ end }}
+{{ end }});
+{{ end }}
+{{ else }}
+public sealed record {{ definition.name }}(
+{{ for property in definition.properties }}    {{ property.type }}{{ if property.nullable }}?{{ end }} {{ property.name }}{{ if !for.last }},{{ end }}
+{{ end }});
+{{ end }}

@@ -1,0 +1,67 @@
+rml 1.0
+
+fact Active connection exists
+  type truth
+  export
+end
+
+fact Recipient approved recommendation
+  type truth
+end
+
+fact Publication consent is recorded
+  type truth
+end
+
+fact Quote is current
+  type truth
+end
+
+fact Quote currency matches line items
+  type truth
+end
+
+fact Job request is open
+  type truth
+end
+
+fact Registered business identity is valid
+  type truth
+end
+
+fact Provider onboarding is activated
+  type truth
+end
+
+fact Community member may publish
+  type truth
+end
+
+fact Member contact is valid
+  type truth
+end
+
+fact Contact method is verified
+  type truth
+end
+
+fact Member is not blocked
+  type truth
+end
+
+fact Provider onboarding is complete
+  type truth
+end
+
+fact Professional evidence is current
+  type truth
+end
+
+fact Community invitation is current
+  type truth
+end
+
+fact Community owner approved membership
+  type truth
+end
+

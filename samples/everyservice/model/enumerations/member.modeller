@@ -1,0 +1,59 @@
+rml 1.0
+
+enumeration Member status
+  member Pending activation
+    value 1
+  end
+  member Member active
+    value 2
+  end
+  member Member suspended
+    value 3
+  end
+  member Member deactivated
+  value 4
+  end
+  member Member banned
+    value 5
+  end
+end
+
+enumeration Contact method type
+  member Email
+    value 1
+  end
+  member Mobile
+    value 2
+  end
+end
+
+enumeration Profile visibility
+  member Private
+    value 1
+  end
+  member Connections only
+    value 2
+  end
+  member Public profile
+    value 3
+  end
+end
+
+enumeration Notification topic
+  member Connection notices
+    value 1
+  end
+  member Recommendation notices
+    value 2
+  end
+  member Quote and job notices
+    value 3
+  end
+  member Community notices
+    value 4
+  end
+  member Service offering feed events
+    value 5
+  end
+end
+

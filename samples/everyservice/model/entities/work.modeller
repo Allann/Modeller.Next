@@ -1,0 +1,152 @@
+rml 1.0
+
+entity Job request
+  relationship Consumer
+    target "Member"
+    cardinality one
+  end
+  relationship Preferred provider
+    target "Member"
+    cardinality one
+    optional
+  end
+  lifecycle Job request lifecycle
+    stage Open
+    stage Fulfilled
+    stage Closed
+  end
+  field Name
+    type text
+  end
+  field Description
+    type text
+  end
+  field Budget amount
+    type decimal(12,2)
+    optional
+    stage "Open"
+  end
+  field Location
+    type coordinate
+    optional
+    stage "Open"
+  end
+  field Preferred date
+    type date
+    optional
+    stage "Open"
+  end
+  field Preferred start time
+    type time
+    optional
+    stage "Open"
+  end
+  field Posted at
+    type datetime
+    optional
+    stage "Open"
+  end
+  field Visibility plan
+    type enumeration "Visibility scope"
+  end
+end
+
+entity Quote
+  relationship Job request
+    target "Job request"
+    cardinality one
+  end
+  relationship Provider
+    target "Member"
+    cardinality one
+  end
+  lifecycle Quote lifecycle
+    stage Quote draft
+    stage Submitted
+    stage Accepted
+    stage Declined
+    stage Expired
+    stage Quote withdrawn
+  end
+  field Revision number
+    type int32
+  end
+  field Valid until
+    type datetimeoffset
+    optional
+    stage "Submitted"
+  end
+  field Total
+    type decimal(12,2)
+    optional
+    stage "Submitted"
+    stage "Accepted"
+  end
+  field Currency code
+    type text
+  end
+end
+
+entity Quote line item
+  owner "Quote"
+  relationship Quote
+    target "Quote"
+    cardinality one
+  end
+  field Description
+    type text
+  end
+  field Quantity
+    type int32
+  end
+  field Unit rate
+    type decimal(12,2)
+  end
+  field Is taxable
+    type boolean
+  end
+end
+
+entity Job
+  relationship Job request
+    target "Job request"
+    cardinality one
+  end
+  relationship Quote
+    target "Quote"
+    cardinality one
+  end
+  relationship Consumer
+    target "Member"
+    cardinality one
+  end
+  relationship Provider
+    target "Member"
+    cardinality one
+  end
+  lifecycle Job lifecycle
+    stage Scheduled
+    stage In progress
+    stage Completed by provider
+    stage Confirmed
+  end
+  field Agreed total
+    type decimal(12,2)
+  end
+  field Scheduled for
+    type datetimeoffset
+    optional
+    stage "Scheduled"
+  end
+  field Provider completed at
+    type datetimeoffset
+    optional
+    stage "Completed by provider"
+  end
+  field Consumer confirmed at
+    type datetimeoffset
+    optional
+    stage "Confirmed"
+  end
+end
+

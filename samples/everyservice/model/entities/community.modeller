@@ -1,0 +1,118 @@
+rml 1.0
+
+entity Community membership
+  relationship Community
+    target "Community"
+    cardinality one
+  end
+  relationship Member
+    target "Member"
+    cardinality one
+  end
+  lifecycle Community membership lifecycle
+    stage Membership invited
+    stage Membership requested
+    stage Membership active
+    stage Membership left
+    stage Membership removed
+  end
+  field Joined at
+    type datetimeoffset
+    optional
+    stage "Membership active"
+  end
+  field Left at
+    type datetimeoffset
+    optional
+    stage "Membership left"
+  end
+  field Removal reason
+    type text
+    optional
+    stage "Membership removed"
+  end
+end
+
+entity Community invitation
+  relationship Community
+    target "Community"
+    cardinality one
+  end
+  relationship Inviter
+    target "Member"
+    cardinality one
+  end
+  relationship Invitee
+    target "Member"
+    cardinality one
+    optional
+  end
+  lifecycle Community invitation lifecycle
+    stage Invitation pending
+    stage Invitation accepted
+    stage Invitation declined
+    stage Invitation expired
+  end
+  field Invite link
+    type text
+    optional
+    stage "Invitation pending"
+  end
+  field Expires at
+    type datetimeoffset
+    optional
+    stage "Invitation pending"
+  end
+end
+
+entity Community
+  relationship Owner
+    target "Member"
+    cardinality one
+  end
+  lifecycle Community privacy lifecycle
+    stage Private group
+    stage Unlisted group
+    stage Discoverable group
+  end
+  field Name
+    type text
+  end
+  field Description
+    type text
+    optional
+  end
+  field Invite link
+    type text
+    optional
+    stage "Unlisted group"
+    stage "Discoverable group"
+  end
+  field Search listing
+    type boolean
+    optional
+    stage "Discoverable group"
+  end
+end
+
+entity Community feed post
+  owner "Community"
+  relationship Community
+    target "Community"
+    cardinality one
+  end
+  relationship Author
+    target "Member"
+    cardinality one
+  end
+  field Post type
+    type text
+  end
+  field Text
+    type text
+  end
+  field Created at
+    type datetimeoffset
+  end
+end
+

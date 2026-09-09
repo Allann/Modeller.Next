@@ -1,0 +1,123 @@
+rml 1.0
+
+entity Provider onboarding
+  relationship Member
+    target "Member"
+    cardinality one
+  end
+  lifecycle Provider onboarding lifecycle
+    stage Onboarding in progress
+    stage Onboarding pending review
+    stage Onboarding activated
+  end
+  field Intent step
+    type int32
+    stage "Onboarding in progress"
+  end
+  field Activated at
+    type datetimeoffset
+    optional
+    stage "Onboarding activated"
+  end
+end
+
+entity Professional evidence
+  owner "Business"
+  relationship Business
+    target "Business"
+    cardinality one
+  end
+  field Evidence type
+    type text
+  end
+  field Identifier
+    type text
+  end
+  field Expires on
+    type date
+    optional
+  end
+end
+
+entity Business location
+  owner "Business"
+  relationship Business
+    target "Business"
+    cardinality one
+  end
+  field Name
+    type text
+  end
+  field Location
+    type coordinate
+  end
+  field Is primary
+    type boolean
+  end
+end
+
+entity Service coverage
+  owner "Service offering"
+  relationship Service offering
+    target "Service offering"
+    cardinality one
+  end
+  field Centre
+    type coordinate
+  end
+  field Radius kilometres
+    type decimal(8,2)
+  end
+  field Is active
+    type boolean
+  end
+end
+
+entity Business
+  relationship Provider
+    target "Member"
+    cardinality one
+  end
+  field Trading name
+    type text
+  end
+  field Australian business number
+    type identifier
+    optional
+  end
+  field Is GST registered
+    type boolean
+  end
+end
+
+entity Service offering
+  relationship Provider
+    target "Member"
+    cardinality one
+  end
+  relationship Business
+    target "Business"
+    cardinality one
+    optional
+  end
+  lifecycle Service offering lifecycle
+    stage Active
+    stage Paused
+    stage Retired
+  end
+  field Category
+    type text
+  end
+  field Description
+    type text
+  end
+  field Starting price
+    type decimal(12,2)
+    optional
+    stage "Active"
+  end
+  field Visibility
+    type enumeration "Visibility scope"
+  end
+end
+
