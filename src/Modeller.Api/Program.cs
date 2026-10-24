@@ -1,13 +1,12 @@
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Modeller.Api;
 using Modeller.Api.Endpoints;
+using Modeller.Api.Health;
 using Modeller.Api.Initiative;
-using Modeller.Api.Analytics;
 using Modeller.Api.OpenApi;
-using Modeller.Initiative;
-using Modeller.Initiative.OpenAICompatible;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -25,7 +24,6 @@ builder.Services.AddOpenApi(options =>
     options.AddSchemaTransformer<ExampleSchemaTransformer>();
     options.AddDocumentTransformer<InitiativeCredentialSecuritySchemeTransformer>();
 });
-builder.Services.AddHealthChecks();
 builder.Services.AddSingleton<WorkspaceAnalysisPipeline>();
 builder.Services.AddSingleton<WorkspaceGenerationPreviewPipeline>();
 builder.Services.AddHttpContextAccessor();
@@ -38,89 +36,12 @@ builder.Services.AddSingleton(TimeProvider.System);
 // start. In Development only, an unset key falls back to a random per-process key (fine for local
 // dev restarts and for tests, which mint and validate within the same process).
 builder.Services.AddSingleton<IInitiativeCredentialService, HmacInitiativeCredentialService>();
-var postHogKey = builder.Configuration["ProductAnalytics:ProjectKey"];
-if (!string.IsNullOrWhiteSpace(postHogKey))
-{
-    builder.Services.AddHttpClient<IProductAnalytics, PostHogProductAnalytics>(client =>
-        client.BaseAddress = new Uri((builder.Configuration["ProductAnalytics:Host"] ?? "https://us.i.posthog.com").TrimEnd('/') + "/"));
-}
-else
-{
-    builder.Services.AddSingleton<IProductAnalytics, DisabledProductAnalytics>();
-}
-
-// Initiative (issue #90): the Agent Advisor is an add-on, never a hard dependency, per #83/#86 —
-// only registered as the real OpenAI-compatible adapter when an endpoint is actually configured;
-// otherwise every Discover/Frame/Shape action runs fully human-only via HumanOnlyAgentAdvisor.
-var agentBaseUrl = builder.Configuration["Agent:BaseUrl"];
-if (!string.IsNullOrWhiteSpace(agentBaseUrl))
-{
-    var timeoutSeconds = builder.Configuration.GetValue("Agent:TimeoutSeconds", 30);
-    var maxOutputTokens = builder.Configuration.GetValue("Agent:MaxOutputTokens", 1200);
-    var maxPromptCharacters = builder.Configuration.GetValue("Agent:MaxPromptCharacters", 24_000);
-    var freeModel = builder.Configuration["Agent:FreeModel"];
-    if (timeoutSeconds is < 1 or > 120) throw new InvalidOperationException("Agent:TimeoutSeconds must be from 1 to 120.");
-    if (maxOutputTokens is < 100 or > 8_000) throw new InvalidOperationException("Agent:MaxOutputTokens must be from 100 to 8000.");
-    if (maxPromptCharacters is < 1_000 or > 200_000) throw new InvalidOperationException("Agent:MaxPromptCharacters must be from 1000 to 200000.");
-
-    var agentModel = builder.Configuration["Agent:Model"]
-        ?? throw new InvalidOperationException("Agent:Model is required when Agent:BaseUrl is set.");
-    builder.Services.AddSingleton(serviceProvider =>
-    {
-        var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
-        return new AgentAdvisorOptions(
-            new Uri(agentBaseUrl),
-            agentModel,
-            builder.Configuration["Agent:ApiKey"] ?? builder.Configuration["AI_GATEWAY_API_KEY"])
-        {
-            Timeout = TimeSpan.FromSeconds(timeoutSeconds),
-            MaxOutputTokens = maxOutputTokens,
-            MaxPromptCharacters = maxPromptCharacters,
-            RequireApiKey = true,
-            FreeModel = freeModel,
-            RequestApiKeyProvider = () => httpContextAccessor.HttpContext?.Request.Headers["X-Agent-Api-Key"].FirstOrDefault(),
-            HostApiKeyProvider = () =>
-                httpContextAccessor.HttpContext?.Request.Headers["X-Vercel-Oidc-Token"].FirstOrDefault()
-                ?? builder.Configuration["VERCEL_OIDC_TOKEN"],
-        };
-    });
-    builder.Services.AddSingleton(new AgentAdvisorStatusResponse(true, agentModel, freeModel is null, freeModel));
-    builder.Services.AddHttpClient<IAgentAdvisor, OpenAiCompatibleAgentAdvisor>(client =>
-        client.Timeout = Timeout.InfiniteTimeSpan);
-}
-else
-{
-    builder.Services.AddSingleton<IAgentAdvisor, HumanOnlyAgentAdvisor>();
-    builder.Services.AddSingleton(new AgentAdvisorStatusResponse(false, null, true, null));
-}
-
-var initiativeRepository = builder.Configuration["Initiative:Repository"];
-var useUpstash = string.Equals(initiativeRepository, "Upstash", StringComparison.OrdinalIgnoreCase);
-var upstashUrl = builder.Configuration["KV_REST_API_URL"]
-    ?? builder.Configuration["UPSTASH_REDIS_REST_URL"];
-var upstashToken = builder.Configuration["KV_REST_API_TOKEN"]
-    ?? builder.Configuration["UPSTASH_REDIS_REST_TOKEN"];
-if (useUpstash && !string.IsNullOrWhiteSpace(upstashUrl) && !string.IsNullOrWhiteSpace(upstashToken))
-{
-    builder.Services.AddHttpClient<IInitiativeSessionRepository, UpstashInitiativeSessionRepository>(client =>
-    {
-        client.BaseAddress = new Uri(upstashUrl.TrimEnd('/') + "/");
-        client.Timeout = TimeSpan.FromSeconds(10);
-        client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", upstashToken);
-    });
-}
-else
-{
-    if (useUpstash && string.Equals(builder.Configuration["VERCEL"], "1", StringComparison.Ordinal))
-        throw new InvalidOperationException(
-            "KV_REST_API_URL and KV_REST_API_TOKEN are required when Initiative:Repository is Upstash on Vercel.");
-
-    var initiativeStorageRoot = builder.Configuration["Initiative:StorageRoot"]
-        ?? Path.Combine(AppContext.BaseDirectory, "data", "initiative");
-    builder.Services.AddSingleton<IInitiativeSessionRepository>(new JsonFileInitiativeSessionRepository(initiativeStorageRoot));
-}
+builder.Services.AddProductAnalytics(builder.Configuration);
+builder.Services.AddAgentAdvisor(builder.Configuration);
+builder.Services.AddInitiativeSessionRepository(builder.Configuration);
 builder.Services.AddScoped<InitiativePipeline>();
+// Every external dependency above gets a readiness check (/healthz/ready) — see DependencyHealthChecks.
+builder.Services.AddDependencyHealthChecks(builder.Configuration);
 builder.Services.AddSignalR();
 // ViewKind must serialize as a stable name, not an ordinal int — the ordinal is an
 // implementation-order detail that could change without the contract itself changing.
@@ -205,8 +126,15 @@ app.UseRateLimiter();
 app.MapWorkspaceEndpoints();
 app.MapInitiativeEndpoints();
 app.MapHub<InitiativeHub>("/hubs/initiative");
-app.MapHealthChecks("/healthz/live");
-app.MapHealthChecks("/healthz/ready");
+// Liveness runs no checks: it only proves the process serves HTTP, so a dependency outage never
+// makes the platform restart a healthy process. Readiness runs every dependency check and reports
+// each one by name; Degraded (an optional add-on is down) still answers 200, Unhealthy answers 503.
+app.MapHealthChecks("/healthz/live", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/healthz/ready", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains(DependencyHealthChecks.ReadyTag),
+    ResponseWriter = DependencyHealthChecks.WriteResponse,
+});
 
 app.MapDevelopmentTooling();
 

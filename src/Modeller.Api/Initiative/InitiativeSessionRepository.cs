@@ -8,6 +8,12 @@ public interface IInitiativeSessionRepository
     Task SaveAsync(InitiativeSession session, CancellationToken cancellationToken = default);
 
     Task<InitiativeSession?> LoadAsync(InitiativeId id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Proves the backing store is reachable and usable right now, without touching any session.
+    /// Throws when it is not — the readiness health check turns that into an Unhealthy result.
+    /// </summary>
+    Task ProbeAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -37,6 +43,14 @@ public sealed class JsonFileInitiativeSessionRepository(string rootDirectory) : 
         var dto = await JsonSerializer.DeserializeAsync<InitiativeSessionDto>(stream, JsonOptions, cancellationToken)
             ?? throw new InvalidOperationException($"The Initiative session document at '{path}' was empty.");
         return InitiativeSessionMapper.ToDomain(dto);
+    }
+
+    public async Task ProbeAsync(CancellationToken cancellationToken = default)
+    {
+        Directory.CreateDirectory(rootDirectory);
+        var probePath = Path.Combine(rootDirectory, $".probe-{Guid.NewGuid():N}");
+        await File.WriteAllTextAsync(probePath, "probe", cancellationToken);
+        File.Delete(probePath);
     }
 
     private string PathFor(InitiativeId id) => Path.Combine(rootDirectory, $"{id.Value:D}.json");

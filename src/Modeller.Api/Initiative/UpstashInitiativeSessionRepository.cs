@@ -43,6 +43,13 @@ public sealed class UpstashInitiativeSessionRepository(HttpClient client) : IIni
         return InitiativeSessionMapper.ToDomain(dto);
     }
 
+    public async Task ProbeAsync(CancellationToken cancellationToken = default)
+    {
+        var reply = await ExecuteAsync(["PING"], cancellationToken);
+        if (!string.Equals(reply, "PONG", StringComparison.Ordinal))
+            throw new InvalidOperationException("Upstash Redis did not answer PING with PONG.");
+    }
+
     private async Task<string?> ExecuteAsync(string[] command, CancellationToken cancellationToken)
     {
         using var response = await client.PostAsJsonAsync("", command, JsonOptions, cancellationToken);

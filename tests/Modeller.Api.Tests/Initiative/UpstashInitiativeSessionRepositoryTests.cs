@@ -81,10 +81,32 @@ public sealed class UpstashInitiativeSessionRepositoryTests
         Assert.Contains("ERR storage unavailable", exception.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task ProbeAsync_RedisAnswersPong_Succeeds()
+    {
+        await CreateRepository(new FakeUpstashHandler()).ProbeAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task ProbeAsync_UpstashError_Throws()
+    {
+        var repository = CreateRepository(new FakeUpstashHandler("ERR storage unavailable"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.ProbeAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ProbeAsync_UnexpectedPingReply_Throws()
+    {
+        var repository = CreateRepository(new FakeUpstashHandler(pingReply: "NOT-PONG"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.ProbeAsync(TestContext.Current.CancellationToken));
+    }
+
     private static UpstashInitiativeSessionRepository CreateRepository(HttpMessageHandler handler) =>
         new(new HttpClient(handler) { BaseAddress = new Uri("https://example.upstash.io/") });
 
-    private sealed class FakeUpstashHandler(string? error = null) : HttpMessageHandler
+    private sealed class FakeUpstashHandler(string? error = null, string pingReply = "PONG") : HttpMessageHandler
     {
         private readonly Dictionary<string, string> _values = [];
 
@@ -129,6 +151,9 @@ public sealed class UpstashInitiativeSessionRepositoryTests
                 _values[command[1]] = command[2];
                 return new { result = (object?)"OK" };
             }
+
+            if (command[0] == "PING")
+                return new { result = (object?)pingReply };
 
             if (command[0] == "DEL")
                 return new { result = (object?)(_values.Remove(command[1]) ? 1 : 0) };

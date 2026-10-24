@@ -79,12 +79,16 @@ jobs:
 
       - name: Smoke-test the container
         run: |
-          docker run -d --rm -p 8080:8080 -e PORT=8080 --name modeller-api-ci modeller-api:ci
+          # A throwaway signing key so /healthz/ready can pass: the container runs as Production,
+          # where Initiative:CredentialSigningKey is required. Storage falls back to JSON files
+          # because VERCEL is unset here.
+          docker run -d --rm -p 8080:8080 -e PORT=8080             -e Initiative__CredentialSigningKey=ci-smoke-test-signing-key-0123456789abcdef             --name modeller-api-ci modeller-api:ci
           for attempt in $(seq 1 10); do
             if curl -sf http://localhost:8080/healthz/live; then break; fi
             sleep 1
           done
           curl -sf http://localhost:8080/healthz/live
+          curl -s --fail-with-body http://localhost:8080/healthz/ready
           curl -sf http://localhost:8080/v1/workspace/supported-views
           docker stop modeller-api-ci
 
@@ -110,15 +114,18 @@ jobs:
       # all — the container never started under Vercel despite an identical `docker run` working).
       # That failure mode is invisible to the steps above, so it went unnoticed until a human
       # checked the live site. Fail the workflow — and thus notify — the moment the production
-      # alias itself doesn't come up healthy after a deploy.
+      # alias itself doesn't come up healthy after a deploy. /healthz/ready (not /healthz/live) is
+      # what is checked: it probes every dependency (Upstash, the credential signing key, and the
+      # optional Agent Advisor/PostHog) and names the failing one — a deleted Upstash database once
+      # passed /healthz/live while every Initiative create failed (seen 2026-10-24).
       - name: Verify the live production deployment is healthy
         run: |
           for attempt in $(seq 1 10); do
-            if curl -sf https://modeller-next.vercel.app/healthz/live; then break; fi
-            echo "Attempt $attempt: production not healthy yet, retrying..."
+            if curl -sf https://modeller-next.vercel.app/healthz/ready; then break; fi
+            echo "Attempt $attempt: production not ready yet, retrying..."
             sleep 6
           done
-          curl -sf https://modeller-next.vercel.app/healthz/live
+          curl -s --fail-with-body https://modeller-next.vercel.app/healthz/ready
           curl -sf https://modeller-next.vercel.app/v1/workspace/supported-views
 
       # Every deploy pushes a new, immutable image tagged by commit SHA (never overwritten — Vercel
