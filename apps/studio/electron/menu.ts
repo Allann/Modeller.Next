@@ -1,5 +1,5 @@
 import { BrowserWindow, Menu, dialog, shell } from 'electron';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fetchWorkspaceInfo } from './workspace-client';
 import { clearPanelWindowState } from './panel-window-state';
@@ -32,7 +32,7 @@ function folderName(rootPath: string): string {
   return segments.at(-1) ?? rootPath;
 }
 
-async function revealGeneratedOutput(mainWindow: BrowserWindow, port: number): Promise<void> {
+export async function revealGeneratedOutput(mainWindow: BrowserWindow, port: number): Promise<void> {
   const workspace = await fetchWorkspaceInfo(port);
   const folder = workspace ? path.join(workspace.root, workspace.logicalOutputRoot) : undefined;
   if (!folder || !existsSync(folder)) {
@@ -40,6 +40,42 @@ async function revealGeneratedOutput(mainWindow: BrowserWindow, port: number): P
     return;
   }
   await shell.openPath(folder);
+}
+
+const COMMON_IDE_ENTRY_POINT_NAMES = ['.slnx', '.sln', '.code-workspace', 'package.json', 'pyproject.toml', 'pom.xml', 'build.gradle', 'go.mod', 'Cargo.toml'];
+
+export function findGeneratedIdeEntryPoint(folder: string, declaredEntryPoint?: string): string | undefined {
+  if (declaredEntryPoint) {
+    const declaredPath = path.join(folder, declaredEntryPoint);
+    return existsSync(declaredPath) ? declaredPath : undefined;
+  }
+  const entries = readdirSync(folder, { withFileTypes: true });
+  const entryPoint = entries.find((entry) => entry.isFile() && COMMON_IDE_ENTRY_POINT_NAMES.some((name) => entry.name === name || entry.name.endsWith(name)));
+  if (entryPoint) return path.join(folder, entryPoint.name);
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const nested = findGeneratedIdeEntryPoint(path.join(folder, entry.name));
+    if (nested) return nested;
+  }
+  return undefined;
+}
+
+export async function openGeneratedSolution(mainWindow: BrowserWindow, port: number): Promise<void> {
+  const workspace = await fetchWorkspaceInfo(port);
+  const folder = workspace ? path.join(workspace.root, workspace.logicalOutputRoot) : undefined;
+  if (!folder || !existsSync(folder)) {
+    await dialog.showMessageBox(mainWindow, { type: 'info', message: 'No generated output yet — click Generate first.' });
+    return;
+  }
+  const entryPoint = findGeneratedIdeEntryPoint(folder, workspace?.ideEntryPoint);
+  if (!entryPoint) {
+    await dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      message: 'This template pack has no generated project entry point to open. You can open the generated output folder instead.',
+    });
+    return;
+  }
+  await shell.openPath(entryPoint);
 }
 
 // Un-maximizes/resizes any currently open detached panel windows back to the default (see
@@ -83,7 +119,8 @@ export function buildApplicationMenu(mainWindow: BrowserWindow, port: number): M
       submenu: [
         { label: 'Open Folder...', accelerator: 'CmdOrCtrl+O', click: () => void openFolder(mainWindow) },
         { label: 'Open Recent', submenu: buildOpenRecentSubmenu(mainWindow, port) },
-        { label: 'Reveal Generated Output', click: () => void revealGeneratedOutput(mainWindow, port) },
+        { label: 'Open Generated Folder', click: () => void revealGeneratedOutput(mainWindow, port) },
+        { label: 'Open Generated Project in IDE', click: () => void openGeneratedSolution(mainWindow, port) },
         { type: 'separator' },
         { role: 'quit' },
       ],

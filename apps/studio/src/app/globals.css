@@ -28,6 +28,23 @@ body {
   color: var(--modeller-ink);
 }
 
+.published-diagram {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.published-diagram header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--modeller-line);
+}
+.published-diagram h1 { font-size: 1rem; margin: 0; }
+.published-diagram label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+.published-diagram select { max-width: 24rem; }
+
 @media (prefers-color-scheme: dark) {
   html,
   body {

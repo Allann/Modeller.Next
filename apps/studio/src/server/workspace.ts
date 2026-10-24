@@ -11,6 +11,8 @@ export interface ModellerConfig {
   version: string;
   sources: string[];
   logicalOutputRoot?: string;
+  templatePack?: string;
+  parameters?: { projectName?: string };
   [key: string]: unknown;
 }
 
@@ -18,6 +20,7 @@ export interface Workspace {
   root: string;
   sources: string[];
   logicalOutputRoot: string;
+  ideEntryPoint?: string;
   openedFromPackage?: boolean;
 }
 
@@ -62,7 +65,23 @@ async function readWorkspace(root: string): Promise<Workspace> {
   const logicalOutputRoot = config.logicalOutputRoot && isWorkspaceRelative(config.logicalOutputRoot)
     ? config.logicalOutputRoot
     : DEFAULT_LOGICAL_OUTPUT_ROOT;
-  return { root, sources, logicalOutputRoot };
+  return { root, sources, logicalOutputRoot, ideEntryPoint: await readIdeEntryPoint(root, config) };
+}
+
+// IDE handoff is adapter metadata, not generation meaning. A template pack may name one generated
+// project entry point, relative to the configured output root. An unreadable or older pack simply
+// has no declaration; the Electron shell then uses its limited project-marker fallback.
+async function readIdeEntryPoint(root: string, config: ModellerConfig): Promise<string | undefined> {
+  if (!config.templatePack || !isWorkspaceRelative(config.templatePack)) return undefined;
+  try {
+    const raw = await readFile(path.join(root, config.templatePack), 'utf-8');
+    const pack = JSON.parse(raw) as { ideEntryPoint?: unknown };
+    if (typeof pack.ideEntryPoint !== 'string') return undefined;
+    const entryPoint = pack.ideEntryPoint.replaceAll('{projectName}', config.parameters?.projectName ?? '');
+    return entryPoint && isWorkspaceRelative(entryPoint) ? entryPoint : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function loadWorkspace(): Promise<Workspace> {

@@ -83,20 +83,30 @@ export function LocalGenerationPreview({
   return (
     <div className="local-generation-preview">
       <div className="local-generation-toolbar diagram-toolbar">
-        <button type="button" onClick={() => void onGenerate()} disabled={status === 'generating'}>
+        <button type="button" className="workbench-action" onClick={() => void onGenerate()} disabled={status === 'generating'} title="Generate code into the workspace output folder">
           {status === 'generating' ? 'Generating…' : hasGenerated ? 'Regenerate' : 'Generate'}
         </button>
         {!hasGenerated && status !== 'error' && (
           <span className="local-generation-status">Writes generated output to the workspace&apos;s output folder.</span>
         )}
+        {hasGenerated && bridge && (
+          <div className="workbench-action-group" aria-label="Generated code actions">
+            <button type="button" className="workbench-action" onClick={() => bridge.openGeneratedOutput()} title="Open the generated output folder">
+              Open folder
+            </button>
+            <button type="button" className="workbench-action" onClick={() => bridge.openGeneratedSolution()} title="Open the generated project in your default IDE">
+              Open in IDE
+            </button>
+          </div>
+        )}
         {bridge ? (
-          <button type="button" className="panel-detach-btn" onClick={() => bridge.detachPanel('generation')} title="Open in a separate window">
+          <button type="button" className="workbench-action panel-detach-btn" onClick={() => bridge.detachPanel('generation')} title="Open in a separate window">
             Detach
           </button>
         ) : !showDetach ? (
           // This is itself the content of a detached panel window (see panels/generation/page.tsx)
           // — closing it re-docks the panel in the main window (see panel-windows.ts's 'closed' handler).
-          <button type="button" className="panel-detach-btn" onClick={() => window.close()} title="Return to the main window">
+          <button type="button" className="workbench-action panel-detach-btn" onClick={() => window.close()} title="Return to the main window">
             Reattach
           </button>
         ) : null}

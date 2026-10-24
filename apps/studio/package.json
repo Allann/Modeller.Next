@@ -14,7 +14,7 @@
     "types:check": "tsc --noEmit && tsc -p electron/tsconfig.json --noEmit",
     "server:build": "dotnet publish ../../src/Modeller.LanguageServer/Modeller.LanguageServer.csproj -c Release -o server-bin && dotnet publish ../../src/Modeller.Cli/Modeller.Cli.csproj -c Release -o server-bin",
     "electron:build": "tsc -p electron/tsconfig.json",
-    "electron:dev": "npm run electron:build && electron .",
+    "electron:dev": "npm run server:build && npm run build && npm run server:bundle && npm run electron:build && electron .",
     "server:bundle": "node scripts/bundle-server.mjs",
     "dist:windows": "npm run server:bundle && node scripts/create-windows-dist.mjs && npm run electron:build && electron-builder --win --config electron-builder.json",
     "test:e2e": "playwright test",
@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.1.0",
+    "@upstash/redis": "^1.38.4",
     "@vercel/analytics": "^2.0.1",
     "@xyflow/react": "^12.11.2",
     "fflate": "^0.8.3",

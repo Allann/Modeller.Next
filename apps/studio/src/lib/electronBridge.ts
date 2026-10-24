@@ -15,6 +15,8 @@ interface ModellerBridge {
   detachPanel(kind: PanelKind): void;
   onPanelDetachState(callback: (state: PanelDetachState) => void): () => void;
   requestPanelDetachState(): void;
+  openGeneratedOutput(): void;
+  openGeneratedSolution(): void;
 }
 
 declare global {

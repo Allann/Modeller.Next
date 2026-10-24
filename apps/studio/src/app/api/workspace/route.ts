@@ -13,6 +13,7 @@ export async function GET() {
       root: workspace.root,
       sources: workspace.sources,
       logicalOutputRoot: workspace.logicalOutputRoot,
+      ideEntryPoint: workspace.ideEntryPoint,
       openedFromPackage: workspace.openedFromPackage ?? false,
     });
   } catch (error) {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const workspace = await setWorkspaceRoot(requestedRoot);
-    return NextResponse.json({ root: workspace.root, sources: workspace.sources, openedFromPackage: workspace.openedFromPackage ?? false });
+    return NextResponse.json({ root: workspace.root, sources: workspace.sources, ideEntryPoint: workspace.ideEntryPoint, openedFromPackage: workspace.openedFromPackage ?? false });
   } catch (error) {
     const response = workspaceErrorResponse(error);
     if (response) return response;

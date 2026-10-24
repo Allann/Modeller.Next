@@ -221,9 +221,44 @@
 
 .diagram-toolbar {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 0.75rem;
   border-bottom: 1px solid var(--modeller-line);
+}
+
+/* Compact workbench actions deliberately stay quiet at rest. Their border and fill appear only
+   on interaction, following the VS Code toolbar pattern rather than browser-default buttons. */
+.workbench-action {
+  min-height: 1.8rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.workbench-action:hover:not(:disabled) {
+  border-color: color-mix(in srgb, currentColor 18%, transparent);
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.workbench-action:focus-visible {
+  outline: 1px solid var(--modeller-teal);
+  outline-offset: 1px;
+}
+.workbench-action:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.workbench-action-group {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  min-width: 0;
 }
 
 .diagram-toolbar select {
@@ -302,6 +337,25 @@
 
 .diagram-pane .react-flow {
   flex: 1;
+}
+
+/* Shown above the active document when its on-disk content changed outside Studio (see
+   WorkbenchShell's external-change poll). Warm/amber like .diagram-error so both read as the
+   same "needs your attention" register rather than looking like distinct alert systems. */
+.external-change-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.78rem;
+  color: #92400e;
+  background: color-mix(in srgb, #d97706 12%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, #d97706 30%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  .external-change-banner {
+    color: #fbbf24;
+  }
 }
 
 .empty-editor {

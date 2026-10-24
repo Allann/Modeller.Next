@@ -86,13 +86,13 @@ export function DiagramPane({ showDetach = true }: { showDetach?: boolean }) {
       loading={!graph}
       extraToolbarContent={
         bridge ? (
-          <button type="button" className="panel-detach-btn" onClick={() => bridge.detachPanel('diagram')} title="Open in a separate window">
+          <button type="button" className="workbench-action panel-detach-btn" onClick={() => bridge.detachPanel('diagram')} title="Open in a separate window">
             Detach
           </button>
         ) : !showDetach ? (
           // This pane is itself the content of a detached panel window (see panels/diagram/page.tsx)
           // — closing it re-docks the panel in the main window (see panel-windows.ts's 'closed' handler).
-          <button type="button" className="panel-detach-btn" onClick={() => window.close()} title="Return to the main window">
+          <button type="button" className="workbench-action panel-detach-btn" onClick={() => window.close()} title="Return to the main window">
             Reattach
           </button>
         ) : null

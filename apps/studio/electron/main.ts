@@ -17,10 +17,10 @@ import {
   spawnServer,
   waitForServerReady,
 } from './server-supervisor';
-import { buildApplicationMenu, openFolder, pushWorkspaceRoot, refreshApplicationMenu } from './menu';
+import { buildApplicationMenu, openFolder, openGeneratedSolution, pushWorkspaceRoot, refreshApplicationMenu, revealGeneratedOutput } from './menu';
 import { closeAllPanelWindows, detachState, isPanelKind, openPanelWindow } from './panel-windows';
 import { fetchAppIcon } from './app-icon';
-import { addRecentWorkspace } from './recent-workspaces';
+import { addRecentWorkspace, loadRecentWorkspaces } from './recent-workspaces';
 
 const SERVER_PORT = 3100;
 
@@ -70,6 +70,14 @@ if (!gotSingleInstanceLock) {
     if (mainWindow) void openFolder(mainWindow);
   });
 
+  ipcMain.on('generated-code:open-output', () => {
+    if (mainWindow) void revealGeneratedOutput(mainWindow, SERVER_PORT);
+  });
+
+  ipcMain.on('generated-code:open-solution', () => {
+    if (mainWindow) void openGeneratedSolution(mainWindow, SERVER_PORT);
+  });
+
   // Sent by WorkbenchShell's onLoadWorkspace only after a workspace actually finishes loading
   // (not merely picked in the dialog) — see recent-workspaces.ts. Rebuilds the menu so File > Open
   // Recent reflects it immediately, since Electron menus don't live-update their submenus.
@@ -92,7 +100,12 @@ if (!gotSingleInstanceLock) {
     const resourcesPath = path.resolve(__dirname, '..');
     const forwardedArgs = resolveForwardedArgs(process.argv, process.defaultApp);
 
-    serverProcess = spawnServer(resourcesPath, forwardedArgs, SERVER_PORT);
+    // Falls back to the most recently opened folder (see recent-workspaces.ts) so a restart resumes
+    // where you left off rather than always landing on the bundled sample workspace — but only when
+    // nothing more specific already names one: a `.modeller-workspace` file association in
+    // forwardedArgs is resolved inside the spawned server itself (workspace-package.ts) and already
+    // takes priority over this env-var fallback regardless, so passing it here never fights that.
+    serverProcess = spawnServer(resourcesPath, forwardedArgs, SERVER_PORT, loadRecentWorkspaces()[0]);
     serverProcess.stderr?.on('data', (chunk: Buffer) => console.error(`[server] ${chunk.toString('utf-8')}`));
     serverProcess.on('exit', (code) => console.log(`[server] exited with code ${code}`));
 

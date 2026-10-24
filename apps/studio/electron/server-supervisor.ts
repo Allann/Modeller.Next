@@ -28,6 +28,32 @@ export function resolveSecondInstanceWorkspacePath(argv: readonly string[], defa
   return openIndex >= 0 ? forwarded[openIndex + 1] : undefined;
 }
 
+// The env var src/server/workspace.ts's resolveWorkspaceRoot() falls back to (after an explicit
+// `current` workspace and before the hardcoded samples/child-care default) when nothing else names
+// a workspace — see buildServerEnv's `initialWorkspace` for how main.ts feeds Studio's own
+// most-recently-opened folder into it, so a restart resumes where you left off instead of always
+// landing back on the sample.
+const INITIAL_WORKSPACE_ENV_VAR = 'MODELLER_STUDIO_WORKSPACE';
+
+// Isolated from spawnServer below purely so this decision is unit-testable without mocking
+// child_process.spawn — see tests/unit/windows-open.test.ts.
+export function buildServerEnv(port: number, initialWorkspace?: string): NodeJS.ProcessEnv {
+  return {
+    // initialWorkspace is spread in *before* `...process.env`, i.e. it only ever fills a gap — an
+    // operator-set MODELLER_STUDIO_WORKSPACE already present in Electron's own environment always
+    // wins over "whatever was last opened in the UI".
+    ...(initialWorkspace ? { [INITIAL_WORKSPACE_ENV_VAR]: initialWorkspace } : {}),
+    ...process.env,
+    ELECTRON_RUN_AS_NODE: '1',
+    PORT: String(port),
+    // Matches the previous .cmd installer's own `set "NODE_ENV=production"` — the Electron shell
+    // always runs against a built .next output (npm run build), never Next's dev server, so
+    // server.ts's own `dev = process.env.NODE_ENV !== 'production'` must resolve false here
+    // regardless of what NODE_ENV happens to be set to in Electron's own environment.
+    NODE_ENV: 'production',
+  };
+}
+
 /**
  * Spawns the packaged app's pre-bundled server (server-dist/server.js, built by
  * scripts/bundle-server.mjs from server.ts) as a genuine child Node process via
@@ -37,15 +63,11 @@ export function resolveSecondInstanceWorkspacePath(argv: readonly string[], defa
  * <args>` invocation exactly — workspace-package.ts's resolveWorkspacePackageArgument()
  * (process.argv.slice(2)) needs no changes for the file-association open-with path to keep working.
  */
-export function spawnServer(resourcesPath: string, forwardedArgs: readonly string[], port: number): ChildProcess {
+export function spawnServer(resourcesPath: string, forwardedArgs: readonly string[], port: number, initialWorkspace?: string): ChildProcess {
   const serverEntry = path.join(resourcesPath, 'server-dist', 'server.js');
   return spawn(process.execPath, [serverEntry, ...forwardedArgs], {
     cwd: resourcesPath,
-    // NODE_ENV=production matches the previous .cmd installer's own `set "NODE_ENV=production"` —
-    // the Electron shell always runs against a built .next output (npm run build), never Next's
-    // dev server, so server.ts's own `dev = process.env.NODE_ENV !== 'production'` must resolve
-    // false here regardless of what NODE_ENV happens to be set to in Electron's own environment.
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', PORT: String(port), NODE_ENV: 'production' },
+    env: buildServerEnv(port, initialWorkspace),
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 }

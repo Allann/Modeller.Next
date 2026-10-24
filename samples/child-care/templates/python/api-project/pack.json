@@ -6,6 +6,7 @@
   "language": "python",
   "rendererId": "scriban",
   "rendererVersion": "1.0",
+  "ideEntryPoint": "{projectName}/pyproject.toml",
   "templates": [
     { "id": "pyproject", "path": "pyproject.toml.sbn", "digest": "sha256:7188aa3970101ecf7baa248017dc128614ee9caac4640bd6d0eb64d4ac00c1ac" },
     { "id": "main", "path": "main.py.sbn", "digest": "sha256:6e567803bc32c5d34b90e6e3cf98d16763c327e1ee2da0735ce09086707cb632" },

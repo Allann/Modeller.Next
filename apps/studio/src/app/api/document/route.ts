@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, stat, writeFile } from 'node:fs/promises';
 import { NextRequest, NextResponse } from 'next/server';
 import { isKnownSource, loadWorkspace, resolveSourcePath } from '@/server/workspace';
 import { localOnlyRouteGuard } from '@/server/playground-guard';
@@ -23,8 +23,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unknown or unsafe document path.' }, { status: 403 });
   }
 
-  const content = await readFile(resolveSourcePath(workspace, relativePath), 'utf-8');
-  return NextResponse.json({ path: relativePath, content });
+  const sourcePath = resolveSourcePath(workspace, relativePath);
+  const content = await readFile(sourcePath, 'utf-8');
+  const stats = await stat(sourcePath);
+  return NextResponse.json({ path: relativePath, content, mtimeMs: stats.mtimeMs });
 }
 
 export async function PUT(request: NextRequest) {
@@ -47,6 +49,8 @@ export async function PUT(request: NextRequest) {
   }
 
   const { content } = (await request.json()) as { content: string };
-  await writeFile(resolveSourcePath(workspace, relativePath), content, 'utf-8');
-  return NextResponse.json({ path: relativePath, saved: true });
+  const sourcePath = resolveSourcePath(workspace, relativePath);
+  await writeFile(sourcePath, content, 'utf-8');
+  const stats = await stat(sourcePath);
+  return NextResponse.json({ path: relativePath, saved: true, mtimeMs: stats.mtimeMs });
 }

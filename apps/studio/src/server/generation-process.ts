@@ -16,6 +16,26 @@ export interface GenerationResult {
   diagnostics: ApiDiagnostic[];
 }
 
+// `modeller generate --format json`'s early-failure path (WorkspaceLoader.Failure in the CLI —
+// a bad config.json, an unreadable source, a missing identity-registry entry, anything caught
+// before rendering even starts) prints only `{ outputVersion, diagnostics }`, with no `changes` or
+// `artifacts` key at all — unlike a normal run, which always includes both (even as `[]`). Without
+// this, a real diagnostic from that path silently vanished: the /api/generate route only forwards
+// diagnostics when `preview.diagnostics.length > 0`, but the *client* only knows how to notice a
+// missing `artifacts` array as "the request failed" and had nothing named `error` to show instead
+// — so the actual diagnostic was dropped and the UI just said "Failed to generate." Normalizing the
+// two possibly-missing arrays here, right at the CLI JSON boundary, keeps GenerationResult honest
+// everywhere else: every other consumer (the route, GenerationPreview) can keep assuming both are
+// always real arrays.
+export function normalizeGenerationResult(parsed: Partial<GenerationResult>): GenerationResult {
+  return {
+    outputVersion: parsed.outputVersion ?? '1.0',
+    changes: parsed.changes ?? [],
+    artifacts: parsed.artifacts ?? [],
+    diagnostics: parsed.diagnostics ?? [],
+  };
+}
+
 /**
  * Shells out to `modeller generate`, the same subprocess pattern already used for `modeller
  * project` (see runCliProjection). `dryRun: true` never writes to disk — used first to learn which
@@ -41,7 +61,7 @@ function runCli(workspaceRoot: string, dryRun: boolean): Promise<GenerationResul
         return;
       }
       try {
-        resolve(JSON.parse(stdout));
+        resolve(normalizeGenerationResult(JSON.parse(stdout) as Partial<GenerationResult>));
       } catch {
         reject(new Error(`Failed to parse modeller generate output: ${stdout}`));
       }

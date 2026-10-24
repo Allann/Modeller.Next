@@ -6,6 +6,7 @@
   "language": "csharp",
   "rendererId": "scriban",
   "rendererVersion": "1.0",
+  "ideEntryPoint": "{projectName}.slnx",
   "templates": [
     { "id": "solution", "path": "Solution.slnx.sbn", "digest": "sha256:83de235a04176e248fbc75cf2155b932ee4a4a2841529ec56a6b858370aec10a" },
     { "id": "project", "path": "ApiProject.csproj.sbn", "digest": "sha256:87f5b630033ff8a8ec62db4a28361bc377731df69f4783f56f71cc00d11e4e3f" },

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { test } from 'node:test';
 import path from 'node:path';
@@ -36,6 +36,61 @@ test('a Windows package argument is recognised from shell open command args', ()
     resolveWorkspacePackageArgument(['C:\\Users\\Reader\\Downloads\\sample.modeller-workspace']),
     'C:\\Users\\Reader\\Downloads\\sample.modeller-workspace',
   );
+});
+
+test('the generated project entry point finder uses the template pack declaration', async () => {
+  const outputRoot = await mkdtemp(path.join(tmpdir(), 'modeller-generated-output-'));
+  try {
+    const projectFolder = path.join(outputRoot, 'Ordering');
+    await mkdir(projectFolder);
+    const solution = path.join(outputRoot, 'Ordering.slnx');
+    await writeFile(solution, '<Solution />');
+
+    const { findGeneratedIdeEntryPoint } = await import('../../electron/menu');
+
+    assert.equal(findGeneratedIdeEntryPoint(outputRoot, 'Ordering.slnx'), solution);
+  } finally {
+    await rm(outputRoot, { recursive: true, force: true });
+  }
+});
+
+test('the generated project entry point finder supports a non-C# project marker', async () => {
+  const outputRoot = await mkdtemp(path.join(tmpdir(), 'modeller-generated-output-'));
+  try {
+    const project = path.join(outputRoot, 'package.json');
+    await writeFile(project, '{}');
+
+    const { findGeneratedIdeEntryPoint } = await import('../../electron/menu');
+
+    assert.equal(findGeneratedIdeEntryPoint(outputRoot), project);
+  } finally {
+    await rm(outputRoot, { recursive: true, force: true });
+  }
+});
+
+test('a workspace resolves its template pack IDE entry point with its project name', async () => {
+  const workspaceRoot = await mkdtemp(path.join(tmpdir(), 'modeller-workspace-entry-point-'));
+  try {
+    await mkdir(path.join(workspaceRoot, '.modeller'));
+    await mkdir(path.join(workspaceRoot, 'templates'));
+    await writeFile(path.join(workspaceRoot, '.modeller', 'config.json'), JSON.stringify({
+      version: '1.0',
+      sources: ['model/context.modeller'],
+      logicalOutputRoot: 'generated',
+      templatePack: 'templates/pack.json',
+      parameters: { projectName: 'Orders' },
+    }));
+    await writeFile(path.join(workspaceRoot, 'templates', 'pack.json'), JSON.stringify({
+      ideEntryPoint: '{projectName}/pyproject.toml',
+    }));
+
+    const { setWorkspaceRoot } = await import('../../src/server/workspace');
+    const workspace = await setWorkspaceRoot(workspaceRoot);
+
+    assert.equal(workspace.ideEntryPoint, 'Orders/pyproject.toml');
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
 });
 
 test('a downloaded workspace package contains the Windows opener metadata', () => {
@@ -172,6 +227,50 @@ test('the Electron main process forwards a file-association argument to the spaw
     ['C:\\Users\\Reader\\Downloads\\sample.modeller-workspace'],
   );
   assert.deepEqual(resolveForwardedArgs(['electron.exe', 'main.js'], true), []);
+});
+
+test('buildServerEnv includes the last-opened workspace as a fallback env var', async () => {
+  const { buildServerEnv } = await import('../../electron/server-supervisor');
+  const original = process.env.MODELLER_STUDIO_WORKSPACE;
+  delete process.env.MODELLER_STUDIO_WORKSPACE;
+  try {
+    const env = buildServerEnv(3100, 'C:\\Users\\Reader\\workspaces\\everyservice');
+
+    assert.equal(env.MODELLER_STUDIO_WORKSPACE, 'C:\\Users\\Reader\\workspaces\\everyservice');
+    assert.equal(env.PORT, '3100');
+    assert.equal(env.NODE_ENV, 'production');
+  } finally {
+    if (original === undefined) delete process.env.MODELLER_STUDIO_WORKSPACE;
+    else process.env.MODELLER_STUDIO_WORKSPACE = original;
+  }
+});
+
+test('buildServerEnv omits the fallback workspace var when none was recorded yet', async () => {
+  const { buildServerEnv } = await import('../../electron/server-supervisor');
+  const original = process.env.MODELLER_STUDIO_WORKSPACE;
+  delete process.env.MODELLER_STUDIO_WORKSPACE;
+  try {
+    const env = buildServerEnv(3100);
+
+    assert.equal(env.MODELLER_STUDIO_WORKSPACE, undefined);
+  } finally {
+    if (original === undefined) delete process.env.MODELLER_STUDIO_WORKSPACE;
+    else process.env.MODELLER_STUDIO_WORKSPACE = original;
+  }
+});
+
+test('buildServerEnv never overrides an operator-set MODELLER_STUDIO_WORKSPACE with the last-opened folder', async () => {
+  const { buildServerEnv } = await import('../../electron/server-supervisor');
+  const original = process.env.MODELLER_STUDIO_WORKSPACE;
+  process.env.MODELLER_STUDIO_WORKSPACE = '/explicit/operator/workspace';
+  try {
+    const env = buildServerEnv(3100, '/some/recently-opened/folder');
+
+    assert.equal(env.MODELLER_STUDIO_WORKSPACE, '/explicit/operator/workspace');
+  } finally {
+    if (original === undefined) delete process.env.MODELLER_STUDIO_WORKSPACE;
+    else process.env.MODELLER_STUDIO_WORKSPACE = original;
+  }
 });
 
 test('a second-instance launch carrying a workspace package is recognised for routing into the running window', async () => {

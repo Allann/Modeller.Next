@@ -37,4 +37,10 @@ contextBridge.exposeInMainWorld('modeller', {
   requestPanelDetachState(): void {
     ipcRenderer.send('panel:detach-state-request');
   },
+  openGeneratedOutput(): void {
+    ipcRenderer.send('generated-code:open-output');
+  },
+  openGeneratedSolution(): void {
+    ipcRenderer.send('generated-code:open-solution');
+  },
 });

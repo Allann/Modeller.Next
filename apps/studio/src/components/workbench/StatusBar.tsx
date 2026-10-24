@@ -73,6 +73,9 @@ export function StatusBar({
   rootInput,
   onRootInputChange,
   onLoadWorkspace,
+  publishing,
+  publishMessage,
+  onPublish,
 }: {
   root: string;
   rootError?: string;
@@ -81,6 +84,9 @@ export function StatusBar({
   rootInput: string;
   onRootInputChange: (value: string) => void;
   onLoadWorkspace: (path: string) => void;
+  publishing: boolean;
+  publishMessage?: string;
+  onPublish: () => void;
 }) {
   const errorCount = useErrorCount();
   const folderSlotMode = resolveFolderSlotMode(!openedFromPackage, !!getElectronBridge());
@@ -93,7 +99,11 @@ export function StatusBar({
           {rootError}
         </span>
       )}
+      {publishMessage && <span className="status-bar-item" role="alert">{publishMessage}</span>}
       <span className="status-bar-spacer" />
+      <button type="button" className="status-bar-item status-bar-folder" onClick={onPublish} disabled={publishing}>
+        {publishing ? 'Publishing…' : 'Publish'}
+      </button>
       <span className="status-bar-item">
         {errorCount} {pluralize(errorCount, 'error')}
       </span>

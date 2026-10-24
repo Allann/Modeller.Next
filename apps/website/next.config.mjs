@@ -77,6 +77,8 @@ const nextConfig = {
     return [
       { source: '/playground', destination: `${studioUrl}/playground` },
       { source: '/playground/:path*', destination: `${studioUrl}/playground/:path*` },
+      { source: '/studio/published/:path*', destination: `${studioUrl}/playground/published/:path*` },
+      { source: '/studio/api/publish', destination: `${studioUrl}/playground/api/publish` },
     ];
   },
   async headers() {
@@ -84,7 +86,7 @@ const nextConfig = {
     // deployment (see rewrites() above), which sets its own, wider CSP for Monaco/onigasm.
     // Matching it here too would send a second, more restrictive CSP header alongside it and
     // break the editor the same way the original blank-page CSP regression did.
-    return [{ source: '/((?!playground).*)', headers: SECURITY_HEADERS }];
+    return [{ source: '/((?!playground|studio/published).*)', headers: SECURITY_HEADERS }];
   },
 };
 
