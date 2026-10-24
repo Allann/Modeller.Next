@@ -700,6 +700,51 @@ pre {
   flex: 1 1 12rem;
 }
 
+/* In-browser local model opt-in (LocalModelPanel). */
+.local-model-panel {
+  margin-top: 1rem;
+  border: 1px solid var(--modeller-line);
+  border-radius: 0.65rem;
+  background: var(--modeller-surface);
+  padding: 0.75rem 0.9rem;
+  font-size: 0.88rem;
+  color: var(--modeller-fg);
+}
+
+.local-model-panel p {
+  margin: 0 0 0.5rem;
+}
+
+.local-model-title {
+  font-weight: 700;
+}
+
+.local-model-panel progress {
+  width: 100%;
+  accent-color: var(--modeller-teal-bright);
+}
+
+.ai-source-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ai-source-choice legend {
+  margin-bottom: 0.3rem;
+  color: var(--modeller-muted);
+  font-size: 0.78rem;
+}
+
+.ai-source-choice label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 /* Facilitator guidance for the selected Discover/Frame field (QuestionsSection). An info panel,
    not a hover tooltip, so it also works on touch screens and stays readable while typing. */
 .field-guidance {

@@ -24,7 +24,7 @@ By default, the public cockpit requires a caller key. A model can be enabled for
 1. The live Gateway catalogue lists the exact model with the `free` tag and no token price.
 2. The Vercel team has paid Gateway credits. Vercel blocks restricted free models for teams that have not moved to the paid-credit tier.
 
-For example, `Agent__FreeModel=alibaba/qwen3.8-27b` met the first check on 17 August 2026 but returned HTTP 403 on the free Vercel tier. Do not set it until the account meets both checks. When enabled, the API authenticates anonymous requests with the deployment's short-lived OIDC token and does not let the browser select a different model.
+For example, `Agent__FreeModel=alibaba/qwen3.8-27b` met the first check on 17 August 2026 but returned HTTP 403 on the free Vercel tier; it is no longer free. On 24 October 2026 the text models with the `free` tag were `reflection/beam-free`, `reflection/beam` and `poolside/laguna-s-2.1-free`. Do not set it until the account meets both checks. When enabled, the API authenticates anonymous requests with the deployment's short-lived OIDC token and does not let the browser select a different model.
 
 A Facilitator can enter their own Vercel AI Gateway API key to use the configured premium model. The page keeps the key only in component memory and sends it in the `X-Agent-Api-Key` header for explicit AI actions. The API does not put it in Redis, logs, analytics, URLs, or the Initiative record.
 
@@ -33,6 +33,26 @@ Keep automatic Gateway credit top-up disabled. Model prices and availability can
 Apply the non-secret variables to Production and Preview only where AI access is required, then redeploy the API.
 
 `openai/gpt-5.4-mini` is the initial production choice because the advice is short and structured. The model remains an environment setting so it can change without a code deployment.
+
+## Local model in the browser
+
+A Facilitator can also run the Agent Participant on their own device, with no API key. The cockpit offers this when the browser supports WebGPU (current Chrome or Edge on a desktop computer).
+
+- The first start downloads Llama 3.2 3B Instruct (about 1.8 GB) from Hugging Face, after the Facilitator agrees. The browser keeps it, so later visits start from the cache. It needs about 2.3 GB of GPU memory.
+- The model runs in a Web Worker on the Facilitator's GPU. The Initiative text is not sent to an AI service. Only the result (a question, a selected intervention, or gate results) goes to the API, the same as manual input.
+- Licence: Llama 3.2 Community License. The cockpit shows "Built with Llama" with a link to the licence; keep that notice if the panel changes.
+- It uses the same prompts as the hosted model: `apps/website/src/lib/localAgent/agent-prompts.json` must be an exact copy of `src/Modeller.Initiative.OpenAICompatible/agent-prompts.json`, and a test fails if they differ. Change the canonical file, then copy it.
+- WebLLM forces each answer to match a JSON schema, and the cockpit checks it with the same rules as the API.
+- The local gate is a hybrid. The browser decides every "is there content?" check exactly (for example `AffectedUsersNamed` and `RisksAreListed`), and asks the model only for the judgement checks (for example `PainPointsAreConcrete`). The recommended next question is the example question of the first field with a gap. The Gateway gate is unchanged.
+- The local prompt limit is 8,000 characters (the model has a 4,096-token context). A longer Initiative shows a message that suggests the AI Gateway.
+- When the Gateway is also available, the Facilitator chooses which one to use. The local model is weaker: for example, its Non-goals questions often ask about the current process instead of the scope.
+- The website CSP allows `https://huggingface.co`, `https://*.hf.co` and `https://raw.githubusercontent.com` in `connect-src`, `'wasm-unsafe-eval'` in `script-src`, and `worker-src 'self' blob:`. If the model download fails after a CSP change, check these first.
+
+### Why this model
+
+On 24 October 2026 the shared prompts were compared on the building-variations worked example, three samples per model. Llama 3.2 3B asked 1 solution-led question out of 24, Qwen3 1.7B 10, and Qwen2.5 1.5B 11. Qwen3 4B was not better and is larger. Qwen2.5 3B performed well but has a non-commercial licence. No small model judged the gate reliably, which is why the presence checks are computed exactly.
+
+The same comparison changed the shared prompts, so they also apply to the Gateway model: the original change request is labelled as a proposed solution that is not yet agreed, the question prompt describes the target field, interventions must include at least three options with a NoAction baseline, and a failed gate check must come with a recommended question.
 
 ## Cost and request controls
 

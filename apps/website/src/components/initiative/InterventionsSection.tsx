@@ -3,23 +3,30 @@
 import { useState } from 'react';
 import { ALL_INTERVENTION_TYPES, type InitiativeSessionDto, type InterventionType } from '@/lib/initiativeTypes';
 import { InitiativeApiError, initiativeApi } from '@/lib/initiativeApi';
+import { LocalAgentError } from '@/lib/localAgent/prompts';
+import type { LocalAgent } from '@/lib/localAgent/useLocalAgent';
 import type { RunAction } from './types';
 
-export function InterventionsSection({ id, credential, session, run, aiAvailable, agentApiKey }: { id: string; credential: string; session: InitiativeSessionDto; run: RunAction; aiAvailable: boolean; agentApiKey: string }) {
+export function InterventionsSection({ id, credential, session, run, aiAvailable, agentApiKey, localAgent }: { id: string; credential: string; session: InitiativeSessionDto; run: RunAction; aiAvailable: boolean; agentApiKey: string; localAgent: LocalAgent | null }) {
   const [type, setType] = useState<InterventionType>('Process');
   const [description, setDescription] = useState('');
   const [rationale, setRationale] = useState('');
   const [continuesToDesignWorkspace, setContinuesToDesignWorkspace] = useState(false);
   const [suggestions, setSuggestions] = useState<{ type: InterventionType; description: string; rationale: string }[] | null>(null);
   const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
+  const [asking, setAsking] = useState(false);
 
   async function askForSuggestions() {
     setSuggestionsError(null);
+    setAsking(true);
     try {
-      const response = await initiativeApi.getInterventionSuggestions(id, credential, agentApiKey);
-      setSuggestions(response.suggestions);
+      setSuggestions(localAgent
+        ? await localAgent.proposeInterventions(session)
+        : (await initiativeApi.getInterventionSuggestions(id, credential, agentApiKey)).suggestions);
     } catch (err) {
-      setSuggestionsError(err instanceof InitiativeApiError ? err.message : 'No suggestions available.');
+      setSuggestionsError(err instanceof InitiativeApiError || err instanceof LocalAgentError ? err.message : 'No suggestions available.');
+    } finally {
+      setAsking(false);
     }
   }
 
@@ -28,8 +35,8 @@ export function InterventionsSection({ id, credential, session, run, aiAvailable
       <h2>Shape: interventions</h2>
       {aiAvailable ? (
         <div className="inline-form">
-          <button className="secondary-action" onClick={() => void askForSuggestions()}>
-            Ask AI for candidate interventions
+          <button className="secondary-action" disabled={asking} onClick={() => void askForSuggestions()}>
+            {asking ? 'Asking AI…' : 'Ask AI for candidate interventions'}
           </button>
         </div>
       ) : null}

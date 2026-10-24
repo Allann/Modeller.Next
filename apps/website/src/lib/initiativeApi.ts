@@ -5,6 +5,7 @@ import type {
   GateCheckResultDto,
   GateKind,
   InitiativeErrorResponse,
+  InitiativeField,
   InitiativeSessionDto,
   InterventionType,
 } from './initiativeTypes';
@@ -97,8 +98,16 @@ export const initiativeApi = {
   linkDesignWorkspace: (id: string, credential: string, interventionId: string, reference: string) =>
     post<InitiativeSessionDto>(`/v1/initiative/${id}/interventions/${interventionId}/design-workspace`, credential, { reference }),
 
-  recordGateEvaluation: (id: string, credential: string, kind: GateKind, manualResults: GateCheckResultDto[] | null, apiKey?: string) =>
-    post<InitiativeSessionDto>(`/v1/initiative/${id}/gate-evaluations`, credential, { kind, manualResults }, apiKey),
+  /** `recommendedQuestion` is only read with `manualResults` — the in-browser local model sends both. */
+  recordGateEvaluation: (
+    id: string,
+    credential: string,
+    kind: GateKind,
+    manualResults: GateCheckResultDto[] | null,
+    apiKey?: string,
+    recommendedQuestion?: { text: string; field: InitiativeField } | null,
+  ) =>
+    post<InitiativeSessionDto>(`/v1/initiative/${id}/gate-evaluations`, credential, { kind, manualResults, recommendedQuestion: recommendedQuestion ?? null }, apiKey),
 
   dismissGateFinding: (id: string, credential: string, kind: GateKind, check: string, reason: string | null) =>
     post<InitiativeSessionDto>(`/v1/initiative/${id}/gate-evaluations/${kind}/dismiss`, credential, { check, reason }),

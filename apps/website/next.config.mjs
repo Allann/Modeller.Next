@@ -36,6 +36,10 @@ const apiOrigin =
 // easy to miss.
 const apiSocketOrigin = apiOrigin.replace(/^http/, 'ws');
 const postHogOrigin = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
+// The cockpit's opt-in local model (src/lib/localAgent): WebLLM fetches the weights from Hugging Face,
+// which redirects to its *.hf.co CDN (the region host varies), and the WebGPU model library from
+// GitHub. It compiles that library with WebAssembly ('wasm-unsafe-eval') inside a module worker.
+const localModelOrigins = 'https://huggingface.co https://*.hf.co https://raw.githubusercontent.com';
 
 // /playground is proxied through to the apps/studio deployment (Next.js "Multi Zones" pattern,
 // issue #74) rather than living at its own subdomain — visitors only ever see modeller.website.
@@ -52,11 +56,12 @@ const SECURITY_HEADERS = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com${isDev ? " 'unsafe-eval'" : ''}`,
+      `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://va.vercel-scripts.com${isDev ? " 'unsafe-eval'" : ''}`,
+      "worker-src 'self' blob:",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
       "font-src 'self' data:",
-      `connect-src 'self' ${apiOrigin} ${apiSocketOrigin} ${postHogOrigin} https://va.vercel-scripts.com https://vitals.vercel-insights.com`,
+      `connect-src 'self' ${apiOrigin} ${apiSocketOrigin} ${postHogOrigin} ${localModelOrigins} https://va.vercel-scripts.com https://vitals.vercel-insights.com`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

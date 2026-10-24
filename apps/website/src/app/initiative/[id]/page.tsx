@@ -13,6 +13,9 @@ import { InterventionsSection } from '@/components/initiative/InterventionsSecti
 import { FinalizeSection } from '@/components/initiative/FinalizeSection';
 import { CopyLinkButton } from '@/components/initiative/CopyLinkButton';
 import { ConnectionStatus } from '@/components/initiative/ConnectionStatus';
+import { LocalModelPanel, type AiSource } from '@/components/initiative/LocalModelPanel';
+import { LocalAgentError } from '@/lib/localAgent/prompts';
+import { useLocalAgent } from '@/lib/localAgent/useLocalAgent';
 import { loadAgentApiKey } from '@/lib/agentApiKey';
 import { loadDomainExpertCredential, loadFacilitatorCredential, saveInitiativeCredentials } from '@/lib/initiativeCredentials';
 
@@ -45,6 +48,8 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
   const [agentStatus, setAgentStatus] = useState<{ available: boolean; model: string | null; requiresApiKey: boolean; freeModel: string | null }>({ available: false, model: null, requiresApiKey: true, freeModel: null });
   const [agentApiKey, setAgentApiKey] = useState('');
   const [activeStep, setActiveStep] = useState<CockpitStep>('DiscoverFrame');
+  const { state: localModel, start: startLocalModel } = useLocalAgent();
+  const [aiSource, setAiSource] = useState<AiSource>('local');
 
   useEffect(() => {
     const loadKeyTimer = window.setTimeout(() => setAgentApiKey(loadAgentApiKey(id)), 0);
@@ -58,7 +63,9 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
       await action();
       await refetch();
     } catch (err) {
-      setActionError(err instanceof InitiativeApiError ? `${err.body.code}: ${err.message}` : 'That action failed.');
+      setActionError(
+        err instanceof InitiativeApiError ? `${err.body.code}: ${err.message}` : err instanceof LocalAgentError ? err.message : 'That action failed.',
+      );
     }
   }
 
@@ -71,7 +78,10 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
   const respondUrl = typeof window !== 'undefined' && domainExpertCredential
     ? `${window.location.origin}/initiative/${id}/respond?credential=${encodeURIComponent(domainExpertCredential)}`
     : '';
-  const canUseAi = agentStatus.available && (!agentStatus.requiresApiKey || agentApiKey.length > 0);
+  const gatewayUsable = agentStatus.available && (!agentStatus.requiresApiKey || agentApiKey.length > 0);
+  // The local model answers whenever it is ready, unless the Facilitator chose the Gateway instead.
+  const localAgent = localModel.status === 'ready' && (aiSource === 'local' || !gatewayUsable) ? localModel.agent : null;
+  const canUseAi = localAgent !== null || gatewayUsable;
   const displayedStep = session.finalization ? 'Finalize' : activeStep;
 
   return (
@@ -100,13 +110,20 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
         </a>
         .
       </p>
+      <LocalModelPanel
+        state={localModel}
+        onStart={startLocalModel}
+        gatewayUsable={gatewayUsable}
+        source={aiSource}
+        onSourceChange={setAiSource}
+      />
       {actionError && <p className="form-error" role="alert">{actionError}</p>}
       <PhaseProgress activeStep={displayedStep} onSelect={setActiveStep} />
       {displayedStep === 'DiscoverFrame' && (
         <div className="cockpit-step-panel">
           <div className="cockpit-input-column">
-            <QuestionsSection session={session} facilitatorId={facilitator?.id} credential={credential} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
-            <GateSection kind="Discovery" session={session} credential={credential} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
+            <QuestionsSection session={session} facilitatorId={facilitator?.id} credential={credential} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} localAgent={localAgent} />
+            <GateSection kind="Discovery" session={session} credential={credential} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} localAgent={localAgent} />
           </div>
           <aside className="cockpit-results-column" aria-label="Accepted Initiative record">
             <StructuredFieldsSection structuredFields={structuredFields} />
@@ -116,8 +133,8 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
       {displayedStep === 'Shape' && (
         <div className="cockpit-step-panel">
           <div className="cockpit-input-column">
-            <InterventionsSection id={id} credential={credential} session={session} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
-            <GateSection kind="Shape" session={session} credential={credential} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} />
+            <InterventionsSection id={id} credential={credential} session={session} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} localAgent={localAgent} />
+            <GateSection kind="Shape" session={session} credential={credential} run={run} aiAvailable={canUseAi} agentApiKey={agentApiKey} localAgent={localAgent} />
           </div>
           <aside className="cockpit-results-column" aria-label="Accepted Initiative record">
             <StructuredFieldsSection structuredFields={structuredFields} />

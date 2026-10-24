@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ALL_FIELDS, INITIATIVE_FIELD_LABELS, PHASE_OF_FIELD, type InitiativeField, type InitiativeSessionDto } from '@/lib/initiativeTypes';
 import { initiativeApi } from '@/lib/initiativeApi';
 import { INITIATIVE_FIELD_GUIDANCE } from '@/lib/initiativeFieldGuidance';
+import type { LocalAgent } from '@/lib/localAgent/useLocalAgent';
 import type { RunAction } from './types';
 
 export function QuestionsSection({
@@ -13,6 +14,7 @@ export function QuestionsSection({
   run,
   aiAvailable,
   agentApiKey,
+  localAgent,
 }: {
   session: InitiativeSessionDto;
   facilitatorId: string | undefined;
@@ -20,9 +22,12 @@ export function QuestionsSection({
   run: RunAction;
   aiAvailable: boolean;
   agentApiKey: string;
+  /** When set, a blank question is written by the in-browser model instead of the server's Gateway. */
+  localAgent: LocalAgent | null;
 }) {
   const [field, setField] = useState<InitiativeField>('ProblemStatement');
   const [text, setText] = useState('');
+  const [proposing, setProposing] = useState(false);
 
   const proposed = session.questions.filter((q) => q.status === 'Proposed');
   const respondedQuestionIds = new Set(session.responses.map((response) => response.questionId));
@@ -39,7 +44,13 @@ export function QuestionsSection({
           className="inline-form"
           onSubmit={(event) => {
             event.preventDefault();
-            void run(() => initiativeApi.proposeQuestion(session.id, credential, field, text || null, text ? undefined : agentApiKey)).then(() => setText(''));
+            setProposing(true);
+            void run(async () => {
+              const questionText = text || (localAgent ? await localAgent.proposeQuestion(session, field) : null);
+              return initiativeApi.proposeQuestion(session.id, credential, field, questionText, questionText ? undefined : agentApiKey);
+            })
+              .then(() => setText(''))
+              .finally(() => setProposing(false));
           }}
         >
           <select
@@ -60,8 +71,8 @@ export function QuestionsSection({
             value={text}
             onChange={(event) => setText(event.target.value)}
           />
-          <button className="secondary-action" type="submit">
-            Propose
+          <button className="secondary-action" type="submit" disabled={proposing}>
+            {proposing && !text ? 'Asking AI…' : 'Propose'}
           </button>
         </form>
         <aside id="field-guidance" className="field-guidance" aria-live="polite">

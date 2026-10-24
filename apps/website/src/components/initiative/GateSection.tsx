@@ -3,13 +3,25 @@
 import { useState } from 'react';
 import { CHECKS_BY_GATE, GATE_CHECK_LABELS, type GateCheckResultDto, type GateKind, type InitiativeSessionDto } from '@/lib/initiativeTypes';
 import { initiativeApi } from '@/lib/initiativeApi';
+import type { LocalAgent } from '@/lib/localAgent/useLocalAgent';
 import type { RunAction } from './types';
 
-export function GateSection({ kind, session, credential, run, aiAvailable, agentApiKey }: { kind: GateKind; session: InitiativeSessionDto; credential: string; run: RunAction; aiAvailable: boolean; agentApiKey: string }) {
+export function GateSection({ kind, session, credential, run, aiAvailable, agentApiKey, localAgent }: { kind: GateKind; session: InitiativeSessionDto; credential: string; run: RunAction; aiAvailable: boolean; agentApiKey: string; localAgent: LocalAgent | null }) {
   const evaluation = kind === 'Discovery' ? session.latestDiscoveryGateEvaluation : session.latestShapeGateEvaluation;
   const [manualResults, setManualResults] = useState<Record<string, { passed: boolean; reason: string }>>({});
+  const [evaluating, setEvaluating] = useState(false);
 
   const checks = CHECKS_BY_GATE[kind];
+
+  function evaluateWithAi() {
+    setEvaluating(true);
+    void run(async () => {
+      if (!localAgent) return initiativeApi.recordGateEvaluation(session.id, credential, kind, null, agentApiKey);
+      // The local model's results go through the manual-results path, with its recommended question.
+      const evaluation = await localAgent.evaluateGate(session, kind);
+      return initiativeApi.recordGateEvaluation(session.id, credential, kind, evaluation.results, undefined, evaluation.recommendedQuestion);
+    }).finally(() => setEvaluating(false));
+  }
 
   function submitManual() {
     const results: GateCheckResultDto[] = checks.map((check) => ({
@@ -26,11 +38,8 @@ export function GateSection({ kind, session, credential, run, aiAvailable, agent
       <p className="hero-note">Advisory only — never blocks proceeding.</p>
       {aiAvailable ? (
         <div className="inline-form">
-          <button
-            className="secondary-action"
-            onClick={() => void run(() => initiativeApi.recordGateEvaluation(session.id, credential, kind, null, agentApiKey))}
-          >
-            Ask AI to evaluate
+          <button className="secondary-action" disabled={evaluating} onClick={evaluateWithAi}>
+            {evaluating ? 'Asking AI…' : 'Ask AI to evaluate'}
           </button>
         </div>
       ) : null}
