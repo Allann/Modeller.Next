@@ -543,10 +543,14 @@ public static partial class RmlCompiler
                 var named = namedKind is not null ? $" named-type={id(Unquote(type.Value[(namedKind.Length + 1)..]), type)}" : "";
                 var primitive = namedKind switch { "enumeration" => "Enumeration", "entity" => "EntityReference", "value" => "ValueTypeReference", _ => CanonicalType(type.Value.Split('(')[0]) };
                 var precision = DecimalPrecision(type.Value);
-                lines.Add($"field owner={entity.Id} id={field.Id} name=\"{field.Value}\" slug={Slug(field.Value)} type={primitive}{named}{precision}{Flag(field, "optional")}");
+                var stages = MemberStages(field, entity, lifecycle, id);
+                lines.Add($"field owner={entity.Id} id={field.Id} name=\"{field.Value}\" slug={Slug(field.Value)} type={primitive}{named}{precision}{Flag(field, "optional")}{stages}");
             }
             foreach (var relationship in entity.Children.Where(item => item.Keyword == "relationship"))
-                lines.Add($"relationship owner={entity.Id} id={relationship.Id} name=\"{relationship.Value}\" slug={Slug(relationship.Value)} target={id(Child(relationship, "target").Value, relationship)} cardinality={Title(Child(relationship, "cardinality").Value)}{Flag(relationship, "optional")}");
+            {
+                var stages = MemberStages(relationship, entity, lifecycle, id);
+                lines.Add($"relationship owner={entity.Id} id={relationship.Id} name=\"{relationship.Value}\" slug={Slug(relationship.Value)} target={id(Child(relationship, "target").Value, relationship)} cardinality={Title(Child(relationship, "cardinality").Value)}{Flag(relationship, "optional")}{stages}");
+            }
         }
     }
 
@@ -617,6 +621,26 @@ public static partial class RmlCompiler
         return (parts[0], parts[1].ToLowerInvariant(), parts[2], node);
     }
     private static string Flag(Node node, string keyword) => node.Children.Any(item => item.Keyword == keyword) ? $" {keyword}=true" : string.Empty;
+
+    /// <summary>Resolves a field/relationship's 'stage' clauses (if any) to lifecycle stage ids, restricted to
+    /// stages declared on this same entity's own 'lifecycle' block — a field cannot scope itself to another
+    /// entity's stage. Returns the SAF ' stages=&lt;id&gt;,&lt;id&gt;' suffix, or empty when no 'stage' clause is present.</summary>
+    private static string MemberStages(Node member, Node entity, Node? lifecycle, Func<string, Node, string> id)
+    {
+        var stageNodes = member.Children.Where(item => item.Keyword == "stage").ToArray();
+        if (stageNodes.Length == 0) return string.Empty;
+        if (lifecycle is null)
+            throw new RmlException("rml.field.stage-without-lifecycle", $"'{member.Keyword} {member.Value}' declares a 'stage' but entity '{entity.Value}' has no 'lifecycle'.", stageNodes[0]);
+        var lifecycleStageIds = lifecycle.Children.Where(item => item.Keyword == "stage").Select(item => item.Id).ToHashSet();
+        var resolved = stageNodes.Select(stageNode =>
+        {
+            var stageId = id(stageNode.Value, stageNode);
+            if (!lifecycleStageIds.Contains(stageId))
+                throw new RmlException("rml.field.stage-unresolved", $"'{member.Keyword} {member.Value}' references stage '{stageNode.Value}', which is not a stage of entity '{entity.Value}''s own lifecycle.", stageNode);
+            return stageId;
+        });
+        return $" stages={string.Join(',', resolved)}";
+    }
     private static string DecimalPrecision(string value)
     {
         var match = Regex.Match(value, "^decimal\\((?<precision>[0-9]+),(?<scale>[0-9]+)\\)$", RegexOptions.CultureInvariant);

@@ -115,6 +115,7 @@ public static partial class DefinitionParser
                     if (statement.Values.TryGetValue("precision", out var precision)) field["precision"] = int.Parse(precision);
                     if (statement.Values.TryGetValue("scale", out var scale)) field["scale"] = int.Parse(scale);
                     field["optional"] = statement.Values.GetValueOrDefault("optional") == "true";
+                    AddStageIds(field, statement.Values.GetValueOrDefault("stages"));
                     return field;
                 }).ToArray();
                 var relationships = statements.Where(statement => statement.Kind == "relationship" && Required(statement, "owner") == Required(entity, "id")).Select(statement =>
@@ -123,6 +124,7 @@ public static partial class DefinitionParser
                     relationship["target"] = Required(statement, "target");
                     relationship["cardinality"] = Required(statement, "cardinality");
                     relationship["optional"] = statement.Values.GetValueOrDefault("optional") == "true";
+                    AddStageIds(relationship, statement.Values.GetValueOrDefault("stages"));
                     return relationship;
                 }).ToArray();
                 var entityDefinition = new JsonObject
@@ -392,6 +394,11 @@ public static partial class DefinitionParser
     }
 
     private static string[] Split(string value) => value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    private static void AddStageIds(JsonObject target, string? value)
+    {
+        var stageIds = value is null ? [] : Split(value);
+        if (stageIds.Length > 0) target["stageIds"] = new JsonArray(stageIds.Select(stageId => (JsonNode?)JsonValue.Create(stageId)).ToArray());
+    }
     private static Dictionary<string, string> Mappings(string? value) =>
         value is null ? [] : Split(value).Select(item => item.Split(':', 2)).ToDictionary(item => item[0], item => item[1], StringComparer.Ordinal);
     private static void AddOptional(JsonObject target, string name, string? value)

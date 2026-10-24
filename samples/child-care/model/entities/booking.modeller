@@ -27,26 +27,33 @@ entity Booking
   field Adjusted start time
     type time
     optional
+    stage "Absent"
   end
   field Adjusted end time
     type time
     optional
+    stage "Absent"
   end
   field Adjusted hours
     type decimal(12,2)
     optional
+    stage "Absent"
   end
   field Absence is chargeable
     type boolean
     optional
+    stage "Absent"
   end
   field Attending preschool program
     type boolean
     optional
+    stage "Attending"
+    stage "Attended"
   end
   field Absence document is held
     type boolean
     optional
+    stage "Absent"
   end
   field Grace period in minutes
     type int32
@@ -79,6 +86,7 @@ entity Booking
     target "Absence"
     cardinality one
     optional
+    stage "Absent"
   end
   relationship Session
     target "Session"
@@ -100,6 +108,7 @@ entity Booking
     target "Absence reason"
     cardinality one
     optional
+    stage "Absent"
   end
   relationship Attendances
     target "Attendance"

@@ -78,6 +78,54 @@ public sealed class GoldenTemplateOutputTests
     }
 
     [Fact]
+    public void CSharp_domain_entity_template_emits_a_stage_hierarchy_for_stage_scoped_fields()
+    {
+        var revision = StageScopedEntityRevision(out var entity);
+        var provider = new CSharpTemplateGlobalsProvider(revision, "ChildCare", "ChildCare", "net10.0");
+
+        var content = Render(TemplatePath("csharp/domain-project/Entity.cs.sbn"), provider,
+            Context(revision, entity, "entity.cs"));
+
+        Assert.Contains("public abstract record Application(", content, StringComparison.Ordinal);
+        Assert.Contains("public sealed record ApplicationDraft(", content, StringComparison.Ordinal);
+        Assert.Contains("public sealed record ApplicationSubmitted(", content, StringComparison.Ordinal);
+        Assert.Contains("bool Reviewed", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("bool? Reviewed", content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CSharp_domain_entity_template_stays_flat_when_no_field_is_stage_scoped()
+    {
+        var revision = AccsRevision(out _, out _, out var entity);
+        var provider = new CSharpTemplateGlobalsProvider(revision, "ChildCare", "ChildCare", "net10.0");
+
+        var content = Render(TemplatePath("csharp/domain-project/Entity.cs.sbn"), provider,
+            Context(revision, entity, "entity.cs"));
+
+        Assert.Contains("public sealed record ACCSDeterminationApplication(", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("abstract record", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("ACCSDeterminationApplicationDraft", content, StringComparison.Ordinal);
+    }
+
+    private static AuthoredContextRevision StageScopedEntityRevision(out EntityDefinition entity)
+    {
+        var revision = AuthoredContextRevision.Create(SemanticId.New(), new SemanticName("Child Care"), new SemanticSlug("child-care"), "1.0.0");
+
+        var draft = new LifecycleStage(SemanticId.New(), new SemanticName("Draft"), new SemanticSlug("draft"));
+        var submitted = new LifecycleStage(SemanticId.New(), new SemanticName("Submitted"), new SemanticSlug("submitted"));
+        var lifecycle = new LifecycleDefinition(SemanticId.New(), new SemanticName("Application lifecycle"),
+            new SemanticSlug("application-lifecycle"), [draft, submitted]);
+        var reviewed = new FieldDefinition(SemanticId.New(), new SemanticName("Reviewed"), new SemanticSlug("reviewed"),
+            new BooleanDataType(), IsOptional: true) { StageIds = [submitted.Id] };
+        entity = new EntityDefinition(SemanticId.New(), new SemanticName("Application"), new SemanticSlug("application"), lifecycle)
+        {
+            Fields = [reviewed]
+        };
+        revision = Apply(revision, new AddDefinition(entity));
+        return revision;
+    }
+
+    [Fact]
     public void Python_behaviour_template_renders_an_unconditional_transition_without_a_dangling_and()
     {
         var revision = UnconditionalTransitionRevision(out var behaviour);

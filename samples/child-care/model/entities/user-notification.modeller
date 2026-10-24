@@ -21,6 +21,8 @@ entity User notification
   field Url
     type string
     optional
+    stage "Notification New"
+    stage "Notification Viewed"
   end
   field Type
     type enumeration "User notification type"

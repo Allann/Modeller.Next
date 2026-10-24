@@ -1,5 +1,6 @@
 using Modeller.Contexts;
 using Modeller.Conformance;
+using Modeller.Model;
 using Modeller.Validation;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -174,6 +175,59 @@ public sealed class SemanticValidationTests
         Assert.True(result.IsValid);
         Assert.Equal(ValidationStageStatus.Skipped, result.Stages[0].Status);
         Assert.All(result.Stages.Skip(1), stage => Assert.Equal(ValidationStageStatus.Passed, stage.Status));
+    }
+
+    [Fact]
+    public void Field_stage_referencing_a_stage_outside_the_entitys_own_lifecycle_is_rejected()
+    {
+        var draft = new LifecycleStage(SemanticId.New(), new SemanticName("Draft"), new SemanticSlug("draft"));
+        var lifecycle = new LifecycleDefinition(SemanticId.New(), new SemanticName("Booking lifecycle"),
+            new SemanticSlug("booking-lifecycle"), [draft]);
+        var otherStageId = SemanticId.New();
+        var field = new FieldDefinition(SemanticId.New(), new SemanticName("Adjusted hours"), new SemanticSlug("adjusted-hours"),
+            new DecimalDataType(12, 2), IsOptional: true) { StageIds = [otherStageId] };
+        var entity = new EntityDefinition(SemanticId.New(), new SemanticName("Booking"), new SemanticSlug("booking"), lifecycle)
+        {
+            Fields = [field]
+        };
+        var revision = AuthoredContextRevision.Create(SemanticId.New(), new SemanticName("Child Care"), new SemanticSlug("child-care"), "1.0.0");
+        var applied = CanonicalModel.Apply(revision, new AddDefinition(entity));
+        Assert.True(applied.Succeeded);
+
+        var result = SemanticValidation.Validate(
+            ValidationRequest.For(applied.Revision, ValidationProfile.Canonical),
+            TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsValid);
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("validation.reference.stage-unresolved", diagnostic.Code);
+        Assert.Equal(ValidationStage.ReferencesAndFederation, diagnostic.Stage);
+    }
+
+    [Fact]
+    public void Field_stage_referencing_the_entitys_own_lifecycle_stage_passes_validation()
+    {
+        var draft = new LifecycleStage(SemanticId.New(), new SemanticName("Draft"), new SemanticSlug("draft"));
+        var lifecycle = new LifecycleDefinition(SemanticId.New(), new SemanticName("Booking lifecycle"),
+            new SemanticSlug("booking-lifecycle"), [draft]);
+        var field = new FieldDefinition(SemanticId.New(), new SemanticName("Adjusted hours"), new SemanticSlug("adjusted-hours"),
+            new DecimalDataType(12, 2), IsOptional: true) { StageIds = [draft.Id] };
+        var relationship = new RelationshipDefinition(SemanticId.New(), new SemanticName("Absence"), new SemanticSlug("absence"),
+            SemanticId.New(), RelationshipCardinality.One, IsOptional: true) { StageIds = [draft.Id] };
+        var entity = new EntityDefinition(SemanticId.New(), new SemanticName("Booking"), new SemanticSlug("booking"), lifecycle)
+        {
+            Fields = [field],
+            Relationships = [relationship]
+        };
+        var revision = AuthoredContextRevision.Create(SemanticId.New(), new SemanticName("Child Care"), new SemanticSlug("child-care"), "1.0.0");
+        var applied = CanonicalModel.Apply(revision, new AddDefinition(entity));
+        Assert.True(applied.Succeeded);
+
+        var result = SemanticValidation.Validate(
+            ValidationRequest.For(applied.Revision, ValidationProfile.Canonical),
+            TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Code == "validation.reference.stage-unresolved");
     }
 
     [Fact]

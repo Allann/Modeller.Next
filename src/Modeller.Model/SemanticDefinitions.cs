@@ -62,6 +62,11 @@ public sealed record FieldDefinition(
     SemanticDocumentation? Documentation = null) : ISemanticConcept
 {
     public ImmutableArray<string> FormerQualifiedNames { get; init; } = [];
+
+    /// <summary>The entity's own lifecycle stages this field is scoped to, if any. Empty means the field is
+    /// present regardless of lifecycle stage (the default for every entity, including one with no lifecycle
+    /// at all). Non-empty means this field is meaningful only while the entity is in one of these stages.</summary>
+    public ImmutableArray<SemanticId> StageIds { get; init; } = [];
 }
 
 public enum RelationshipCardinality { One, Many }
@@ -76,6 +81,10 @@ public sealed record RelationshipDefinition(
     SemanticDocumentation? Documentation = null) : ISemanticConcept
 {
     public ImmutableArray<string> FormerQualifiedNames { get; init; } = [];
+
+    /// <summary>The entity's own lifecycle stages this relationship is scoped to, if any. See
+    /// <see cref="FieldDefinition.StageIds"/>.</summary>
+    public ImmutableArray<SemanticId> StageIds { get; init; } = [];
 }
 
 public sealed record EnumerationDefinition(

@@ -5,8 +5,8 @@ using Modeller.Model;
 namespace Modeller.Rendering;
 
 /// <summary>Language-neutral canonical traversal shared by every renderer's globals provider.</summary>
-public sealed record ProjectedField(SemanticId FieldId, string RawName, DataType Type, bool IsOptional);
-public sealed record ProjectedRelationship(SemanticId RelationshipId, string RawName, SemanticId TargetId, RelationshipCardinality Cardinality, bool IsOptional);
+public sealed record ProjectedField(SemanticId FieldId, string RawName, DataType Type, bool IsOptional, ImmutableArray<SemanticId> StageIds);
+public sealed record ProjectedRelationship(SemanticId RelationshipId, string RawName, SemanticId TargetId, RelationshipCardinality Cardinality, bool IsOptional, ImmutableArray<SemanticId> StageIds);
 public sealed record ProjectedEntity(EntityDefinition Source, ImmutableArray<ProjectedField> Fields, ImmutableArray<ProjectedRelationship> Relationships);
 
 public sealed record ProjectedEnumerationMember(string RawName, int Value);
@@ -66,9 +66,9 @@ public sealed class TemplateSemanticProjection(AuthoredContextRevision revision)
     public ProjectedEntity Entity(EntityDefinition entity) => new(
         entity,
         entity.Fields.Select(field => new ProjectedField(field.Id, field.Name.Value, field.Type,
-            field.IsOptional && field.Type is not StringDataType)).ToImmutableArray(),
+            field.IsOptional && field.Type is not StringDataType, field.StageIds)).ToImmutableArray(),
         entity.Relationships.Select(relationship => new ProjectedRelationship(relationship.Id, relationship.Name.Value, relationship.TargetId,
-            relationship.Cardinality, relationship.Cardinality == RelationshipCardinality.One && relationship.IsOptional)).ToImmutableArray());
+            relationship.Cardinality, relationship.Cardinality == RelationshipCardinality.One && relationship.IsOptional, relationship.StageIds)).ToImmutableArray());
 
     public ProjectedEnumeration Enumeration(EnumerationDefinition enumeration) => new(
         enumeration,

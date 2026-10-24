@@ -551,6 +551,141 @@ public sealed class RmlCompilerTests
     }
 
     [Fact]
+    public void Compile_resolves_a_fields_stage_clauses_to_the_entitys_own_lifecycle_stages()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Booking
+              lifecycle Booking lifecycle
+                stage Planned
+                stage Attending
+                stage Absent
+              end
+              field Adjusted hours
+                type decimal(12,2)
+                optional
+                stage "Absent"
+              end
+              relationship Absence
+                target "Absence reason"
+                cardinality one
+                optional
+                stage "Absent"
+              end
+            end
+            entity Absence reason
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join("; ", result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}")));
+        var entities = result.Package!.AuthoredRevision.Definitions.OfType<EntityDefinition>().ToDictionary(entity => entity.Name.Value);
+        var booking = entities["Booking"];
+        var absentStage = booking.Lifecycle!.Stages.Single(stage => stage.Name.Value == "Absent");
+        var field = Assert.Single(booking.Fields);
+        Assert.Equal([absentStage.Id], field.StageIds);
+        var relationship = Assert.Single(booking.Relationships);
+        Assert.Equal([absentStage.Id], relationship.StageIds);
+    }
+
+    [Fact]
+    public void Compile_supports_a_field_scoped_to_multiple_stages()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Booking
+              lifecycle Booking lifecycle
+                stage Planned
+                stage Attending
+                stage Attended
+              end
+              field Attending preschool program
+                type boolean
+                optional
+                stage "Attending"
+                stage "Attended"
+              end
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, string.Join("; ", result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}")));
+        var booking = Assert.Single(result.Package!.AuthoredRevision.Definitions.OfType<EntityDefinition>());
+        var field = Assert.Single(booking.Fields);
+        Assert.Equal(booking.Lifecycle!.Stages.Where(stage => stage.Name.Value is "Attending" or "Attended").Select(stage => stage.Id),
+            field.StageIds);
+    }
+
+    [Fact]
+    public void Compile_rejects_a_field_stage_that_belongs_to_a_different_entitys_lifecycle()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Booking
+              lifecycle Booking lifecycle
+                stage Planned
+                stage Absent
+              end
+              field Adjusted hours
+                type decimal(12,2)
+                optional
+                stage "Other stage"
+              end
+            end
+            entity Room
+              lifecycle Room lifecycle
+                stage Other stage
+              end
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("rml.field.stage-unresolved", diagnostic.Code);
+    }
+
+    [Fact]
+    public void Compile_rejects_a_field_stage_when_the_entity_has_no_lifecycle()
+    {
+        const string source = """
+            rml 1.0
+            context Child Care
+              version 1.0.0
+            end
+            entity Booking
+              field Adjusted hours
+                type decimal(12,2)
+                optional
+                stage "Absent"
+              end
+            end
+            """;
+
+        var result = RmlCompiler.Compile(
+            [new SourceDocument("workspace.rml", source)], ParseOptions.EditorLanguage1, TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("rml.field.stage-without-lifecycle", diagnostic.Code);
+    }
+
+    [Fact]
     public void CompileWorkspace_rejects_two_bounded_contexts_sharing_a_name()
     {
         const string source = """

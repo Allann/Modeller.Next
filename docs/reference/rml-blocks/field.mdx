@@ -17,3 +17,23 @@ end
 ```
 
 Primitive types are `boolean`, `text`, `byte`, `int16`, `int32`, `int64`, `decimal`, `date`, `time`, `datetime`, `datetimeoffset`, `identifier`, and `coordinate`. Named types use `enumeration "Name"`, `entity "Name"`, or `value "Name"`.
+
+## Scoping a field to a lifecycle stage
+
+When the owning entity declares a `lifecycle`, a field can add one or more `stage "Name"` clauses to say it exists only while the entity is in one of those stages — each name must reference a `stage` declared by the entity's own `lifecycle`. A stage-scoped field must still be `optional`, since it is absent in every other stage. A C# generator that supports stage-scoped fields (such as the child-care sample's domain templates) uses this to emit one record per lifecycle stage instead of a single record with fields that are only meaningful sometimes — making states like "an Absent booking with no absence reason" impossible to construct.
+
+```text
+entity Booking
+  lifecycle Booking lifecycle
+    stage Planned
+    stage Absent
+  end
+  field Adjusted hours
+    type decimal(12,2)
+    optional
+    stage "Absent"
+  end
+end
+```
+
+A field with no `stage` clause is present regardless of lifecycle stage, exactly as before — adding `stage` is opt-in and does not change how existing fields render.

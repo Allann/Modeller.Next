@@ -169,36 +169,51 @@ public static partial class ContextPackageSystem
                 .ToImmutableArray());
     }
 
-    private static FieldDefinition ReadField(JsonElement element)
+    // Type names with a no-argument DataType: a lookup table, not a branch per case, keeps ReadDataType's
+    // complexity to the handful of cases that actually need extra JSON properties.
+    private static readonly Dictionary<string, Func<DataType>> SimpleDataTypes = new(StringComparer.Ordinal)
     {
-        var identity = ReadIdentity(element);
-        DataType type = element.GetProperty("type").GetString()! switch
+        ["Boolean"] = () => new BooleanDataType(),
+        ["Byte"] = () => new ByteDataType(),
+        ["Int16"] = () => new Int16DataType(),
+        ["Int32"] = () => new Int32DataType(),
+        ["Int64"] = () => new Int64DataType(),
+        ["Date"] = () => new DateDataType(),
+        ["Time"] = () => new TimeDataType(),
+        ["DateTime"] = () => new DateTimeDataType(),
+        ["DateTimeOffset"] = () => new DateTimeOffsetDataType(),
+        ["UniqueIdentifier"] = () => new UniqueIdentifierDataType(),
+        ["GeographicCoordinate"] = () => new GeographicCoordinateDataType(),
+    };
+
+    private static DataType ReadDataType(JsonElement element)
+    {
+        var kind = element.GetProperty("type").GetString()!;
+        if (SimpleDataTypes.TryGetValue(kind, out var factory)) return factory();
+        return kind switch
         {
-            "Boolean" => new BooleanDataType(),
             "String" => new StringDataType(
                 element.TryGetProperty("minimumLength", out var minimumLength) ? minimumLength.GetInt32() : null,
                 element.TryGetProperty("maximumLength", out var maximumLength) ? maximumLength.GetInt32() : null),
-            "Byte" => new ByteDataType(),
-            "Int16" => new Int16DataType(),
-            "Int32" => new Int32DataType(),
-            "Int64" => new Int64DataType(),
-            "Date" => new DateDataType(),
-            "Time" => new TimeDataType(),
-            "DateTime" => new DateTimeDataType(),
-            "DateTimeOffset" => new DateTimeOffsetDataType(),
-            "UniqueIdentifier" => new UniqueIdentifierDataType(),
-            "GeographicCoordinate" => new GeographicCoordinateDataType(),
             "Decimal" => new DecimalDataType(
                 element.TryGetProperty("precision", out var precision) ? precision.GetInt32() : null,
                 element.TryGetProperty("scale", out var scale) ? scale.GetInt32() : null),
             "Enumeration" => new EnumerationDataType(SemanticId.Parse(element.GetProperty("namedType").GetString()!)),
             "EntityReference" => new EntityReferenceDataType(SemanticId.Parse(element.GetProperty("namedType").GetString()!)),
             "ValueTypeReference" => new ValueTypeReferenceDataType(SemanticId.Parse(element.GetProperty("namedType").GetString()!)),
-            var kind => throw new ArgumentException($"Unsupported data type '{kind}'.")
+            var other => throw new ArgumentException($"Unsupported data type '{other}'.")
         };
+    }
+
+    private static FieldDefinition ReadField(JsonElement element)
+    {
+        var identity = ReadIdentity(element);
         return new(identity.Id, identity.Name, identity.Slug,
-            type,
-            element.TryGetProperty("optional", out var optional) && optional.GetBoolean());
+            ReadDataType(element),
+            element.TryGetProperty("optional", out var optional) && optional.GetBoolean())
+        {
+            StageIds = ReadStageIds(element)
+        };
     }
 
     private static RelationshipDefinition ReadRelationship(JsonElement element)
@@ -206,8 +221,16 @@ public static partial class ContextPackageSystem
         var identity = ReadIdentity(element);
         return new(identity.Id, identity.Name, identity.Slug, SemanticId.Parse(element.GetProperty("target").GetString()!),
             Enum.Parse<RelationshipCardinality>(element.GetProperty("cardinality").GetString()!),
-            element.TryGetProperty("optional", out var optional) && optional.GetBoolean());
+            element.TryGetProperty("optional", out var optional) && optional.GetBoolean())
+        {
+            StageIds = ReadStageIds(element)
+        };
     }
+
+    private static ImmutableArray<SemanticId> ReadStageIds(JsonElement element) =>
+        element.TryGetProperty("stageIds", out var stageIds)
+            ? stageIds.EnumerateArray().Select(stageId => SemanticId.Parse(stageId.GetString()!)).ToImmutableArray()
+            : [];
 
     private static ConclusionDefinition ReadConclusion(JsonElement element)
     {

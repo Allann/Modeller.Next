@@ -37,25 +37,50 @@ public sealed class CSharpTemplateGlobalsProvider(
 
     private object Entity(ProjectedEntity entity)
     {
-        var properties = entity.Fields.Select(field => new
+        var members = entity.Fields.Select(field => new
             {
                 name = Identifier(field.RawName),
                 type = CSharpDataTypeRenderer.Render(field.Type, id => Identifier(FindName(id))),
-                nullable = field.IsOptional
+                nullable = field.IsOptional,
+                stageIds = field.StageIds
             }).Concat(entity.Relationships.Select(relationship => new
             {
                 name = Identifier(relationship.RawName),
                 type = relationship.Cardinality == RelationshipCardinality.Many ? "IReadOnlyList<Guid>" : "Guid",
-                nullable = relationship.IsOptional
+                nullable = relationship.IsOptional,
+                stageIds = relationship.StageIds
             })).ToArray();
+        // The flat 'properties' list stays exactly as before — every template that only needs the whole
+        // entity shape (Repository/Api/Queries/Commands) keeps reading it unchanged. 'stage_groups' is an
+        // additive view for templates that want to emit a discriminated hierarchy instead.
+        var properties = members.Select(member => new { member.name, member.type, member.nullable }).ToArray();
         var lifecycle = entity.Source.Lifecycle;
+        var sharedProperties = members.Where(member => member.stageIds.IsEmpty)
+            .Select(member => new { member.name, member.type, member.nullable }).ToArray();
+        // Each stage's constructor takes the shared properties first (so it can chain to the base record's
+        // constructor positionally) followed by that stage's own properties — which are never nullable: being
+        // in this stage is what guarantees they're set, so there's nothing left to guard with '?'.
+        var stageGroups = lifecycle?.Stages.Select(stage =>
+        {
+            var stageOnlyProperties = members.Where(member => member.stageIds.Contains(stage.Id))
+                .Select(member => new { member.name, member.type, nullable = false }).ToArray();
+            return new
+            {
+                name = Identifier(stage.Name.Value),
+                stage_only_properties = stageOnlyProperties,
+                properties = sharedProperties.Concat(stageOnlyProperties).ToArray()
+            };
+        }).ToArray() ?? [];
         return new
         {
             kind = "entity",
             name = Identifier(entity.Source.Name.Value),
             properties,
             stage_type = lifecycle is null ? null : $"{Identifier(entity.Source.Name.Value)}Stage",
-            stages = lifecycle?.Stages.Select(stage => new { name = Identifier(stage.Name.Value) }).ToArray() ?? []
+            stages = lifecycle?.Stages.Select(stage => new { name = Identifier(stage.Name.Value) }).ToArray() ?? [],
+            shared_properties = sharedProperties,
+            stage_groups = stageGroups,
+            has_stage_scoped_properties = members.Any(member => !member.stageIds.IsEmpty)
         };
     }
 

@@ -23,12 +23,14 @@ public sealed class {{ definition.name }}Api : IEndpointModule
             return Results.Created($"/api/{{ definition.name | string.downcase }}/{entity.Id}", entity);
         });
 
+{{ if !definition.has_stage_scoped_properties }}
         group.MapPut("/{id:guid}", async (Guid id, Update{{ definition.name }}Command command, Update{{ definition.name }}Handler handler, CancellationToken cancellationToken) =>
         {
             var updated = await handler.HandleAsync(command with { Id = id }, cancellationToken);
             return updated ? Results.NoContent() : Results.NotFound();
         });
 
+{{ end }}
         group.MapDelete("/{id:guid}", async (Guid id, Delete{{ definition.name }}Handler handler, CancellationToken cancellationToken) =>
         {
             var deleted = await handler.HandleAsync(new Delete{{ definition.name }}Command(id), cancellationToken);

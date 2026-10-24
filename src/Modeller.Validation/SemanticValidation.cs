@@ -221,7 +221,38 @@ public static class SemanticValidation
             }
         }
 
+        foreach (var entity in revision.Definitions.OfType<EntityDefinition>().OrderBy(entity => entity.Id.ToString(), StringComparer.Ordinal))
+            ValidateEntityStageReferences(entity, diagnostics);
+
         return diagnostics.OrderBy(diagnostic => diagnostic.Path, StringComparer.Ordinal).ToImmutableArray();
+    }
+
+    /// <summary>A field or relationship's 'stage' clause must reference a stage of its own entity's lifecycle —
+    /// scoping a member to another entity's stage would be meaningless, since only this entity's own lifecycle
+    /// ever puts it in that stage.</summary>
+    private static void ValidateEntityStageReferences(EntityDefinition entity, ImmutableArray<ValidationDiagnostic>.Builder diagnostics)
+    {
+        var ownStageIds = entity.Lifecycle?.Stages.Select(stage => stage.Id).ToHashSet() ?? [];
+        foreach (var field in entity.Fields.OrderBy(field => field.Id.ToString(), StringComparer.Ordinal))
+            for (var index = 0; index < field.StageIds.Length; index++)
+                if (!ownStageIds.Contains(field.StageIds[index]))
+                    diagnostics.Add(new ValidationDiagnostic(
+                        "validation.reference.stage-unresolved",
+                        ValidationStage.ReferencesAndFederation,
+                        ValidationSeverity.Error,
+                        "A field's 'stage' must reference a stage of its own entity's lifecycle.",
+                        field.Id.ToString(),
+                        $"/definitions/{entity.Id}/fields/{field.Id}/stageIds/{index}"));
+        foreach (var relationship in entity.Relationships.OrderBy(relationship => relationship.Id.ToString(), StringComparer.Ordinal))
+            for (var index = 0; index < relationship.StageIds.Length; index++)
+                if (!ownStageIds.Contains(relationship.StageIds[index]))
+                    diagnostics.Add(new ValidationDiagnostic(
+                        "validation.reference.stage-unresolved",
+                        ValidationStage.ReferencesAndFederation,
+                        ValidationSeverity.Error,
+                        "A relationship's 'stage' must reference a stage of its own entity's lifecycle.",
+                        relationship.Id.ToString(),
+                        $"/definitions/{entity.Id}/relationships/{relationship.Id}/stageIds/{index}"));
     }
 
     private static ImmutableArray<ValidationDiagnostic> ValidateSnapshotLocks(
