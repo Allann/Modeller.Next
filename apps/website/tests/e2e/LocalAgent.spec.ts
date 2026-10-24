@@ -2,6 +2,7 @@ import { test, expect, type Page, type Route } from '@playwright/test';
 import canonicalPrompts from '../../../../src/Modeller.Initiative.OpenAICompatible/agent-prompts.json';
 import { CHECKS_BY_GATE, type InitiativeSessionDto } from '../../src/lib/initiativeTypes';
 import { evaluateGateLocally, judgementPrompt } from '../../src/lib/localAgent/localGate';
+import { startWithFallback, type CacheBackend, type EngineStartSteps } from '../../src/lib/localAgent/storageFallback';
 import {
   AGENT_PROMPTS,
   LOCAL_MAX_PROMPT_CHARACTERS,
@@ -158,6 +159,51 @@ test.describe('local gate', () => {
       JSON.stringify({ checks: [{ check: 'NoActionWasConsidered', passed: true, reason: 'Considered.' }], recommendedQuestion: null }));
 
     expect(evaluation.results[0]).toEqual({ check: 'SelectedTechnologyInterventionsHaveRationale', passed: false, reason: '1 selected Technology intervention(s) have no rationale.' });
+  });
+});
+
+test.describe('local model storage', () => {
+  const engine = { complete: async () => '{}' };
+  /** Records each step; `failures` says what create() throws for each backend. */
+  function steps(failures: Partial<Record<CacheBackend, unknown>>, cached: CacheBackend | null = null) {
+    const log: string[] = [];
+    const s: EngineStartSteps = {
+      cachedBackend: async () => cached,
+      ensureStorageForDownload: async () => { log.push('check quota'); },
+      create: async (backend) => {
+        log.push(`create ${backend}`);
+        if (failures[backend] !== undefined) throw failures[backend];
+        return engine;
+      },
+      removePartialDownload: async (backend) => { log.push(`remove ${backend}`); },
+      onRetry: () => { log.push('retry'); },
+    };
+    return { s, log };
+  }
+
+  test('a downloaded model starts from its own backend without a quota check', async () => {
+    const { s, log } = steps({}, 'indexeddb');
+    expect(await startWithFallback(s)).toBe(engine);
+    expect(log).toEqual(['create indexeddb']);
+  });
+
+  test('a quota error from the worker (a plain string) falls back to IndexedDB', async () => {
+    const { s, log } = steps({ cache: 'QuotaExceededError: Quota exceeded.' });
+    expect(await startWithFallback(s)).toBe(engine);
+    expect(log).toEqual(['check quota', 'create cache', 'remove cache', 'retry', 'create indexeddb']);
+  });
+
+  test('when both backends refuse, both partial downloads are removed and the reason is explained', async () => {
+    const quota = new DOMException('Quota exceeded.', 'QuotaExceededError');
+    const { s, log } = steps({ cache: quota, indexeddb: quota });
+    await expect(startWithFallback(s)).rejects.toThrow('The browser refused to store the local model');
+    expect(log).toEqual(['check quota', 'create cache', 'remove cache', 'retry', 'create indexeddb', 'remove indexeddb']);
+  });
+
+  test('other errors are passed on without a retry', async () => {
+    const { s, log } = steps({ cache: 'OperationError: requestDevice failed' });
+    await expect(startWithFallback(s)).rejects.toBe('OperationError: requestDevice failed');
+    expect(log).toEqual(['check quota', 'create cache']);
   });
 });
 

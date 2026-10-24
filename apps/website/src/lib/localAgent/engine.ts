@@ -1,4 +1,7 @@
 import { LocalAgentError, type ChatPrompt } from './prompts';
+import { describe, startWithFallback, type CacheBackend, type LocalChatEngine } from './storageFallback';
+
+export type { LocalChatEngine } from './storageFallback';
 
 /**
  * The model the cockpit downloads: Llama 3.2 3B Instruct, about 1.8 GB to download once and about
@@ -18,14 +21,9 @@ const MAX_OUTPUT_TOKENS = 900;
 
 export type LoadProgress = { fraction: number; text: string };
 
-/** The one thing the cockpit needs from a model: a system/user prompt in, schema-shaped JSON text out. */
-export interface LocalChatEngine {
-  complete(prompt: ChatPrompt): Promise<string>;
-}
-
 declare global {
   interface Window {
-    /** Test seam: Playwright installs a fake engine here, since WebGPU and an 875 MB model are not
+    /** Test seam: Playwright installs a fake engine here, since WebGPU and a 1.8 GB model are not
      * available in CI. Never set in production. */
     __modellerLocalEngine?: LocalChatEngine;
   }
@@ -36,14 +34,29 @@ export function isWebGpuAvailable(): boolean {
   return typeof navigator !== 'undefined' && 'gpu' in navigator;
 }
 
-export async function isModelCached(): Promise<boolean> {
-  if (typeof window !== 'undefined' && window.__modellerLocalEngine) return false;
+const BACKENDS: CacheBackend[] = ['cache', 'indexeddb'];
+
+async function appConfigFor(backend: CacheBackend) {
+  const { prebuiltAppConfig } = await import('@mlc-ai/web-llm');
+  return { ...prebuiltAppConfig, cacheBackend: backend };
+}
+
+/** The backend that already holds the whole model, or null when it is not downloaded. */
+async function cachedBackend(): Promise<CacheBackend | null> {
+  if (typeof window !== 'undefined' && window.__modellerLocalEngine) return null;
   try {
     const { hasModelInCache } = await import('@mlc-ai/web-llm');
-    return await hasModelInCache(LOCAL_MODEL_ID);
+    for (const backend of BACKENDS) {
+      if (await hasModelInCache(LOCAL_MODEL_ID, await appConfigFor(backend))) return backend;
+    }
   } catch {
-    return false;
+    // Unknown cache state: treat the model as not downloaded.
   }
+  return null;
+}
+
+export async function isModelCached(): Promise<boolean> {
+  return (await cachedBackend()) !== null;
 }
 
 function gigabytes(bytes: number): string {
@@ -69,7 +82,7 @@ function storageMessage(availableBytes: number | null): string {
  * "QuotaExceededError". Also asks the browser to keep the model when storage gets low.
  */
 async function ensureStorageForDownload(): Promise<void> {
-  if (await isModelCached() || typeof navigator === 'undefined' || !navigator.storage?.estimate) return;
+  if (typeof navigator === 'undefined' || !navigator.storage?.estimate) return;
   try {
     await navigator.storage.persist?.();
   } catch {
@@ -81,17 +94,13 @@ async function ensureStorageForDownload(): Promise<void> {
   if (available < LOCAL_MODEL_STORAGE_BYTES) throw new LocalAgentError(storageMessage(available));
 }
 
-function isQuotaError(error: unknown): boolean {
-  return error instanceof Error && (error.name === 'QuotaExceededError' || /quota/i.test(error.message));
-}
-
 /** A failed download leaves part of the model in storage, using quota the next attempt needs. */
-async function removePartialDownload(): Promise<void> {
+async function removePartialDownload(backend: CacheBackend): Promise<void> {
   try {
     const { deleteModelAllInfoInCache } = await import('@mlc-ai/web-llm');
-    await deleteModelAllInfoInCache(LOCAL_MODEL_ID);
+    await deleteModelAllInfoInCache(LOCAL_MODEL_ID, await appConfigFor(backend));
   } catch {
-    // Nothing more can be done here; the storage message already tells the Facilitator what to do.
+    // Nothing more can be done here; the message already tells the Facilitator what to do.
   }
 }
 
@@ -100,28 +109,38 @@ let loading: Promise<LocalChatEngine> | null = null;
 /** Loads the model once per page (downloading it on first use) and reuses it after that. */
 export function loadLocalEngine(onProgress: (progress: LoadProgress) => void): Promise<LocalChatEngine> {
   if (typeof window !== 'undefined' && window.__modellerLocalEngine) return Promise.resolve(window.__modellerLocalEngine);
-  loading ??= ensureStorageForDownload()
-    .then(() => createEngine(onProgress))
-    .catch(async (error: unknown) => {
-      loading = null;
-      if (error instanceof LocalAgentError) throw error;
-      if (isQuotaError(error)) {
-        await removePartialDownload();
-        throw new LocalAgentError(storageMessage(null));
-      }
-      throw new LocalAgentError(`The local model could not start: ${error instanceof Error ? error.message : String(error)}`);
-    });
+  loading ??= startEngine(onProgress).catch((error: unknown) => {
+    loading = null;
+    throw error instanceof LocalAgentError ? error : new LocalAgentError(`The local model could not start: ${describe(error)}`);
+  });
   return loading;
 }
 
-async function createEngine(onProgress: (progress: LoadProgress) => void): Promise<LocalChatEngine> {
+function startEngine(onProgress: (progress: LoadProgress) => void): Promise<LocalChatEngine> {
+  return startWithFallback({
+    cachedBackend,
+    ensureStorageForDownload,
+    create: (backend) => createEngine(onProgress, backend),
+    removePartialDownload,
+    onRetry: () => onProgress({ fraction: 0, text: 'The browser cache refused the model. Trying the browser database instead…' }),
+  });
+}
+
+async function createEngine(onProgress: (progress: LoadProgress) => void, backend: CacheBackend): Promise<LocalChatEngine> {
   // Imported on demand: WebLLM is several megabytes of JavaScript that only a Facilitator who opts
   // in to the local model should ever download.
   const { CreateWebWorkerMLCEngine } = await import('@mlc-ai/web-llm');
   const worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
-  const engine = await CreateWebWorkerMLCEngine(worker, LOCAL_MODEL_ID, {
-    initProgressCallback: (report) => onProgress({ fraction: report.progress, text: report.text }),
-  });
+  let engine: Awaited<ReturnType<typeof CreateWebWorkerMLCEngine>>;
+  try {
+    engine = await CreateWebWorkerMLCEngine(worker, LOCAL_MODEL_ID, {
+      appConfig: await appConfigFor(backend),
+      initProgressCallback: (report) => onProgress({ fraction: report.progress, text: report.text }),
+    });
+  } catch (error) {
+    worker.terminate();
+    throw error;
+  }
 
   return {
     async complete(prompt) {
