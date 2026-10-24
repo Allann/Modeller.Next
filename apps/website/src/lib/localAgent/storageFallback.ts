@@ -22,16 +22,15 @@ export type StorageEstimate = { quota: number; usage: number };
  * The browser will not let this site store the model. The usual cause is not disk space: when Chrome
  * or Edge is set to delete site data on close (and in private windows), each site may store only about
  * 300 MB (web-llm issues #144 and #374). The panel shows the steps to exempt the site.
+ * `quotaBytes` is null when the browser refused the writes although it reported enough quota.
  */
 export class StorageLimitError extends LocalAgentError {
-  constructor(readonly quotaBytes: number) {
-    super(`This browser lets modeller.website store only about ${Math.round(quotaBytes / 1e6)} MB. The local model needs about 1.8 GB.`);
+  constructor(readonly quotaBytes: number | null) {
+    super(quotaBytes === null
+      ? 'The browser refused to store the local model.'
+      : `This browser lets modeller.website store only about ${Math.round(quotaBytes / 1e6)} MB. The local model needs about 1.8 GB.`);
   }
 }
-
-/** Shown when both backends refuse the model although the browser reports enough quota. */
-const REFUSED_MESSAGE = 'The browser refused to store the local model, although it reports enough storage for this site. '
-  + 'Reload the page and try again, or use the AI Gateway, or continue manually.';
 
 /** WebLLM passes errors from its worker to the page as plain strings ("QuotaExceededError: ..."). */
 export function describe(error: unknown): string {
@@ -101,6 +100,8 @@ export async function startWithFallback(steps: EngineStartSteps): Promise<LocalC
   } catch (error) {
     await explainFailure(steps, 'indexeddb', error);
     if (!isRefusedWrite(error)) throw error;
-    throw new LocalAgentError(REFUSED_MESSAGE);
+    // Both stores refused although the quota looked large: the site-data setting is still the most
+    // likely cause, so the Facilitator gets the same steps.
+    throw new StorageLimitError(null);
   }
 }

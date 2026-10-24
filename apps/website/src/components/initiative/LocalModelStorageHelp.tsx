@@ -43,18 +43,22 @@ function EdgeSteps() {
 }
 
 /**
- * Shown when the browser's per-site storage limit is smaller than the local model. A web page cannot
- * raise its own limit, and the browser has no quota setting: the limit comes from deleting site data on
- * close (about 300 MB per site), which the Facilitator can lift for this one site.
+ * Shown, in place of an error, when the browser would not store the local model. A web page cannot
+ * raise its own storage limit, and browsers have no quota setting: the limit comes from deleting site
+ * data on close (about 300 MB per site), which the Facilitator can lift for this one site.
  */
-export function LocalModelStorageHelp({ message }: { message: string }) {
+export function LocalModelStorageHelp({ quotaBytes }: { quotaBytes: number | null }) {
   const browser = detectBrowser();
   return (
     <div className="local-model-help" role="alert">
-      <p><strong>{message}</strong></p>
+      <p className="local-model-help-title">One browser setting is needed to use the local model</p>
       <p>
-        Your browser is set to delete site data when it closes. Then it lets each site store only about 300 MB, however
-        much disk space is free. You can lift this limit for modeller.website only. Your other sites keep their protection.
+        The model needs about 1.8 GB of storage in your browser.{' '}
+        {quotaBytes === null
+          ? 'Your browser did not let this site store it.'
+          : `Your browser lets this site store only about ${Math.round(quotaBytes / 1e6)} MB.`}{' '}
+        This happens when the browser is set to delete site data when it closes. Free disk space does not change it.
+        Do these steps once, to let modeller.website keep its data. Your other sites keep their protection.
       </p>
       {browser !== 'edge' && (
         <>
@@ -68,9 +72,7 @@ export function LocalModelStorageHelp({ message }: { message: string }) {
           <EdgeSteps />
         </>
       )}
-      <p>
-        Then reload this page and start the local model again. A private window always has this limit.
-      </p>
+      <p>Then reload this page and start the local model again. In a private window, this limit always applies.</p>
       <button className="secondary-action" type="button" onClick={() => window.location.reload()}>
         Reload this page
       </button>

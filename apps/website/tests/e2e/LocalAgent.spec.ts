@@ -222,7 +222,9 @@ test.describe('local model storage', () => {
         indexeddb: 'Error: ArtifactIndexedDBCache failed to fetch: https://huggingface.co/x/params_shard_0.bin',
       },
     });
-    await expect(startWithFallback(s)).rejects.toThrow('The browser refused to store the local model');
+    const error = await startWithFallback(s).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(StorageLimitError);
+    expect((error as StorageLimitError).quotaBytes).toBeNull();
     expect(log).toEqual(['estimate', 'create cache', 'estimate', 'remove cache', 'retry', 'create indexeddb', 'estimate', 'remove indexeddb']);
   });
 
@@ -306,7 +308,10 @@ test.describe('cockpit with the local model', () => {
     await panel.getByRole('button', { name: /Download .* and start the local model/ }).click();
 
     const help = panel.getByRole('alert');
-    await expect(help).toContainText('lets modeller.website store only about 500 MB');
+    await expect(help).toContainText('One browser setting is needed to use the local model');
+    await expect(help).toContainText('lets this site store only about 500 MB');
+    // The steps replace the error: no red error text in the panel.
+    await expect(panel.locator('.form-error')).toHaveCount(0);
     await expect(help).toContainText('delete site data when it closes');
     // Headless Chromium reports itself as Chrome, so only the Chrome steps are shown.
     await expect(help).toContainText('chrome://settings/content/siteData');

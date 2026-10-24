@@ -35,8 +35,8 @@ export type LocalAgentState =
   | { status: 'idle'; cached: boolean }
   | { status: 'loading'; progress: LoadProgress }
   | { status: 'ready'; agent: LocalAgent }
-  /** `storageQuotaBytes` is set when the browser's per-site storage limit is too small for the model. */
-  | { status: 'error'; message: string; cached: boolean; storageQuotaBytes?: number };
+  /** `storageQuotaBytes` is set (null when unknown) when the browser would not store the model. */
+  | { status: 'error'; message: string; cached: boolean; storageQuotaBytes?: number | null };
 
 // Per-browser convenience only: remembers that this Facilitator opted in, so a later visit starts the
 // already-downloaded model without asking again. Storage can be unavailable (private windows), so
