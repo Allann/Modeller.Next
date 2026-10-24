@@ -186,8 +186,10 @@ ApiMetrics.RecordProcessStart();
 // ceilings; this caps the raw HTTP payload before it's even deserialized.
 builder.WebHost.ConfigureKestrel(kestrel => kestrel.Limits.MaxRequestBodySize = 2 * 1024 * 1024);
 
-var port = builder.Configuration["PORT"] ?? "8080";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+if (ListenUrls.Resolve(builder.Configuration["PORT"], builder.Configuration["urls"]) is { } listenUrl)
+{
+    builder.WebHost.UseUrls(listenUrl);
+}
 
 var app = builder.Build();
 
