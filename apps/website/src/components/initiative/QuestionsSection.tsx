@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ALL_FIELDS, INITIATIVE_FIELD_LABELS, PHASE_OF_FIELD, type InitiativeField, type InitiativeSessionDto } from '@/lib/initiativeTypes';
 import { initiativeApi } from '@/lib/initiativeApi';
+import { INITIATIVE_FIELD_GUIDANCE } from '@/lib/initiativeFieldGuidance';
 import type { RunAction } from './types';
 
 export function QuestionsSection({
@@ -27,11 +28,13 @@ export function QuestionsSection({
   const respondedQuestionIds = new Set(session.responses.map((response) => response.questionId));
   const sent = session.questions.filter((q) => q.status === 'Sent' && !respondedQuestionIds.has(q.id));
   const pendingResponses = session.responses.filter((r) => r.status === 'Pending');
+  const guidance = INITIATIVE_FIELD_GUIDANCE[field];
 
   return (
     <section aria-label="Questions">
       <h2>Discover &amp; Frame</h2>
       {facilitatorId && (
+        <>
         <form
           className="inline-form"
           onSubmit={(event) => {
@@ -39,7 +42,12 @@ export function QuestionsSection({
             void run(() => initiativeApi.proposeQuestion(session.id, credential, field, text || null, text ? undefined : agentApiKey)).then(() => setText(''));
           }}
         >
-          <select value={field} onChange={(event) => setField(event.target.value as InitiativeField)}>
+          <select
+            aria-label="Field to ask about"
+            aria-describedby="field-guidance"
+            value={field}
+            onChange={(event) => setField(event.target.value as InitiativeField)}
+          >
             {ALL_FIELDS.map((f) => (
               <option key={f} value={f}>
                 {INITIATIVE_FIELD_LABELS[f]} ({PHASE_OF_FIELD[f]})
@@ -56,6 +64,19 @@ export function QuestionsSection({
             Propose
           </button>
         </form>
+        <aside id="field-guidance" className="field-guidance" aria-live="polite">
+          <p className="field-guidance-title">
+            {INITIATIVE_FIELD_LABELS[field]} <span className="field-guidance-phase">{PHASE_OF_FIELD[field]}</span>
+          </p>
+          <p>{guidance.captures}</p>
+          <p className="field-guidance-example">
+            Example question: <q>{guidance.exampleQuestion}</q>{' '}
+            <button className="link-action" type="button" onClick={() => setText(guidance.exampleQuestion)}>
+              Use this question
+            </button>
+          </p>
+        </aside>
+        </>
       )}
 
       {proposed.length > 0 && (
