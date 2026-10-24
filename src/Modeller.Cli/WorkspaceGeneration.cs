@@ -48,7 +48,10 @@ internal static class WorkspaceGeneration
         var execution = await GenerationExecution.ExecuteAsync(new(planning, manifest, dryRun ? OutputMode.Preview : OutputMode.Apply),
             scriban, new CliOutputFileSystem(host, outputRoot), cancellationToken);
         if (execution.Output is null)
-            return await WorkspaceLoader.Failure(host, machine, execution.Diagnostics.FirstOrDefault() ?? "workspace.generation.failed", "Workspace generation failed.");
+        {
+            var diagnostic = execution.Diagnostics.FirstOrDefault();
+            return await WorkspaceLoader.Failure(host, machine, diagnostic?.Code ?? "workspace.generation.failed", diagnostic?.Message ?? "Workspace generation failed.");
+        }
 
         return await EmitResultAsync(root, dryRun, machine, host, execution.Plan!, execution.Rendering!, execution.Output, manifestText, WorkspaceLoader.Join(root, configuration.OwnershipManifest), cancellationToken);
     }

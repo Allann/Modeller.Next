@@ -114,9 +114,9 @@ public static class GeneratedSourceTreeHarness
         var adapter = new ScribanRendererAdapter(capability.Renderer.Id, capability.Renderer.Version, templates.ToImmutable(), globalsProvider: globalsProvider);
         var outputFileSystem = fileSystem ?? new InMemoryOutputFileSystem();
         var execution = await GenerationExecution.ExecuteAsync(new(planning, previousManifest ?? OwnershipManifest.Empty, OutputMode.Apply), adapter, outputFileSystem, cancellationToken);
-        if (execution.Output is null) return GeneratedSourceTreeResult.Failed(execution.Diagnostics.FirstOrDefault() ?? "generation.failed");
+        if (execution.Output is null) return GeneratedSourceTreeResult.Failed(execution.Diagnostics.FirstOrDefault()?.Code ?? "generation.failed");
 
-        return new GeneratedSourceTreeResult(execution.IsSuccess, execution.Diagnostics, outputFileSystem.Files,
+        return new GeneratedSourceTreeResult(execution.IsSuccess, execution.Diagnostics.Select(item => item.Code).ToImmutableArray(), outputFileSystem.Files,
             execution.Output.Manifest, execution.Output.Changes, outputFileSystem);
     }
 

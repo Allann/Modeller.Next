@@ -65,7 +65,9 @@ public sealed class GenerationExecutionTests
         Assert.Null(result.Plan);
         Assert.Null(result.Rendering);
         Assert.Null(result.Output);
-        Assert.Equal("generation.pack.incompatible", Assert.Single(result.Diagnostics));
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("generation.pack.incompatible", diagnostic.Code);
+        Assert.False(string.IsNullOrWhiteSpace(diagnostic.Message));
     }
 
     [Fact]
@@ -81,7 +83,7 @@ public sealed class GenerationExecutionTests
         Assert.NotNull(result.Rendering);
         Assert.False(result.Rendering!.IsSuccess);
         Assert.Null(result.Output);
-        Assert.Equal("rendering.renderer.incompatible", Assert.Single(result.Diagnostics));
+        Assert.Equal("rendering.renderer.incompatible", Assert.Single(result.Diagnostics).Code);
     }
 
     private sealed class IncompatibleRendererAdapter : IRendererAdapter
