@@ -2,7 +2,7 @@ import { test, expect, type Page, type Route } from '@playwright/test';
 import canonicalPrompts from '../../../../src/Modeller.Initiative.OpenAICompatible/agent-prompts.json';
 import { CHECKS_BY_GATE, type InitiativeSessionDto } from '../../src/lib/initiativeTypes';
 import { evaluateGateLocally, judgementPrompt } from '../../src/lib/localAgent/localGate';
-import { startWithFallback, type CacheBackend, type EngineStartSteps } from '../../src/lib/localAgent/storageFallback';
+import { StorageLimitError, startWithFallback, type CacheBackend, type EngineStartSteps, type StorageEstimate } from '../../src/lib/localAgent/storageFallback';
 import {
   AGENT_PROMPTS,
   LOCAL_MAX_PROMPT_CHARACTERS,
@@ -164,15 +164,20 @@ test.describe('local gate', () => {
 
 test.describe('local model storage', () => {
   const engine = { complete: async () => '{}' };
-  /** Records each step; `failures` says what create() throws for each backend. */
-  function steps(failures: Partial<Record<CacheBackend, unknown>>, cached: CacheBackend | null = null) {
+  const LARGE = { quota: 600e9, usage: 0 };
+  const SESSION_ONLY = { quota: 310e6, usage: 295e6 };
+
+  /** Records each step. `failures` says what create() throws for each backend; `estimates` are
+   * returned in order (the last one repeats). */
+  function steps(options: { failures?: Partial<Record<CacheBackend, unknown>>; cached?: CacheBackend; estimates?: StorageEstimate[] }) {
     const log: string[] = [];
+    const estimates = [...(options.estimates ?? [LARGE])];
     const s: EngineStartSteps = {
-      cachedBackend: async () => cached,
-      ensureStorageForDownload: async () => { log.push('check quota'); },
+      cachedBackend: async () => options.cached ?? null,
+      estimate: async () => { log.push('estimate'); return estimates.length > 1 ? estimates.shift()! : estimates[0]; },
       create: async (backend) => {
         log.push(`create ${backend}`);
-        if (failures[backend] !== undefined) throw failures[backend];
+        if (options.failures?.[backend] !== undefined) throw options.failures[backend];
         return engine;
       },
       removePartialDownload: async (backend) => { log.push(`remove ${backend}`); },
@@ -182,28 +187,49 @@ test.describe('local model storage', () => {
   }
 
   test('a downloaded model starts from its own backend without a quota check', async () => {
-    const { s, log } = steps({}, 'indexeddb');
+    const { s, log } = steps({ cached: 'indexeddb' });
     expect(await startWithFallback(s)).toBe(engine);
     expect(log).toEqual(['create indexeddb']);
   });
 
-  test('a quota error from the worker (a plain string) falls back to IndexedDB', async () => {
-    const { s, log } = steps({ cache: 'QuotaExceededError: Quota exceeded.' });
+  test('a quota that is too small stops before the download', async () => {
+    const { s, log } = steps({ estimates: [{ quota: 500e6, usage: 0 }] });
+    const error = await startWithFallback(s).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(StorageLimitError);
+    expect((error as StorageLimitError).message).toContain('only about 500 MB');
+    expect(log).toEqual(['estimate']);
+  });
+
+  test('a browser that enforces a small quota only while writing gets the storage help, without a retry', async () => {
+    // Seen in Chrome and Edge with "delete site data on close": a large estimate before, 310 MB after.
+    const { s, log } = steps({ failures: { cache: 'QuotaExceededError: Quota exceeded.' }, estimates: [LARGE, SESSION_ONLY] });
+    const error = await startWithFallback(s).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(StorageLimitError);
+    expect((error as StorageLimitError).quotaBytes).toBe(310e6);
+    expect(log).toEqual(['estimate', 'create cache', 'estimate', 'remove cache']);
+  });
+
+  test('a Cache API refusal with a large quota falls back to IndexedDB', async () => {
+    const { s, log } = steps({ failures: { cache: 'QuotaExceededError: Quota exceeded.' } });
     expect(await startWithFallback(s)).toBe(engine);
-    expect(log).toEqual(['check quota', 'create cache', 'remove cache', 'retry', 'create indexeddb']);
+    expect(log).toEqual(['estimate', 'create cache', 'estimate', 'remove cache', 'retry', 'create indexeddb']);
   });
 
-  test('when both backends refuse, both partial downloads are removed and the reason is explained', async () => {
-    const quota = new DOMException('Quota exceeded.', 'QuotaExceededError');
-    const { s, log } = steps({ cache: quota, indexeddb: quota });
+  test('when both backends refuse with a large quota, both partial downloads are removed', async () => {
+    const { s, log } = steps({
+      failures: {
+        cache: new DOMException('Quota exceeded.', 'QuotaExceededError'),
+        indexeddb: 'Error: ArtifactIndexedDBCache failed to fetch: https://huggingface.co/x/params_shard_0.bin',
+      },
+    });
     await expect(startWithFallback(s)).rejects.toThrow('The browser refused to store the local model');
-    expect(log).toEqual(['check quota', 'create cache', 'remove cache', 'retry', 'create indexeddb', 'remove indexeddb']);
+    expect(log).toEqual(['estimate', 'create cache', 'estimate', 'remove cache', 'retry', 'create indexeddb', 'estimate', 'remove indexeddb']);
   });
 
-  test('other errors are passed on without a retry', async () => {
-    const { s, log } = steps({ cache: 'OperationError: requestDevice failed' });
+  test('other errors are passed on, and the download is kept', async () => {
+    const { s, log } = steps({ failures: { cache: 'OperationError: requestDevice failed' } });
     await expect(startWithFallback(s)).rejects.toBe('OperationError: requestDevice failed');
-    expect(log).toEqual(['check quota', 'create cache']);
+    expect(log).toEqual(['estimate', 'create cache', 'estimate']);
   });
 });
 
@@ -279,8 +305,15 @@ test.describe('cockpit with the local model', () => {
 
     await panel.getByRole('button', { name: /Download .* and start the local model/ }).click();
 
-    await expect(panel.getByRole('alert')).toContainText('deletes site data when it closes');
-    await expect(panel.getByRole('alert')).toContainText('only about 0.5 GB');
+    const help = panel.getByRole('alert');
+    await expect(help).toContainText('lets modeller.website store only about 500 MB');
+    await expect(help).toContainText('delete site data when it closes');
+    // Headless Chromium reports itself as Chrome, so only the Chrome steps are shown.
+    await expect(help).toContainText('chrome://settings/content/siteData');
+    await expect(help).not.toContainText('edge://');
+    await expect(help).toContainText('[*.]modeller.website');
+    await expect(help.getByRole('button', { name: 'Copy settings address' })).toBeVisible();
+    await expect(help.getByRole('button', { name: 'Reload this page' })).toBeVisible();
     expect(modelRequests).toEqual([]);
   });
 

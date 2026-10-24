@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { GateKind, InitiativeField, InitiativeSessionDto } from '../initiativeTypes';
 import { isModelCached, isWebGpuAvailable, loadLocalEngine, type LoadProgress, type LocalChatEngine } from './engine';
 import { evaluateGateLocally } from './localGate';
+import { StorageLimitError } from './storageFallback';
 import {
   parseInterventions,
   parseQuestion,
@@ -34,7 +35,8 @@ export type LocalAgentState =
   | { status: 'idle'; cached: boolean }
   | { status: 'loading'; progress: LoadProgress }
   | { status: 'ready'; agent: LocalAgent }
-  | { status: 'error'; message: string; cached: boolean };
+  /** `storageQuotaBytes` is set when the browser's per-site storage limit is too small for the model. */
+  | { status: 'error'; message: string; cached: boolean; storageQuotaBytes?: number };
 
 // Per-browser convenience only: remembers that this Facilitator opted in, so a later visit starts the
 // already-downloaded model without asking again. Storage can be unavailable (private windows), so
@@ -66,7 +68,12 @@ export function useLocalAgent(): { state: LocalAgentState; start: () => void } {
     loadLocalEngine((progress) => setState({ status: 'loading', progress }))
       .then((engine) => setState({ status: 'ready', agent: createLocalAgent(engine) }))
       .catch((error: unknown) =>
-        setState({ status: 'error', message: error instanceof Error ? error.message : String(error), cached: false }),
+        setState({
+          status: 'error',
+          message: error instanceof Error ? error.message : String(error),
+          cached: false,
+          storageQuotaBytes: error instanceof StorageLimitError ? error.quotaBytes : undefined,
+        }),
       );
   }, []);
 

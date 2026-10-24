@@ -724,6 +724,38 @@ pre {
   accent-color: var(--modeller-teal-bright);
 }
 
+.local-model-help {
+  margin: 0.25rem 0 0.75rem;
+  border-left: 3px solid #c0392b;
+  padding: 0.4rem 0 0.4rem 0.75rem;
+}
+
+.local-model-help ol {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.25rem;
+}
+
+.local-model-help li {
+  margin-bottom: 0.3rem;
+}
+
+.local-model-help code {
+  border-radius: 0.3rem;
+  background: color-mix(in srgb, var(--modeller-mint) 20%, var(--modeller-surface));
+  padding: 0.05rem 0.3rem;
+  font-size: 0.82rem;
+}
+
+.local-model-help .copy-link-action {
+  vertical-align: middle;
+}
+
+/* Two classes, to win over .local-model-panel p. */
+.local-model-help .local-model-help-browser {
+  margin: 0.4rem 0 0;
+  font-weight: 700;
+}
+
 .ai-source-choice {
   display: flex;
   flex-wrap: wrap;

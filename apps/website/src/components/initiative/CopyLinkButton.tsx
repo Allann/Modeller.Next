@@ -2,14 +2,15 @@
 
 import { useState } from 'react';
 
-export function CopyLinkButton({ url }: { url: string }) {
+/** `label` names what is copied, for screen readers; it defaults to the Domain Expert link. */
+export function CopyLinkButton({ url, label = 'Domain Expert link' }: { url: string; label?: string }) {
   const [copied, setCopied] = useState(false);
 
   return (
     <button
       type="button"
       className="copy-link-action"
-      aria-label={copied ? 'Domain Expert link copied' : 'Copy Domain Expert link'}
+      aria-label={copied ? `${label} copied` : `Copy ${label}`}
       title={copied ? 'Copied' : 'Copy link'}
       onClick={() => {
         void navigator.clipboard?.writeText(url).then(() => {

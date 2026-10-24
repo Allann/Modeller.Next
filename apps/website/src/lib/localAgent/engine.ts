@@ -1,5 +1,5 @@
 import { LocalAgentError, type ChatPrompt } from './prompts';
-import { describe, startWithFallback, type CacheBackend, type LocalChatEngine } from './storageFallback';
+import { describe, startWithFallback, type CacheBackend, type LocalChatEngine, type StorageEstimate } from './storageFallback';
 
 export type { LocalChatEngine } from './storageFallback';
 
@@ -13,8 +13,6 @@ export type { LocalChatEngine } from './storageFallback';
 export const LOCAL_MODEL_ID = 'Llama-3.2-3B-Instruct-q4f16_1-MLC';
 export const LOCAL_MODEL_LABEL = 'Llama 3.2 3B Instruct';
 export const LOCAL_MODEL_DOWNLOAD_SIZE = '1.8 GB';
-/** Weights (1,807 MB) plus the WebGPU library and configuration, with a small margin. */
-const LOCAL_MODEL_STORAGE_BYTES = 1.9e9;
 
 /** Room for the longest answer (a full Discovery Gate) inside the 4,096-token context window. */
 const MAX_OUTPUT_TOKENS = 900;
@@ -59,39 +57,19 @@ export async function isModelCached(): Promise<boolean> {
   return (await cachedBackend()) !== null;
 }
 
-function gigabytes(bytes: number): string {
-  return `${(bytes / 1e9).toFixed(1)} GB`;
-}
-
-function storageMessage(availableBytes: number | null): string {
-  const limit = availableBytes === null ? '' : ` This browser lets this site store only about ${gigabytes(Math.max(availableBytes, 0))}.`;
-  return `The local model needs about ${LOCAL_MODEL_DOWNLOAD_SIZE} of browser storage.${limit} `
-    + 'This usually means the browser deletes site data when it closes, which limits each site to about 0.3 GB, '
-    + 'however much disk space is free. To fix it, let modeller.website keep its data. '
-    + 'Chrome: Settings > Privacy and security > Site settings > Additional content settings > On-device site data > '
-    + '"Allowed to save data on your device" > Add. '
-    + 'Edge: Settings > Privacy, search, and services > "Choose what to clear every time you close the browser" > '
-    + '"Cookies and other site data" > "Don’t clear" > Add. '
-    + 'A private window has the same limit. Then reload the page and try again.';
-}
-
 /**
- * Stops before a download that cannot fit. The common cause is not disk space: when the browser is
- * set to clear site data on close (or in a private window), Chrome and Edge cap each site at about
- * 300 MB (web-llm issues #144 and #374). Without this check the download fails part-way with a bare
- * "QuotaExceededError". Also asks the browser to keep the model when storage gets low.
+ * The browser's storage estimate for this site. Also asks the browser to keep the model when storage
+ * gets low; the browser may decline, and the download works either way.
  */
-async function ensureStorageForDownload(): Promise<void> {
-  if (typeof navigator === 'undefined' || !navigator.storage?.estimate) return;
+async function estimate(): Promise<StorageEstimate | null> {
+  if (typeof navigator === 'undefined' || !navigator.storage?.estimate) return null;
   try {
     await navigator.storage.persist?.();
+    const { quota, usage } = await navigator.storage.estimate();
+    return quota === undefined ? null : { quota, usage: usage ?? 0 };
   } catch {
-    // Persistence is a request the browser may decline; the download still works without it.
+    return null;
   }
-  const { quota, usage } = await navigator.storage.estimate();
-  if (quota === undefined) return;
-  const available = quota - (usage ?? 0);
-  if (available < LOCAL_MODEL_STORAGE_BYTES) throw new LocalAgentError(storageMessage(available));
 }
 
 /** A failed download leaves part of the model in storage, using quota the next attempt needs. */
@@ -119,7 +97,7 @@ export function loadLocalEngine(onProgress: (progress: LoadProgress) => void): P
 function startEngine(onProgress: (progress: LoadProgress) => void): Promise<LocalChatEngine> {
   return startWithFallback({
     cachedBackend,
-    ensureStorageForDownload,
+    estimate,
     create: (backend) => createEngine(onProgress, backend),
     removePartialDownload,
     onRetry: () => onProgress({ fraction: 0, text: 'The browser cache refused the model. Trying the browser database instead…' }),

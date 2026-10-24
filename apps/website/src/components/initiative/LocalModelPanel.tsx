@@ -2,6 +2,7 @@
 
 import { LOCAL_MODEL_DOWNLOAD_SIZE, LOCAL_MODEL_LABEL } from '@/lib/localAgent/engine';
 import type { LocalAgentState } from '@/lib/localAgent/useLocalAgent';
+import { LocalModelStorageHelp } from './LocalModelStorageHelp';
 
 export type AiSource = 'local' | 'gateway';
 
@@ -42,7 +43,9 @@ export function LocalModelPanel({
               ? `The model (${LOCAL_MODEL_LABEL}) is already downloaded.`
               : `The first start downloads the model (${LOCAL_MODEL_LABEL}, about ${LOCAL_MODEL_DOWNLOAD_SIZE}). Your browser keeps it for later visits.`}
           </p>
-          {state.status === 'error' && <p className="form-error" role="alert">{state.message}</p>}
+          {state.status === 'error' && (state.storageQuotaBytes !== undefined
+            ? <LocalModelStorageHelp message={state.message} />
+            : <p className="form-error" role="alert">{state.message}</p>)}
           <button className="secondary-action" type="button" onClick={onStart}>
             {state.cached ? 'Start the local model' : `Download (${LOCAL_MODEL_DOWNLOAD_SIZE}) and start the local model`}
           </button>
