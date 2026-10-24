@@ -10,6 +10,8 @@ import { LocalAgentError, type ChatPrompt } from './prompts';
 export const LOCAL_MODEL_ID = 'Llama-3.2-3B-Instruct-q4f16_1-MLC';
 export const LOCAL_MODEL_LABEL = 'Llama 3.2 3B Instruct';
 export const LOCAL_MODEL_DOWNLOAD_SIZE = '1.8 GB';
+/** Weights (1,807 MB) plus the WebGPU library and configuration, with a small margin. */
+const LOCAL_MODEL_STORAGE_BYTES = 1.9e9;
 
 /** Room for the longest answer (a full Discovery Gate) inside the 4,096-token context window. */
 const MAX_OUTPUT_TOKENS = 900;
@@ -44,17 +46,71 @@ export async function isModelCached(): Promise<boolean> {
   }
 }
 
+function gigabytes(bytes: number): string {
+  return `${(bytes / 1e9).toFixed(1)} GB`;
+}
+
+function storageMessage(availableBytes: number | null): string {
+  const limit = availableBytes === null ? '' : ` This browser lets this site store only about ${gigabytes(Math.max(availableBytes, 0))}.`;
+  return `The local model needs about ${LOCAL_MODEL_DOWNLOAD_SIZE} of browser storage.${limit} `
+    + 'This usually means the browser deletes site data when it closes, which limits each site to about 0.3 GB, '
+    + 'however much disk space is free. To fix it, let modeller.website keep its data. '
+    + 'Chrome: Settings > Privacy and security > Site settings > Additional content settings > On-device site data > '
+    + '"Allowed to save data on your device" > Add. '
+    + 'Edge: Settings > Privacy, search, and services > "Choose what to clear every time you close the browser" > '
+    + '"Cookies and other site data" > "Don’t clear" > Add. '
+    + 'A private window has the same limit. Then reload the page and try again.';
+}
+
+/**
+ * Stops before a download that cannot fit. The common cause is not disk space: when the browser is
+ * set to clear site data on close (or in a private window), Chrome and Edge cap each site at about
+ * 300 MB (web-llm issues #144 and #374). Without this check the download fails part-way with a bare
+ * "QuotaExceededError". Also asks the browser to keep the model when storage gets low.
+ */
+async function ensureStorageForDownload(): Promise<void> {
+  if (await isModelCached() || typeof navigator === 'undefined' || !navigator.storage?.estimate) return;
+  try {
+    await navigator.storage.persist?.();
+  } catch {
+    // Persistence is a request the browser may decline; the download still works without it.
+  }
+  const { quota, usage } = await navigator.storage.estimate();
+  if (quota === undefined) return;
+  const available = quota - (usage ?? 0);
+  if (available < LOCAL_MODEL_STORAGE_BYTES) throw new LocalAgentError(storageMessage(available));
+}
+
+function isQuotaError(error: unknown): boolean {
+  return error instanceof Error && (error.name === 'QuotaExceededError' || /quota/i.test(error.message));
+}
+
+/** A failed download leaves part of the model in storage, using quota the next attempt needs. */
+async function removePartialDownload(): Promise<void> {
+  try {
+    const { deleteModelAllInfoInCache } = await import('@mlc-ai/web-llm');
+    await deleteModelAllInfoInCache(LOCAL_MODEL_ID);
+  } catch {
+    // Nothing more can be done here; the storage message already tells the Facilitator what to do.
+  }
+}
+
 let loading: Promise<LocalChatEngine> | null = null;
 
 /** Loads the model once per page (downloading it on first use) and reuses it after that. */
 export function loadLocalEngine(onProgress: (progress: LoadProgress) => void): Promise<LocalChatEngine> {
   if (typeof window !== 'undefined' && window.__modellerLocalEngine) return Promise.resolve(window.__modellerLocalEngine);
-  loading ??= createEngine(onProgress).catch((error: unknown) => {
-    loading = null;
-    throw error instanceof LocalAgentError
-      ? error
-      : new LocalAgentError(`The local model could not start: ${error instanceof Error ? error.message : String(error)}`);
-  });
+  loading ??= ensureStorageForDownload()
+    .then(() => createEngine(onProgress))
+    .catch(async (error: unknown) => {
+      loading = null;
+      if (error instanceof LocalAgentError) throw error;
+      if (isQuotaError(error)) {
+        await removePartialDownload();
+        throw new LocalAgentError(storageMessage(null));
+      }
+      throw new LocalAgentError(`The local model could not start: ${error instanceof Error ? error.message : String(error)}`);
+    });
   return loading;
 }
 

@@ -209,6 +209,35 @@ test.describe('cockpit with the local model', () => {
     await expect(panel.getByRole('radio', { name: 'AI Gateway (higher quality)' })).not.toBeChecked();
   });
 
+  test('stops before the download when the browser cannot store the model', async ({ page }) => {
+    // The real engine path (no fake engine): WebGPU is present, but this site may store only 0.5 GB.
+    const modelRequests: string[] = [];
+    page.on('request', (request) => {
+      if (/huggingface\.co|hf\.co|raw\.githubusercontent\.com/.test(request.url())) modelRequests.push(request.url());
+    });
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'gpu', { value: {}, configurable: true });
+      Object.defineProperty(navigator, 'storage', {
+        value: { estimate: async () => ({ quota: 500e6, usage: 0 }), persist: async () => false },
+        configurable: true,
+      });
+    });
+    await page.route(`${API_BASE_URL}/**`, (route: Route) => {
+      const url = new URL(route.request().url());
+      return url.pathname === '/v1/initiative/agent-status'
+        ? route.fulfill({ json: { available: false, model: null, requiresApiKey: true, freeModel: null } })
+        : route.fulfill({ json: session() });
+    });
+    await page.goto(`/initiative/${SESSION_ID}?credential=${encodeURIComponent(CREDENTIAL)}`);
+    const panel = page.getByRole('region', { name: 'Local AI model' });
+
+    await panel.getByRole('button', { name: /Download .* and start the local model/ }).click();
+
+    await expect(panel.getByRole('alert')).toContainText('deletes site data when it closes');
+    await expect(panel.getByRole('alert')).toContainText('only about 0.5 GB');
+    expect(modelRequests).toEqual([]);
+  });
+
   test('a blank question is written by the local model and saved as ordinary text', async ({ page }) => {
     const calls = await openCockpit(page, { question: '{"text": "What could go wrong if nothing changes?"}' });
     await page.getByRole('button', { name: /start the local model/ }).click();
