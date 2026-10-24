@@ -3,4 +3,9 @@
   <ItemGroup>
     <ProjectReference Include="../Modeller.Initiative/Modeller.Initiative.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Canonical Agent Participant prompts; apps/website/src/lib/localAgent/agent-prompts.json is a
+         byte-identical copy for the in-browser local model (checked by AgentPromptsTests). -->
+    <EmbeddedResource Include="agent-prompts.json" LogicalName="Modeller.Initiative.OpenAICompatible.agent-prompts.json" />
+  </ItemGroup>
 </Project>

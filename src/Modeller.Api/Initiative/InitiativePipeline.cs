@@ -171,35 +171,47 @@ public sealed class InitiativePipeline(
             if (!Enum.TryParse<GateKind>(request.Kind, out var kind))
                 return InitiativeMutationOutcome.Early(Invalid($"'{request.Kind}' is not a recognised gate."));
 
-            IReadOnlyList<GateCheckResult> results;
-            string? recommendedText = null;
-            InitiativeField? recommendedField = null;
-
+            GateEvaluationInput input;
             if (request.ManualResults is { Count: > 0 } manual)
             {
-                var parsed = new List<GateCheckResult>();
-                foreach (var result in manual)
-                {
-                    if (!Enum.TryParse<GateCheck>(result.Check, out var check))
-                        return InitiativeMutationOutcome.Early(Invalid($"'{result.Check}' is not a recognised gate check."));
-                    parsed.Add(new GateCheckResult(check, result.Passed, result.Reason));
-                }
-
-                results = parsed;
+                var (parsed, error) = ParseManualGateEvaluation(manual, request.RecommendedQuestion);
+                if (error is not null) return InitiativeMutationOutcome.Early(error);
+                input = parsed!;
             }
             else
             {
                 var suggestion = await advisor.EvaluateGateAsync(new GateEvaluationRequest(kind, session.BuildStructuredFields()), cancellationToken);
                 if (!suggestion.Succeeded) return InitiativeMutationOutcome.Early(AgentUnavailable(suggestion.Status, suggestion.FailureReason));
-                results = suggestion.Value!.Results;
-                recommendedText = suggestion.Value.RecommendedQuestionText;
-                recommendedField = suggestion.Value.RecommendedQuestionField;
+                input = new(suggestion.Value!.Results, suggestion.Value.RecommendedQuestionText, suggestion.Value.RecommendedQuestionField);
             }
 
-            var evaluation = new GateEvaluation(kind, results, null, DateTimeOffset.UtcNow, AgentEvaluationStatus.Ready);
-            var updated = session.RecordGateEvaluation(evaluation, recommendedText, recommendedField);
+            var evaluation = new GateEvaluation(kind, input.Results, null, DateTimeOffset.UtcNow, AgentEvaluationStatus.Ready);
+            var updated = session.RecordGateEvaluation(evaluation, input.RecommendedText, input.RecommendedField);
             return InitiativeMutationOutcome.Success(updated);
         });
+
+    private sealed record GateEvaluationInput(IReadOnlyList<GateCheckResult> Results, string? RecommendedText, InitiativeField? RecommendedField);
+
+    /// <summary>
+    /// Parses gate results that were produced outside the server — by the Facilitator, or by the
+    /// website's in-browser local model, which also sends the evaluation's recommended next question.
+    /// </summary>
+    private static (GateEvaluationInput? Input, ApiResult? Error) ParseManualGateEvaluation(
+        IReadOnlyList<GateCheckResultDto> manual, RecommendedQuestionDto? recommended)
+    {
+        var results = new List<GateCheckResult>();
+        foreach (var result in manual)
+        {
+            if (!Enum.TryParse<GateCheck>(result.Check, out var check))
+                return (null, Invalid($"'{result.Check}' is not a recognised gate check."));
+            results.Add(new GateCheckResult(check, result.Passed, result.Reason));
+        }
+
+        if (recommended is null || string.IsNullOrWhiteSpace(recommended.Text)) return (new(results, null, null), null);
+        if (!Enum.TryParse<InitiativeField>(recommended.Field, out var field))
+            return (null, Invalid($"'{recommended.Field}' is not a recognised Initiative field."));
+        return (new(results, recommended.Text, field), null);
+    }
 
     public Task<ApiResult> DismissGateFindingAsync(Guid id, string? credential, string kind, DismissGateFindingRequestDto request, CancellationToken cancellationToken) =>
         ExecuteAsync(id, credential, InitiativeCredentialRole.Facilitator, null, cancellationToken, session =>

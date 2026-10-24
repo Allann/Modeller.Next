@@ -67,6 +67,51 @@ public sealed class InitiativeEndpointsTests : IDisposable
     }
 
     [Fact]
+    public async Task ManualGateResults_WithRecommendedQuestion_ProposeItWithAgentProvenance()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (facilitatorCredential, _, session) = await CreateSessionAsync(ct);
+
+        var response = await PostAsync($"/v1/initiative/{session.Id}/gate-evaluations", facilitatorCredential,
+            new RecordGateEvaluationRequestDto("Discovery",
+                [new GateCheckResultDto("AffectedUsersNamed", false, "Nobody is named yet.")],
+                new RecommendedQuestionDto("Who is affected when approvals are late?", "AffectedUsers")), ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = await response.Content.ReadFromJsonAsync<InitiativeSessionDto>(ApiJson.Options, ct);
+        var recommended = Assert.Single(updated!.Questions);
+        Assert.Equal("Who is affected when approvals are late?", recommended.Text);
+        Assert.Equal("AffectedUsers", recommended.Field);
+        Assert.Equal("Agent", recommended.AuthorRole);
+    }
+
+    [Fact]
+    public async Task ManualGateResults_WithUnknownRecommendedField_Returns400()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (facilitatorCredential, _, session) = await CreateSessionAsync(ct);
+
+        var response = await PostAsync($"/v1/initiative/{session.Id}/gate-evaluations", facilitatorCredential,
+            new RecordGateEvaluationRequestDto("Discovery",
+                [new GateCheckResultDto("AffectedUsersNamed", false, "Nobody is named yet.")],
+                new RecommendedQuestionDto("Who is affected?", "NotAField")), ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ManualGateResults_WithUnknownCheck_Returns400()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (facilitatorCredential, _, session) = await CreateSessionAsync(ct);
+
+        var response = await PostAsync($"/v1/initiative/{session.Id}/gate-evaluations", facilitatorCredential,
+            new RecordGateEvaluationRequestDto("Discovery", [new GateCheckResultDto("NotACheck", true, "Fine.")]), ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Get_UnknownInitiative_WithNoCredential_Returns400WithStructuredEnvelope()
     {
         var response = await _client.GetAsync($"/v1/initiative/{Guid.NewGuid()}", TestContext.Current.CancellationToken);

@@ -23,59 +23,22 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly ActivitySource ActivitySource = new("Modeller.Initiative.OpenAICompatible");
 
-    private const string QuestionSystemPrompt =
-        """
-        You are the Agent Participant helping a Facilitator run an Initiative through Modeller.
-        Propose exactly one short, specific Prompted Question that would elicit the target field's
-        content. Respond only as JSON, no commentary: {"text": "Question text?"}
-        """;
 
-    private const string FieldUpdateSystemPrompt =
-        """
-        You are the Agent Participant. Draft a concise, third-person structured-field entry from the
-        Domain Expert's accepted response — do not invent facts not present in the response. Respond
-        only as JSON, no commentary: {"draftText": "Entry text."}
-        """;
 
-    private const string InterventionSystemPrompt =
-        """
-        You are the Agent Participant helping Shape an Initiative. Propose two to five candidate
-        interventions against the current outcomes and constraints, drawn only from these types:
-        Process, People, Organisation, Policy, Information, Technology, Experiment, NoAction. Always
-        include a NoAction baseline. Respond only as JSON, no commentary:
-        {"suggestions": [{"type": "Process", "description": "...", "rationale": "..."}]}
-        """;
 
-    private const string GateSystemPrompt =
-        """
-        You are the Agent Participant evaluating a gate. For Discovery, use exactly these checks:
-        OriginalChangeRequestCaptured, ProblemStatementDescribesBusinessProblem, AffectedUsersNamed,
-        PainPointsAreConcrete, OutcomesAreObservable, SuccessCriteriaAreUnderstandable,
-        NonGoalsAreListed, ConstraintsAreListed, AssumptionsAreListed, OpenQuestionsAreListed,
-        RisksAreListed, NoUnresolvedSolutionLedLanguage. For Shape, use exactly:
-        SelectedTechnologyInterventionsHaveRationale, NoActionWasConsidered. The gate is strictly
-        advisory: findings only ever inform the Facilitator, never block them. Respond only as JSON,
-        no commentary:
-        {"checks": [{"check": "AffectedUsersNamed", "passed": true, "reason": "Short reason."}],
-         "recommendedQuestion": null}
-        Use null for recommendedQuestion when every check passes, otherwise
-        {"text": "Question text?", "field": "AffectedUsers"}.
-        """;
 
     public Task<AgentAdvisorResult<AgentQuestionSuggestion>> ProposeQuestionAsync(
         ProposeQuestionRequest request, CancellationToken cancellationToken = default) =>
         CompleteAsync(
             "propose_question",
-            QuestionSystemPrompt,
-            $"""
-            Original change request:
-            {request.OriginalChangeRequest}
-
-            Target field: {request.TargetField}
-
-            Current structured fields:
-            {request.CurrentFields.ToMarkdown()}
-            """,
+            AgentPrompts.ProposeQuestion,
+            new Dictionary<string, string>
+            {
+                ["originalChangeRequest"] = request.OriginalChangeRequest,
+                ["targetField"] = request.TargetField.ToString(),
+                ["targetFieldDescription"] = AgentPrompts.ProposeQuestion.DescribeField(request.TargetField),
+                ["currentFields"] = request.CurrentFields.ToMarkdown(),
+            },
             root => new AgentQuestionSuggestion(RequireString(root, "text"), request.TargetField),
             cancellationToken);
 
@@ -83,16 +46,13 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
         DraftFieldUpdateRequest request, CancellationToken cancellationToken = default) =>
         CompleteAsync(
             "draft_field_update",
-            FieldUpdateSystemPrompt,
-            $"""
-            Field: {request.Field}
-
-            Accepted response:
-            {request.AcceptedResponseText}
-
-            Existing entries for this field:
-            {string.Join(Environment.NewLine, request.ExistingEntries.Select(entry => $"- {entry}"))}
-            """,
+            AgentPrompts.DraftFieldUpdate,
+            new Dictionary<string, string>
+            {
+                ["field"] = request.Field.ToString(),
+                ["acceptedResponse"] = request.AcceptedResponseText,
+                ["existingEntries"] = string.Join(Environment.NewLine, request.ExistingEntries.Select(entry => $"- {entry}")),
+            },
             root => new AgentFieldUpdateSuggestion(request.Field, RequireString(root, "draftText")),
             cancellationToken);
 
@@ -100,11 +60,8 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
         ProposeInterventionsRequest request, CancellationToken cancellationToken = default) =>
         CompleteAsync(
             "propose_interventions",
-            InterventionSystemPrompt,
-            $"""
-            Current structured fields:
-            {request.CurrentFields.ToMarkdown()}
-            """,
+            AgentPrompts.ProposeInterventions,
+            new Dictionary<string, string> { ["currentFields"] = request.CurrentFields.ToMarkdown() },
             ParseInterventionSuggestions,
             cancellationToken);
 
@@ -112,15 +69,19 @@ public sealed class OpenAiCompatibleAgentAdvisor(HttpClient httpClient, AgentAdv
         GateEvaluationRequest request, CancellationToken cancellationToken = default) =>
         CompleteAsync(
             "evaluate_gate",
-            GateSystemPrompt,
-            $"""
-            Gate: {request.Kind}
-
-            Current structured fields:
-            {request.CurrentFields.ToMarkdown()}
-            """,
+            AgentPrompts.EvaluateGate,
+            new Dictionary<string, string>
+            {
+                ["gate"] = request.Kind.ToString(),
+                ["currentFields"] = request.CurrentFields.ToMarkdown(),
+            },
             ParseGateEvaluationSuggestion,
             cancellationToken);
+
+    private Task<AgentAdvisorResult<T>> CompleteAsync<T>(
+        string operationName, AgentPromptTemplate prompt, IReadOnlyDictionary<string, string> values, Func<JsonElement, T> parse,
+        CancellationToken cancellationToken) =>
+        CompleteAsync(operationName, prompt.System, prompt.RenderUser(values), parse, cancellationToken);
 
     private async Task<AgentAdvisorResult<T>> CompleteAsync<T>(
         string operationName, string systemPrompt, string userPrompt, Func<JsonElement, T> parse, CancellationToken cancellationToken)

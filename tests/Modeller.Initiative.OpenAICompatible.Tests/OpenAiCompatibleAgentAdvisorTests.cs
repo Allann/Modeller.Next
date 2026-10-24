@@ -42,6 +42,23 @@ public class OpenAiCompatibleAgentAdvisorTests
     }
 
     [Fact]
+    public async Task ProposeQuestionAsync_UserPromptDescribesTheTargetField()
+    {
+        JsonElement? requestBody = null;
+        var handler = new FakeHandler(request =>
+        {
+            requestBody = request.Content!.ReadFromJsonAsync<JsonElement>().GetAwaiter().GetResult();
+            return FakeChatCompletion("""{"text": "Who feels the delay first?"}""").Response(request);
+        });
+
+        await CreateAdvisor(handler).ProposeQuestionAsync(
+            new ProposeQuestionRequest("Build a new system", EmptyFields(), InitiativeField.AffectedUsers), TestContext.Current.CancellationToken);
+
+        var userMessage = requestBody!.Value.GetProperty("messages")[1].GetProperty("content").GetString();
+        Assert.Contains("Target field: AffectedUsers (which people or groups are affected, and who feels it first)", userMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ProposeQuestionAsync_ContextAboveConfiguredLimit_DoesNotCallProvider()
     {
         var called = false;

@@ -29,8 +29,14 @@ public sealed record SelectInterventionRequestDto(string Type, string Descriptio
 public sealed record LinkDesignWorkspaceRequestDto(string Reference);
 
 /// <summary>If <see cref="ManualResults"/> is omitted, the pipeline asks the Agent Advisor to
-/// evaluate the gate instead.</summary>
-public sealed record RecordGateEvaluationRequestDto(string Kind, IReadOnlyList<GateCheckResultDto>? ManualResults);
+/// evaluate the gate instead. <see cref="RecommendedQuestion"/> is only read together with
+/// <see cref="ManualResults"/>: it lets results produced outside the server — the website's
+/// in-browser local model — keep the evaluation's recommended next question, which is then proposed
+/// with Agent provenance exactly as a server-side evaluation's would be.</summary>
+public sealed record RecordGateEvaluationRequestDto(
+    string Kind, IReadOnlyList<GateCheckResultDto>? ManualResults, RecommendedQuestionDto? RecommendedQuestion = null);
+
+public sealed record RecommendedQuestionDto(string Text, string Field);
 
 public sealed record DismissGateFindingRequestDto(string Check, string? Reason);
 
