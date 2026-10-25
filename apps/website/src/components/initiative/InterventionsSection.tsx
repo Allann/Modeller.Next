@@ -6,6 +6,7 @@ import { InitiativeApiError, initiativeApi } from '@/lib/initiativeApi';
 import { LocalAgentError } from '@/lib/localAgent/prompts';
 import type { LocalAgent } from '@/lib/localAgent/useLocalAgent';
 import type { RunAction } from './types';
+import { DocsHelpLink } from '@/components/DocsHelpLink';
 
 export function InterventionsSection({ id, credential, session, run, aiAvailable, agentApiKey, localAgent }: { id: string; credential: string; session: InitiativeSessionDto; run: RunAction; aiAvailable: boolean; agentApiKey: string; localAgent: LocalAgent | null }) {
   const [type, setType] = useState<InterventionType>('Process');
@@ -32,7 +33,7 @@ export function InterventionsSection({ id, credential, session, run, aiAvailable
 
   return (
     <section aria-label="Shape: interventions">
-      <h2>Shape: interventions</h2>
+      <h2>Shape: interventions <DocsHelpLink topic="shape" /></h2>
       {aiAvailable ? (
         <div className="inline-form">
           <button className="secondary-action" disabled={asking} onClick={() => void askForSuggestions()}>
@@ -98,6 +99,7 @@ export function InterventionsSection({ id, credential, session, run, aiAvailable
               onChange={(event) => setContinuesToDesignWorkspace(event.target.checked)}
             />
             Continue into System Design
+            <DocsHelpLink topic="systemDesignHandoff" />
           </label>
         )}
         <button className="secondary-action" type="submit">

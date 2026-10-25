@@ -5,6 +5,7 @@ import { CHECKS_BY_GATE, GATE_CHECK_LABELS, type GateCheckResultDto, type GateKi
 import { initiativeApi } from '@/lib/initiativeApi';
 import type { LocalAgent } from '@/lib/localAgent/useLocalAgent';
 import type { RunAction } from './types';
+import { DocsHelpLink } from '@/components/DocsHelpLink';
 
 export function GateSection({ kind, session, credential, run, aiAvailable, agentApiKey, localAgent }: { kind: GateKind; session: InitiativeSessionDto; credential: string; run: RunAction; aiAvailable: boolean; agentApiKey: string; localAgent: LocalAgent | null }) {
   const evaluation = kind === 'Discovery' ? session.latestDiscoveryGateEvaluation : session.latestShapeGateEvaluation;
@@ -34,7 +35,7 @@ export function GateSection({ kind, session, credential, run, aiAvailable, agent
 
   return (
     <section aria-label={`${kind} Gate`}>
-      <h2>{kind} Gate</h2>
+      <h2>{kind} Gate <DocsHelpLink topic={kind === 'Discovery' ? 'discoveryGate' : 'shape'} /></h2>
       <p className="hero-note">Advisory only — never blocks proceeding.</p>
       {aiAvailable ? (
         <div className="inline-form">

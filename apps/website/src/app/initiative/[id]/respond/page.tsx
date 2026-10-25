@@ -7,6 +7,7 @@ import { useInitiativeSession } from '@/lib/useInitiativeSession';
 import { ConnectionStatus } from '@/components/initiative/ConnectionStatus';
 import { InitiativeDocument } from '@/components/initiative/InitiativeDocument';
 import { buildStructuredFields, INITIATIVE_FIELD_LABELS } from '@/lib/initiativeTypes';
+import { DocsHelpLink } from '@/components/DocsHelpLink';
 
 /** The Domain Expert's focused view — deliberately not the whole cockpit surface (issue #91):
  * just the current sent question and a place to answer it. Enforced on the wire, not just in what
@@ -88,7 +89,7 @@ export default function DomainExpertRespondPage({ params }: { params: Promise<{ 
         </div>
 
         <section className="accepted-summary" aria-label="Accepted answers">
-        <h2>Accepted so far</h2>
+        <h2>Accepted so far <DocsHelpLink topic="roles" /></h2>
         {acceptedEntries.length > 0 ? (
           <ul className="item-list">
             {acceptedEntries.flatMap(([field, values]) =>

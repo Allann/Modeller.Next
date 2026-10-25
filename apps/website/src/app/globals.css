@@ -688,6 +688,24 @@ pre {
   text-decoration: underline;
 }
 
+.docs-help-link {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.35rem;
+  border-radius: 999px;
+  color: var(--modeller-muted);
+  vertical-align: middle;
+}
+
+.docs-help-link:hover {
+  color: var(--modeller-teal-bright);
+}
+
+.docs-help-link:focus-visible {
+  outline: 2px solid var(--modeller-teal-bright);
+  outline-offset: 2px;
+}
+
 .inline-form {
   display: flex;
   flex-wrap: wrap;

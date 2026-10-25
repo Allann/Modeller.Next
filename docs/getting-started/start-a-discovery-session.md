@@ -29,7 +29,7 @@ You will facilitate: guiding the session, deciding which questions to ask, and
 accepting what becomes part of the record. See
 [Initiatives](/docs/concepts/initiatives) for what each role is responsible for.
 
-## 1. Open modeller.website and create the Initiative
+## 1. Open modeller.website and create the Initiative [#create-the-initiative]
 
 Go to **[modeller.website](https://modeller.website)** and fill in the form on
 the landing page:
@@ -46,7 +46,7 @@ Select **Start the Initiative**. You land on the Facilitator cockpit at
 > **Bookmark that URL.** There are no accounts, so the link is the only way back
 > into your Initiative.
 
-## 2. Send the Domain Expert their link
+## 2. Send the Domain Expert their link [#domain-expert-link]
 
 The cockpit shows a **Domain Expert link** (`.../initiative/<id>/respond`).
 Send it to them however you normally would.
@@ -55,7 +55,7 @@ That view is deliberately narrow: it shows the change request and the one
 question currently waiting for them. Questions you are still drafting, gate
 findings, and the intervention comparison stay on your side of the session.
 
-## 3. Work the question loop through Discover and Frame
+## 3. Work the question loop through Discover and Frame [#question-loop]
 
 The cockpit's **Discover & Frame** section drives the whole conversation with one
 repeating loop:
@@ -72,7 +72,7 @@ The phase indicator moves through Capture Request, Clarify Problem, Identify
 Impact, Define Outcomes, and Set Boundaries as those fields fill in. Both views
 update live, so you can run this in a call or asynchronously over days.
 
-## 4. Check the Discovery Gate, then Shape
+## 4. Check the Discovery Gate, then Shape [#discovery-gate]
 
 The **Discovery Gate** reports what is still thin — a missing outcome, an
 unevidenced problem. It is advisory: it never blocks you, and you can record an
@@ -83,7 +83,7 @@ organisation, policy, information, technology, experiment, and no action). Selec
 as many as the outcome genuinely needs, and mark for each whether it continues
 into a design workspace. The Shape Gate is advisory in exactly the same way.
 
-## 5. Finalize, or continue into System Design
+## 5. Finalize, or continue into System Design [#finalize]
 
 Finalizing records the Initiative as it stands, including whether it closed
 cleanly or with open gate findings. You can reopen it later.

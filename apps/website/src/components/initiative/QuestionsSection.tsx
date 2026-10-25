@@ -6,6 +6,7 @@ import { initiativeApi } from '@/lib/initiativeApi';
 import { INITIATIVE_FIELD_GUIDANCE } from '@/lib/initiativeFieldGuidance';
 import type { LocalAgent } from '@/lib/localAgent/useLocalAgent';
 import type { RunAction } from './types';
+import { DocsHelpLink } from '@/components/DocsHelpLink';
 
 export function QuestionsSection({
   session,
@@ -37,7 +38,7 @@ export function QuestionsSection({
 
   return (
     <section aria-label="Questions">
-      <h2>Discover &amp; Frame</h2>
+      <h2>Discover &amp; Frame <DocsHelpLink topic="questionLoop" /></h2>
       {facilitatorId && (
         <>
         <form
@@ -78,6 +79,7 @@ export function QuestionsSection({
         <aside id="field-guidance" className="field-guidance" aria-live="polite">
           <p className="field-guidance-title">
             {INITIATIVE_FIELD_LABELS[field]} <span className="field-guidance-phase">{PHASE_OF_FIELD[field]}</span>
+            <DocsHelpLink topic={PHASE_OF_FIELD[field] === 'Discover' ? 'discover' : 'frame'} />
           </p>
           <p>{guidance.captures}</p>
           <p className="field-guidance-example">

@@ -8,6 +8,7 @@ import { capture } from '@/lib/productAnalytics';
 import { saveAgentApiKey } from '@/lib/agentApiKey';
 import { saveInitiativeCredentials } from '@/lib/initiativeCredentials';
 import type { AgentAdvisorStatusResponse } from '@/lib/initiativeTypes';
+import { DocsHelpLink } from '@/components/DocsHelpLink';
 
 export default function HomePage() {
   const router = useRouter();
@@ -98,7 +99,7 @@ export default function HomePage() {
         </form>
 
         <section className="initiative-steps" aria-labelledby="initiative-steps-title">
-          <h2 id="initiative-steps-title">How it works</h2>
+          <h2><span id="initiative-steps-title">How it works</span> <DocsHelpLink topic="startDiscoverySession" /></h2>
           <ol>
             <li>Start the Initiative and send the private response link to the Domain Expert.</li>
             <li>Ask questions, then accept the answers that describe the problem and desired outcomes.</li>

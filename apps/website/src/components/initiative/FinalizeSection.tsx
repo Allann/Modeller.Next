@@ -5,6 +5,7 @@ import type { InitiativeSessionDto } from '@/lib/initiativeTypes';
 import { initiativeApi } from '@/lib/initiativeApi';
 import type { RunAction } from './types';
 import { InitiativeDocument } from './InitiativeDocument';
+import { DocsHelpLink } from '@/components/DocsHelpLink';
 
 export function FinalizeSection({ session, credential, run }: { session: InitiativeSessionDto; credential: string; run: RunAction }) {
   const [reason, setReason] = useState('');
@@ -17,7 +18,7 @@ export function FinalizeSection({ session, credential, run }: { session: Initiat
 
     return (
       <section aria-label="Finalization">
-        <h2>Archived</h2>
+        <h2>Archived <DocsHelpLink topic="finalize" /></h2>
         <p>
           This Initiative is available until {archiveExpiresAt.toLocaleString()}. Use the{' '}
           <a href={facilitatorLink}>Facilitator link</a> to return here and reopen it during this period.
@@ -32,7 +33,7 @@ export function FinalizeSection({ session, credential, run }: { session: Initiat
 
   return (
     <section aria-label="Finalize">
-      <h2>Finalize</h2>
+      <h2>Finalize <DocsHelpLink topic="finalize" /></h2>
       <form
         className="inline-form"
         onSubmit={(event) => {

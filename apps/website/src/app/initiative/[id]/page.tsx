@@ -18,6 +18,8 @@ import { LocalAgentError } from '@/lib/localAgent/prompts';
 import { useLocalAgent } from '@/lib/localAgent/useLocalAgent';
 import { loadAgentApiKey } from '@/lib/agentApiKey';
 import { loadDomainExpertCredential, loadFacilitatorCredential, saveInitiativeCredentials } from '@/lib/initiativeCredentials';
+import { DocsHelpLink } from '@/components/DocsHelpLink';
+import { docsHelpUrl } from '@/lib/docsHelp';
 
 export default function FacilitatorCockpitPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -95,17 +97,17 @@ export default function FacilitatorCockpitPage({ params }: { params: Promise<{ i
       )}
       {respondUrl ? (
         <p className="hero-note">
-          Domain Expert link: <a href={respondUrl}>{respondUrl}</a> <CopyLinkButton url={respondUrl} />
+          Domain Expert link: <a href={respondUrl}>{respondUrl}</a> <CopyLinkButton url={respondUrl} /> <DocsHelpLink topic="domainExpertLink" />
         </p>
       ) : (
         <p className="hero-note">
           The Domain Expert link is only available in the browser tab where you started this
-          Initiative. Return to that tab to copy it.
+          Initiative. Return to that tab to copy it. <DocsHelpLink topic="domainExpertLink" />
         </p>
       )}
       <p className="hero-note">
         New to Initiatives?{' '}
-        <a href="https://modeller.wiki/docs/guides/building-variation-initiative" target="_blank" rel="noreferrer">
+        <a href={docsHelpUrl('workedExample')} target="_blank" rel="noreferrer">
           Follow the worked building-variation example
         </a>
         .
