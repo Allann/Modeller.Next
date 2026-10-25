@@ -290,7 +290,7 @@ test.describe('cockpit with the local model', () => {
       if (/huggingface\.co|hf\.co|raw\.githubusercontent\.com/.test(request.url())) modelRequests.push(request.url());
     });
     await page.addInitScript(() => {
-      Object.defineProperty(navigator, 'gpu', { value: {}, configurable: true });
+      Object.defineProperty(navigator, 'gpu', { value: { requestAdapter: async () => ({}) }, configurable: true });
       Object.defineProperty(navigator, 'storage', {
         value: { estimate: async () => ({ quota: 500e6, usage: 0 }), persist: async () => false },
         configurable: true,
@@ -320,6 +320,48 @@ test.describe('cockpit with the local model', () => {
     await expect(help.getByRole('button', { name: 'Copy settings address' })).toBeVisible();
     await expect(help.getByRole('button', { name: 'Reload this page' })).toBeVisible();
     expect(modelRequests).toEqual([]);
+  });
+
+  test('shows GPU steps, and offers no download, when the browser gives no GPU', async ({ page }) => {
+    // WebGPU is present, but the browser gives no adapter (for example, graphics acceleration is off).
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'gpu', { value: { requestAdapter: async () => null }, configurable: true });
+    });
+    await page.route(`${API_BASE_URL}/**`, (route: Route) => {
+      const url = new URL(route.request().url());
+      return url.pathname === '/v1/initiative/agent-status'
+        ? route.fulfill({ json: { available: false, model: null, requiresApiKey: true, freeModel: null } })
+        : route.fulfill({ json: session() });
+    });
+    await page.goto(`/initiative/${SESSION_ID}?credential=${encodeURIComponent(CREDENTIAL)}`);
+    const panel = page.getByRole('region', { name: 'Local AI model' });
+
+    const help = panel.getByRole('alert');
+    await expect(help).toContainText('Your browser is not using your GPU at the moment');
+    await expect(help.locator('ol li').first()).toContainText('chrome://restart');
+    await expect(help).toContainText('chrome://gpu');
+    await expect(help).toContainText('Hardware accelerated');
+    await expect(help).toContainText('chrome://settings/system');
+    await expect(panel.getByRole('button', { name: /start the local model/ })).toHaveCount(0);
+    await expect(panel).not.toContainText('Unable to find a compatible GPU');
+  });
+
+  test('explains that the browser needs WebGPU when it has none', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'gpu', { value: undefined, configurable: true });
+    });
+    await page.route(`${API_BASE_URL}/**`, (route: Route) => {
+      const url = new URL(route.request().url());
+      return url.pathname === '/v1/initiative/agent-status'
+        ? route.fulfill({ json: { available: false, model: null, requiresApiKey: true, freeModel: null } })
+        : route.fulfill({ json: session() });
+    });
+    await page.goto(`/initiative/${SESSION_ID}?credential=${encodeURIComponent(CREDENTIAL)}`);
+    const panel = page.getByRole('region', { name: 'Local AI model' });
+
+    await expect(panel).toContainText('does not support WebGPU');
+    await expect(panel.getByRole('alert')).toHaveCount(0);
+    await expect(panel.getByRole('button', { name: /start the local model/ })).toHaveCount(0);
   });
 
   test('a blank question is written by the local model and saved as ordinary text', async ({ page }) => {

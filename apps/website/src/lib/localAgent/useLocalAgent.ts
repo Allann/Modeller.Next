@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { GateKind, InitiativeField, InitiativeSessionDto } from '../initiativeTypes';
-import { isModelCached, isWebGpuAvailable, loadLocalEngine, type LoadProgress, type LocalChatEngine } from './engine';
+import { NoGpuError, checkWebGpu, isModelCached, loadLocalEngine, type LoadProgress, type LocalChatEngine } from './engine';
 import { evaluateGateLocally } from './localGate';
 import { StorageLimitError } from './storageFallback';
 import {
@@ -31,7 +31,7 @@ function createLocalAgent(engine: LocalChatEngine): LocalAgent {
 
 export type LocalAgentState =
   | { status: 'checking' }
-  | { status: 'unsupported' }
+  | { status: 'unsupported'; reason: 'no-webgpu' | 'no-gpu' }
   | { status: 'idle'; cached: boolean }
   | { status: 'loading'; progress: LoadProgress }
   | { status: 'ready'; agent: LocalAgent }
@@ -68,26 +68,31 @@ export function useLocalAgent(): { state: LocalAgentState; start: () => void } {
     loadLocalEngine((progress) => setState({ status: 'loading', progress }))
       .then((engine) => setState({ status: 'ready', agent: createLocalAgent(engine) }))
       .catch((error: unknown) =>
-        setState({
-          status: 'error',
-          message: error instanceof Error ? error.message : String(error),
-          cached: false,
-          storageQuotaBytes: error instanceof StorageLimitError ? error.quotaBytes : undefined,
-        }),
+        setState(error instanceof NoGpuError
+          ? { status: 'unsupported', reason: 'no-gpu' }
+          : {
+              status: 'error',
+              message: error instanceof Error ? error.message : String(error),
+              cached: false,
+              storageQuotaBytes: error instanceof StorageLimitError ? error.quotaBytes : undefined,
+            }),
       );
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    if (!isWebGpuAvailable()) {
-      const timer = window.setTimeout(() => setState({ status: 'unsupported' }), 0);
-      return () => window.clearTimeout(timer);
-    }
-    void isModelCached().then((cached) => {
+    void (async () => {
+      const support = await checkWebGpu();
+      if (cancelled) return;
+      if (support !== 'available') {
+        setState({ status: 'unsupported', reason: support });
+        return;
+      }
+      const cached = await isModelCached();
       if (cancelled) return;
       if (cached && readOptIn()) start();
       else setState({ status: 'idle', cached });
-    });
+    })();
     return () => {
       cancelled = true;
     };

@@ -27,9 +27,38 @@ declare global {
   }
 }
 
-export function isWebGpuAvailable(): boolean {
-  if (typeof window !== 'undefined' && window.__modellerLocalEngine) return true;
-  return typeof navigator !== 'undefined' && 'gpu' in navigator;
+/** `no-gpu`: the browser supports WebGPU, but it gives this site no GPU to use. */
+export type WebGpuSupport = 'available' | 'no-webgpu' | 'no-gpu';
+
+/** Thrown when WebLLM finds no GPU, which can happen even after checkWebGpu found one. */
+export class NoGpuError extends LocalAgentError {
+  constructor() {
+    super('The browser did not give this site a GPU to use.');
+  }
+}
+
+type GpuLike = { requestAdapter(options?: { powerPreference?: string }): Promise<unknown> };
+
+/**
+ * The WebGPU API alone is not enough: with graphics acceleration off, a blocked GPU or driver, or a
+ * remote desktop, the browser has the API but gives no adapter, and WebLLM fails after the download
+ * starts. Asks for an adapter the same way WebLLM does.
+ */
+export async function checkWebGpu(): Promise<WebGpuSupport> {
+  if (typeof window !== 'undefined' && window.__modellerLocalEngine) return 'available';
+  const gpu = typeof navigator === 'undefined' ? undefined : (navigator as { gpu?: GpuLike }).gpu;
+  if (!gpu) return 'no-webgpu';
+  try {
+    return (await gpu.requestAdapter({ powerPreference: 'high-performance' })) ? 'available' : 'no-gpu';
+  } catch {
+    return 'no-gpu';
+  }
+}
+
+/** WebLLM's errors for a missing adapter or WebGPU, which reach the page as plain text from its worker. */
+function isNoGpu(error: unknown): boolean {
+  const text = describe(error);
+  return /Unable to find a compatible GPU|WebGPU is not supported|Cannot find WebGPU/.test(text);
 }
 
 const BACKENDS: CacheBackend[] = ['cache', 'indexeddb'];
@@ -89,7 +118,9 @@ export function loadLocalEngine(onProgress: (progress: LoadProgress) => void): P
   if (typeof window !== 'undefined' && window.__modellerLocalEngine) return Promise.resolve(window.__modellerLocalEngine);
   loading ??= startEngine(onProgress).catch((error: unknown) => {
     loading = null;
-    throw error instanceof LocalAgentError ? error : new LocalAgentError(`The local model could not start: ${describe(error)}`);
+    if (error instanceof LocalAgentError) throw error;
+    if (isNoGpu(error)) throw new NoGpuError();
+    throw new LocalAgentError(`The local model could not start: ${describe(error)}`);
   });
   return loading;
 }

@@ -36,7 +36,7 @@ Apply the non-secret variables to Production and Preview only where AI access is
 
 ## Local model in the browser
 
-A Facilitator can also run the Agent Participant on their own device, with no API key. The cockpit offers this when the browser supports WebGPU (current Chrome or Edge on a desktop computer).
+A Facilitator can also run the Agent Participant on their own device, with no API key. The cockpit offers this when the browser supports WebGPU (current Chrome or Edge on a desktop computer) and gives the site a GPU. Before it offers the download, the cockpit asks the browser for a GPU adapter. When there is none (the browser fell back to software after a GPU process crash, graphics acceleration is off, the GPU or driver is blocked, or the session is a remote desktop), the panel shows the steps to fix it.
 
 - The first start downloads Llama 3.2 3B Instruct (about 1.8 GB) from Hugging Face, after the Facilitator agrees. The browser keeps it, so later visits start from the cache. It needs about 2.3 GB of GPU memory.
 - The model runs in a Web Worker on the Facilitator's GPU. The Initiative text is not sent to an AI service. Only the result (a question, a selected intervention, or gate results) goes to the API, the same as manual input.

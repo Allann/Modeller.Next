@@ -5,16 +5,16 @@ import { CopyLinkButton } from './CopyLinkButton';
 /** Matches both modeller.website and www.modeller.website in Chrome's and Edge's site lists. */
 const SITE_PATTERN = '[*.]modeller.website';
 
-type Browser = 'edge' | 'chrome' | 'other';
+export type Browser = 'edge' | 'chrome' | 'other';
 
-function detectBrowser(): Browser {
+export function detectBrowser(): Browser {
   const agent = typeof navigator === 'undefined' ? '' : navigator.userAgent;
   if (agent.includes('Edg/')) return 'edge';
   if (agent.includes('Chrome/')) return 'chrome';
   return 'other';
 }
 
-function SettingsAddress({ address }: { address: string }) {
+export function SettingsAddress({ address }: { address: string }) {
   return (
     <>
       <code>{address}</code> <CopyLinkButton url={address} label="settings address" />

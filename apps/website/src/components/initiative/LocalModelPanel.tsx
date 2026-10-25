@@ -2,6 +2,7 @@
 
 import { LOCAL_MODEL_DOWNLOAD_SIZE, LOCAL_MODEL_LABEL } from '@/lib/localAgent/engine';
 import type { LocalAgentState } from '@/lib/localAgent/useLocalAgent';
+import { LocalModelGpuHelp } from './LocalModelGpuHelp';
 import { LocalModelStorageHelp } from './LocalModelStorageHelp';
 
 export type AiSource = 'local' | 'gateway';
@@ -28,7 +29,8 @@ export function LocalModelPanel({
   return (
     <section className="local-model-panel" aria-label="Local AI model">
       <p className="local-model-title">AI on this device</p>
-      {state.status === 'unsupported' && (
+      {state.status === 'unsupported' && state.reason === 'no-gpu' && <LocalModelGpuHelp gatewayUsable={gatewayUsable} />}
+      {state.status === 'unsupported' && state.reason === 'no-webgpu' && (
         <p>
           This browser cannot run the local model, because it does not support WebGPU. Use a current version of Chrome or
           Edge on a desktop computer{gatewayUsable ? ', or use the AI Gateway' : ''}.
